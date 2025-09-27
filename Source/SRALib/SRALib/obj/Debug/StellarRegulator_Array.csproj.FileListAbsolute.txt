@@ -1,0 +1,8 @@
+D:\Rimworld mod\StellarRegulator_Array\StellarRegulator_Array\bin\Debug\StellarRegulator_Array.dll
+D:\Rimworld mod\StellarRegulator_Array\StellarRegulator_Array\bin\Debug\StellarRegulator_Array.pdb
+D:\Rimworld mod\StellarRegulator_Array\StellarRegulator_Array\obj\Debug\StellarRegulator_Array.csproj.AssemblyReference.cache
+D:\Rimworld mod\StellarRegulator_Array\StellarRegulator_Array\obj\Debug\StellarRegulator_Array.csproj.CoreCompileInputs.cache
+D:\Rimworld mod\StellarRegulator_Array\StellarRegulator_Array\obj\Debug\StellarRegulator_Array.dll
+D:\Rimworld mod\StellarRegulator_Array\StellarRegulator_Array\obj\Debug\StellarRegulator_Array.pdb
+D:\steam\steamapps\common\RimWorld\Mods\StellarRegulator Array\Assemblies\StellarRegulator_Array.dll
+D:\steam\steamapps\common\RimWorld\Mods\StellarRegulator Array\Assemblies\StellarRegulator_Array.pdb

@@ -1,0 +1,12 @@
+D:\steam\steamapps\common\RimWorld\Mods\StellarRegulator Array\Source\StellarRegulator_Array\StellarRegulator_Array\bin\Release\StellarRegulator_Array.dll
+D:\steam\steamapps\common\RimWorld\Mods\StellarRegulator Array\Source\StellarRegulator_Array\StellarRegulator_Array\bin\Release\StellarRegulator_Array.pdb
+D:\steam\steamapps\common\RimWorld\Mods\StellarRegulator Array\Source\StellarRegulator_Array\StellarRegulator_Array\bin\Release\0Harmony.dll
+D:\steam\steamapps\common\RimWorld\Mods\StellarRegulator Array\Source\StellarRegulator_Array\StellarRegulator_Array\bin\Release\HarmonyMod.dll
+D:\steam\steamapps\common\RimWorld\Mods\StellarRegulator Array\Source\StellarRegulator_Array\StellarRegulator_Array\bin\Release\UnityEngine.IMGUIModule.dll
+D:\steam\steamapps\common\RimWorld\Mods\StellarRegulator Array\Source\StellarRegulator_Array\StellarRegulator_Array\bin\Release\UnityEngine.TextRenderingModule.dll
+D:\steam\steamapps\common\RimWorld\Mods\StellarRegulator Array\Source\StellarRegulator_Array\StellarRegulator_Array\bin\Release\UnityEngine.UIModule.dll
+D:\steam\steamapps\common\RimWorld\Mods\StellarRegulator Array\Source\StellarRegulator_Array\StellarRegulator_Array\obj\Release\SRA.csproj.AssemblyReference.cache
+D:\steam\steamapps\common\RimWorld\Mods\StellarRegulator Array\Source\StellarRegulator_Array\StellarRegulator_Array\obj\Release\SRA.csproj.CoreCompileInputs.cache
+D:\steam\steamapps\common\RimWorld\Mods\StellarRegulator Array\Source\StellarRegulator_Array\StellarRegulator_Array\obj\Release\SRA.csproj.Up2Date
+D:\steam\steamapps\common\RimWorld\Mods\StellarRegulator Array\Source\StellarRegulator_Array\StellarRegulator_Array\obj\Release\StellarRegulator_Array.dll
+D:\steam\steamapps\common\RimWorld\Mods\StellarRegulator Array\Source\StellarRegulator_Array\StellarRegulator_Array\obj\Release\StellarRegulator_Array.pdb
