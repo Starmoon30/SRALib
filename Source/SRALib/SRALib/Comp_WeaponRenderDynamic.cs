@@ -188,7 +188,6 @@ namespace SRA
         [HarmonyPatch(typeof(PawnRenderUtility), "DrawEquipmentAiming")]
         private class HarmonyPatch_PawnWeaponRenderer
         {
-            // Token: 0x0600053B RID: 1339 RVA: 0x00026300 File Offset: 0x00024500
             public static bool Prefix(Thing eq, Vector3 drawLoc, float aimAngle)
             {
                 bool flag = eq != null && eq.TryGetComp<Comp_WeaponRenderDynamic>() != null && eq.TryGetComp<CompEquippable>().ParentHolder != null;

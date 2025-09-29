@@ -90,6 +90,7 @@
     <Compile Include="CompAbilityEffect_ExcaliburBeam.cs" />
     <Compile Include="CompGlobalMechCommand.cs" />
     <Compile Include="Comp_BodyshapeAjuster.cs" />
+    <Compile Include="Comp_TurretRenderDynamic.cs" />
     <Compile Include="HediffComp_CountdownDeath.cs" />
     <Compile Include="Comp_WeaponRenderDynamic.cs" />
     <Compile Include="Verb_KT_Tachyon_Lances.cs" />
