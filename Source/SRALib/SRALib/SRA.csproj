@@ -108,7 +108,7 @@
     <Compile Include="ThingDefOf.cs" />
     <Compile Include="SRALibSettings.cs" />
     <Compile Include="Mortar_Patch.cs" />
-    <Compile Include="SRARepair.cs" />
+    <Compile Include="Comp_RepairTower.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
