@@ -82,6 +82,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Building_TempControler.cs" />
+    <Compile Include="Building_TurretGunHasSpeed.cs" />
     <Compile Include="CompDamageFactors.cs" />
     <Compile Include="CompProperties_DamageFactors.cs" />
     <Compile Include="CompUseEffect_ActivateMech.cs" />
@@ -97,6 +98,7 @@
     <Compile Include="Projectile_MultiExplosive_beam.cs" />
     <Compile Include="Projectile_MultiExplosive.cs" />
     <Compile Include="Thing_ExcaliburBeam.cs" />
+    <Compile Include="Verb_ShootWithOffset.cs" />
     <Compile Include="Verb_ShootArc.cs" />
     <Compile Include="HediffComp_TopTurret.cs" />
     <Compile Include="HediffComp_SRARegen.cs" />
