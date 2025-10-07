@@ -46,6 +46,12 @@ namespace SRA
             if (this.SRArepairTick <= 0)
             {
                 this.SRArepairTick = 300; // 5秒间隔
+                CompPowerTrader compPowerTrader = parent.TryGetComp<CompPowerTrader>();
+                bool hasPower = compPowerTrader == null || compPowerTrader.PowerOn;
+                if (!hasPower)
+                {
+                    return;
+                }
                 this.SRARepairAllThings();
                 this.SRARepairAllApparelsInPawn();
             }
@@ -57,11 +63,25 @@ namespace SRA
 
         private bool SRACanRepair(Thing thing)
         {
-            return thing.def.useHitPoints && (float)thing.HitPoints < (float)thing.MaxHitPoints * Props.maxRepairMultiplier + Props.maxRepairOffset;
+            if (thing is Building)
+            {
+                return thing.def.useHitPoints && (float)thing.HitPoints < (float)thing.MaxHitPoints * Props.maxRepairMultiplier + Props.maxRepairOffset;
+            }
+            else
+            {
+                return thing.def.useHitPoints && (float)thing.HitPoints < (float)thing.MaxHitPoints;
+            }
         }
         private float GetMaxRepairLimit(Thing thing)
         {
-            return (float)thing.MaxHitPoints * Props.maxRepairMultiplier + Props.maxRepairOffset;
+            if (thing is Building)
+            {
+                return (float)thing.MaxHitPoints * Props.maxRepairMultiplier + Props.maxRepairOffset;
+            }
+            else
+            {
+                return (float)thing.MaxHitPoints;
+            }
         }
 
         private IEnumerable<Thing> GetThingsInRepairRange()
