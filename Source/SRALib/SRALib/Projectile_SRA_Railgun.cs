@@ -20,6 +20,8 @@ namespace SRA
         public float explosionArmorPenetration = 0f;
         public DamageDef damageDef = DamageDefOf.Bullet;
         public SoundDef explosionSound = SRALib_DefOf.EnergyShield_Broken;
+        public EffecterDef explosionEffect;
+        public int explosionEffectLifetimeTicks;
 
         public HediffDef explosionHediff;
         public float explosionHediffSeverity = 0f;
@@ -63,6 +65,20 @@ namespace SRA
                 Find.BattleLog.Add(battleLogEntry_RangedImpact);
                 Pawn pawn;
                 bool instigatorGuilty = (pawn = (launcher as Pawn)) == null || !pawn.Drafted;
+
+                if (ProjectileExt.explosionEffect != null)
+                {
+                    Effecter effecter = ProjectileExt.explosionEffect.Spawn().Trigger(new TargetInfo(Position, launcher.Map, false), this.launcher, -1);
+                    if (ProjectileExt.explosionEffectLifetimeTicks != 0)
+                    {
+                        Map.effecterMaintainer.AddEffecterToMaintain(effecter, Position.ToVector3().ToIntVec3(), ProjectileExt.explosionEffectLifetimeTicks);
+                    }
+                    else
+                    {
+                        effecter.Trigger(new TargetInfo(Position, Map, false), new TargetInfo(Position, Map, false), -1);
+                        effecter.Cleanup();
+                    }
+                }
                 List<Thing> thingsIgnoredByExplosion = new List<Thing>();
                 foreach (IntVec3 cell in GenRadial.RadialCellsAround(position, ProjectileExt.explosionRadius, true))
                 {
