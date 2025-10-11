@@ -68,7 +68,7 @@ namespace SRA
 
             if (properties.explosionEffect != null)
             {
-                Effecter effecter = properties.explosionEffect.Spawn();
+                Effecter effecter = properties.explosionEffect.Spawn().Trigger(new TargetInfo(Position, launcher.Map, false), this.launcher, -1);
                 if (properties.explosionEffectLifetimeTicks != 0)
                 {
                     Map.effecterMaintainer.AddEffecterToMaintain(effecter, Position.ToVector3().ToIntVec3(), properties.explosionEffectLifetimeTicks);

@@ -93,6 +93,8 @@
     <Compile Include="Comp_BodyshapeAjuster.cs" />
     <Compile Include="Comp_MultiTurretGun.cs" />
     <Compile Include="Comp_TurretRenderDynamic.cs" />
+    <Compile Include="Projectile_BeamWithEffect.cs" />
+    <Compile Include="Projectile_BulletWithEffect.cs" />
     <Compile Include="HediffComp_CountdownDeath.cs" />
     <Compile Include="Comp_WeaponRenderDynamic.cs" />
     <Compile Include="Verb_KT_Tachyon_Lances.cs" />
