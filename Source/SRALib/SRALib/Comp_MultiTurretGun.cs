@@ -19,6 +19,15 @@ namespace SRA
     {
         private bool fireAtWill = true;
         public new CompProperties_MultiTurretGun Props => (CompProperties_MultiTurretGun)props;
+        public override void CompTick()
+        {
+            base.CompTick();
+            if (!currentTarget.IsValid && burstCooldownTicksLeft <= 0)
+            {
+                // 在其他情况下没有目标且冷却结束时也回正
+                curRotation = parent.Rotation.AsAngle + Props.angleOffset;
+            }
+        }
         private void MakeGun()
         {
             gun = ThingMaker.MakeThing(Props.turretDef);

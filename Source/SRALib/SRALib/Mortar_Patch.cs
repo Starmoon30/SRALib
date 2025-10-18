@@ -1,7 +1,7 @@
-﻿using HarmonyLib;
+﻿using System;
+using HarmonyLib;
 using Verse;
 using RimWorld;
-
 namespace SRA
 {
     /// <summary>
@@ -24,7 +24,6 @@ namespace SRA
         // This component doesn't need any specific logic.
         // Its mere presence on a turret is checked by the Harmony patch.
     }
-
     [HarmonyPatch(typeof(Building_TurretGun), "get_CanSetForcedTarget")]
     public static class Patch_Building_TurretGun_CanSetForcedTarget
     {
@@ -47,4 +46,3 @@ namespace SRA
         }
     }
 }
-

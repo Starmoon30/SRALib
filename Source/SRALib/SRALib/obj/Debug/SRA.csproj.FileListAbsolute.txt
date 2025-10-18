@@ -28,6 +28,8 @@ D:\steam\steamapps\common\RimWorld\Mods\StellarRegulator Array\Source\StellarReg
 D:\steam\steamapps\common\RimWorld\Mods\StellarRegulator Array\Source\StellarRegulator_Array\StellarRegulator_Array\obj\Debug\SRA.csproj.Up2Date
 D:\steam\steamapps\common\RimWorld\Mods\StellarRegulator Array\Source\StellarRegulator_Array\StellarRegulator_Array\obj\Debug\StellarRegulator_Array.dll
 D:\steam\steamapps\common\RimWorld\Mods\StellarRegulator Array\Source\StellarRegulator_Array\StellarRegulator_Array\obj\Debug\StellarRegulator_Array.pdb
+D:\steam\steamapps\common\RimWorld\Mods\SRALib\Source\SRALib\SRALib\obj\Debug\SRA.csproj.AssemblyReference.cache
+D:\steam\steamapps\common\RimWorld\Mods\SRALib\Source\SRALib\SRALib\obj\Debug\SRA.csproj.CoreCompileInputs.cache
 D:\steam\steamapps\common\RimWorld\Mods\SRALib\Source\SRALib\SRALib\bin\Debug\SRALib.dll
 D:\steam\steamapps\common\RimWorld\Mods\SRALib\Source\SRALib\SRALib\bin\Debug\SRALib.pdb
 D:\steam\steamapps\common\RimWorld\Mods\SRALib\Source\SRALib\SRALib\bin\Debug\0Harmony.dll
@@ -40,8 +42,6 @@ D:\steam\steamapps\common\RimWorld\Mods\SRALib\Source\SRALib\SRALib\bin\Debug\ne
 D:\steam\steamapps\common\RimWorld\Mods\SRALib\Source\SRALib\SRALib\bin\Debug\UnityEngine.SharedInternalsModule.dll
 D:\steam\steamapps\common\RimWorld\Mods\SRALib\Source\SRALib\SRALib\bin\Debug\UnityEngine.TextCoreFontEngineModule.dll
 D:\steam\steamapps\common\RimWorld\Mods\SRALib\Source\SRALib\SRALib\bin\Debug\UnityEngine.TextCoreTextEngineModule.dll
-D:\steam\steamapps\common\RimWorld\Mods\SRALib\Source\SRALib\SRALib\obj\Debug\SRA.csproj.AssemblyReference.cache
-D:\steam\steamapps\common\RimWorld\Mods\SRALib\Source\SRALib\SRALib\obj\Debug\SRA.csproj.CoreCompileInputs.cache
 D:\steam\steamapps\common\RimWorld\Mods\SRALib\Source\SRALib\SRALib\obj\Debug\SRA.csproj.Up2Date
 D:\steam\steamapps\common\RimWorld\Mods\SRALib\Source\SRALib\SRALib\obj\Debug\SRALib.dll
 D:\steam\steamapps\common\RimWorld\Mods\SRALib\Source\SRALib\SRALib\obj\Debug\SRALib.pdb

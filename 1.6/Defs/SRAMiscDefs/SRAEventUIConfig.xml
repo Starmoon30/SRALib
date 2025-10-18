@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Defs>
+
+  <SRA.EventUIConfigDef>
+    <defName>SRA_EventUIConfig</defName>
+    
+    <!-- General Style -->
+    <labelFont>Small</labelFont>
+    <drawBorders>false</drawBorders>
+    <showDefName>false</showDefName>
+    <showLabel>true</showLabel>
+    <defaultBackgroundImagePath>SRA/Events/Bg/SRA_event_diplomacy_background</defaultBackgroundImagePath>
+    
+    <!-- Virtual Layout Dimensions -->
+    <portraitSize>(1200, 800)</portraitSize>
+    <nameSize>(650, 100)</nameSize>
+    <textSize>(650, 350)</textSize>
+    <optionsWidth>750</optionsWidth>
+    
+    <!-- Virtual Layout Offsets -->
+    <textNameOffset>0</textNameOffset>
+    <optionsTextOffset>0</optionsTextOffset>
+
+    <defaultWindowSize>(1600, 900)</defaultWindowSize>
+
+    <!-- New Layout Dimensions -->
+    <newLayoutNameSize>(200, 50)</newLayoutNameSize>
+    <newLayoutportraitSize>(600, 200)</newLayoutportraitSize>
+    <newLayoutTextSize>(600, 200)</newLayoutTextSize>
+    <newLayoutOptionsWidth>600</newLayoutOptionsWidth>
+    <newLayoutPadding>20</newLayoutPadding>
+    <newLayoutTextNameOffset>20</newLayoutTextNameOffset>
+    <newLayoutOptionsTextOffset>20</newLayoutOptionsTextOffset>
+    
+  </SRA.EventUIConfigDef>
+
+</Defs>

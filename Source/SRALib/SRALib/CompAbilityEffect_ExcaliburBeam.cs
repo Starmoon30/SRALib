@@ -3,6 +3,7 @@ using Verse;
 using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
+using Verse.Sound;
 
 namespace SRA
 {
@@ -13,6 +14,7 @@ namespace SRA
         public float armorPenetration;
         public float pathWidth;
         public DamageDef damageDef;
+        public SoundDef soundDef = null;
 
         public CompProperties_AbilityExcaliburBeam()
         {
@@ -54,6 +56,10 @@ namespace SRA
 
             // 启动打击
             beam.StartStrike(allAffectedCells, 0, 1); // 单次爆发
+            if (Props.soundDef != null)
+            {
+                Props.soundDef.PlayOneShot(new TargetInfo(this.parent.pawn.Position, this.parent.pawn.Map, false));
+            }
         }
 
         // 重写 DrawEffectPreview 方法以显示作用范围
@@ -65,7 +71,7 @@ namespace SRA
             {
                 // 计算并绘制受影响区域
                 List<IntVec3> affectedCells = CalculateAffectedCells(target.Cell);
-                GenDraw.DrawFieldEdges(affectedCells, Valid(target) ? Color.green : Color.red);
+                GenDraw.DrawFieldEdges(affectedCells,Color.red);
 
                 // 绘制从施法者到目标的连线
                 GenDraw.DrawLineBetween(this.parent.pawn.Position.ToVector3Shifted(),
