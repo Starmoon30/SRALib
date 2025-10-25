@@ -1,5 +1,7 @@
 using Verse;
 using RimWorld;
+using static RimWorld.CompProperties_Power;
+using System;
 
 namespace SRA
 {
@@ -157,7 +159,7 @@ namespace SRA
             if (!eventVarManager.HasVariable(name))
             {
                 reason = $"Variable '{name}' not found.";
-                return false;
+                return true;
             }
 
             object variable = eventVarManager.GetVariable<object>(name);
@@ -169,7 +171,7 @@ namespace SRA
                 if (compareValueStr == null)
                 {
                     reason = $"Comparison variable '{valueVariableName}' not set.";
-                    return false;
+                    return true;
                 }
             }
 
@@ -235,6 +237,59 @@ namespace SRA
                 reason = "";
             }
             return exists;
+        }
+    }
+
+    public class Condition_HasThing : Condition
+    {
+        public ThingDef thingDef;
+        public int count = 1;
+        public override bool IsMet(out string reason)
+        {
+            if (thingDef == null)
+            {
+                reason = "thingDef not specified in Condition_HasThing.";
+                return false;
+            }
+            Map currentMap = Find.CurrentMap;
+            if (currentMap == null)
+            {
+                reason = "[SRA] Condition_HasThing cannot execute without a current map.";
+                return false;
+            }
+            int playerAmount = currentMap.resourceCounter.GetCount(thingDef);
+            if (playerAmount < count)
+            {
+                reason = "not has enough thing.";
+                return false;
+            }
+            else
+            {
+                reason = "has enough thing.";
+                return true;
+            }
+        }
+    }
+    public class Condition_HasResearchProject : Condition
+    {
+        public ResearchProjectDef researchProject;
+        public override bool IsMet(out string reason)
+        {
+            if (researchProject == null)
+            {
+                reason = "researchProject not specified in Condition_HasResearchProject.";
+                return false;
+            }
+            if (!researchProject.IsFinished)
+            {
+                reason = "researchProject not IsFinished.";
+                return false;
+            }
+            else
+            {
+                reason = "has researchProject.";
+                return true;
+            }
         }
     }
 }

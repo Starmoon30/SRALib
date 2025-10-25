@@ -14,4 +14,7 @@
 	<SRAExecuteDeathLabel>自毁</SRAExecuteDeathLabel>
 	<SRAExecuteDeathDesc>立即自毁。</SRAExecuteDeathDesc>
 	<SRAExecuteDeathTip>剩余时间：</SRAExecuteDeathTip>
+
+	
+	<SRA_IgnoreTerrainCostTipExtra>\n-近地悬浮：该单位的移动速度不受地形影响。\n</SRA_IgnoreTerrainCostTipExtra>
 </LanguageData>

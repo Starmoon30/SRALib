@@ -44,18 +44,54 @@ namespace SRA
             
             FloatMenuOption option = new FloatMenuOption(label, delegate()
             {
-                EventDef uiDef = DefDatabase<EventDef>.GetNamed(Props.uiDefName, false);
+                EventDef uiDef = DefDatabase<EventDef>.GetNamed(Props.uiDefName.Translate(), false);
                 if (uiDef != null)
                 {
-                    Find.WindowStack.Add((Window)Activator.CreateInstance(uiDef.windowType, uiDef));
+                    if (uiDef.hiddenWindow)
+                    {
+                        if (!uiDef.dismissEffects.NullOrEmpty())
+                        {
+                            foreach (var conditionalEffect in uiDef.dismissEffects)
+                            {
+                                string reason;
+                                if (AreConditionsMet(conditionalEffect.conditions, out reason))
+                                {
+                                    conditionalEffect.Execute(null);
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        Find.WindowStack.Add((Window)Activator.CreateInstance(uiDef.windowType, uiDef));
+                    }
                 }
                 else
                 {
-                    Log.Error($"[CompOpenCustomUI] Could not find EventDef named '{Props.uiDefName}'.");
+                    Log.Error($"[SRA] Effect_OpenCustomUI could not find EventDef named '{Props.uiDefName}'");
                 }
             });
 
             yield return option;
+        }
+
+        private bool AreConditionsMet(List<Condition> conditions, out string reason)
+        {
+            reason = "";
+            if (conditions.NullOrEmpty())
+            {
+                return true;
+            }
+
+            foreach (var condition in conditions)
+            {
+                if (!condition.IsMet(out string singleReason))
+                {
+                    reason = singleReason;
+                    return false;
+                }
+            }
+            return true;
         }
     }
 }

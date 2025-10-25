@@ -61,6 +61,7 @@ namespace SRA
                 (Find.TickManager.TicksGame - lastPenetrationTick) >= ProjectileExt.penetrationDelayTicks;
             if (hitThing != LasthitThing)
             {
+                LasthitThing = hitThing;
                 BattleLogEntry_RangedImpact battleLogEntry_RangedImpact = new BattleLogEntry_RangedImpact(launcher, hitThing, intendedTarget.Thing, equipmentDef, def, targetCoverDef);
                 Find.BattleLog.Add(battleLogEntry_RangedImpact);
                 Pawn pawn;
@@ -133,7 +134,6 @@ namespace SRA
                     intendedTarget: intendedTarget.Thing,
                     ignoredThings: thingsIgnoredByExplosion
                 );
-                LasthitThing = hitThing;
 
             }
             // 非目标且满足穿透条件

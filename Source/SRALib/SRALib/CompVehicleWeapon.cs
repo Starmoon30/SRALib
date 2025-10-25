@@ -169,9 +169,8 @@ namespace SRA
         // Token: 0x06000180 RID: 384 RVA: 0x00009CB0 File Offset: 0x00007EB0
         public Vector3 GetOffsetByRot()
         {
-            bool flag = this.Props.drawData != null;
             Vector3 result;
-            if (flag)
+            if (this.Props.drawData != null)
             {
                 result = this.Props.drawData.OffsetForRot(this.pawn.Rotation);
             }
@@ -213,20 +212,19 @@ namespace SRA
     [HarmonyPatch(typeof(PawnRenderUtility), "DrawEquipmentAndApparelExtras")]
     internal static class Patch_DrawVehicleTurret
     {
-        // Token: 0x060000BA RID: 186 RVA: 0x000051AC File Offset: 0x000033AC
         [HarmonyPriority(600)]
         public static bool Prefix(Pawn pawn, Vector3 drawPos, Rot4 facing, PawnRenderFlags flags)
         {
-            CompVehicleWeapon compVehicleWeapon = CompVehicleWeapon.cachedVehicldesPawns.TryGetValue(pawn, null);
+            // 直接通过组件查找，而不是静态字典
+            CompVehicleWeapon compVehicleWeapon = pawn.GetComp<CompVehicleWeapon>();
             bool flag = compVehicleWeapon != null;
             bool result;
             if (flag)
             {
-                Pawn pawn2 = (Pawn)compVehicleWeapon.parent;
-                bool flag2 = pawn2.equipment != null && pawn2.equipment.Primary != null;
+                bool flag2 = pawn.equipment != null && pawn.equipment.Primary != null;
                 if (flag2)
                 {
-                    Patch_DrawVehicleTurret.DrawTuret(pawn2, compVehicleWeapon, pawn2.equipment.Primary);
+                    DrawTuret(pawn, compVehicleWeapon, pawn.equipment.Primary);
                 }
                 result = false;
             }
@@ -237,7 +235,6 @@ namespace SRA
             return result;
         }
 
-        // Token: 0x060000BB RID: 187 RVA: 0x0000521C File Offset: 0x0000341C
         public static void DrawTuret(Pawn pawn, CompVehicleWeapon compWeapon, Thing equipment)
         {
             float currentAngle = compWeapon.CurrentAngle;
@@ -250,7 +247,7 @@ namespace SRA
             Vector3 vector2;
             if (compWeapon.Props.drawSize != 0f)
             {
-                vector2 = Vector3.one* compWeapon.Props.drawSize;
+                vector2 = Vector3.one * compWeapon.Props.drawSize;
             }
             else
             {

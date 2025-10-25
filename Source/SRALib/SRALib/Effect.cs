@@ -4,6 +4,9 @@ using System.Linq;
 using UnityEngine;
 using Verse;
 using RimWorld;
+using System.Security.AccessControl;
+using Verse.Noise;
+using static RimWorld.FleshTypeDef;
 
 namespace SRA
 {
@@ -107,7 +110,7 @@ namespace SRA
             {
                 messageTypeDef = MessageTypeDefOf.PositiveEvent;
             }
-            Messages.Message(message, messageTypeDef);
+            Messages.Message(message.Translate(), messageTypeDef);
         }
     }
 
@@ -290,6 +293,33 @@ namespace SRA
         }
     }
 
+    public class Effect_TakeThing : Effect
+    {
+        public ThingDef thingDef;
+        public int count = 1;
+        public override void Execute(Window dialog = null)
+        {
+            if (thingDef == null)
+            {
+                Log.Error("[SRA] Effect_GiveThing has a null thingDef.");
+                return;
+            }
+
+            Map currentMap = Find.CurrentMap;
+            if (currentMap == null)
+            {
+                Log.Error("[SRA] Effect_GiveThing cannot execute without a current map.");
+                return;
+            }
+            int playerAmount = currentMap.resourceCounter.GetCount(thingDef);
+            if (playerAmount >= count)
+            {
+                // 扣除资源
+                TradeUtility.LaunchThingsOfType(thingDef, count, currentMap, null);
+            }
+        }
+    }
+
     public class Effect_SpawnPawn : Effect
     {
         public PawnKindDef kindDef;
@@ -342,6 +372,65 @@ namespace SRA
         }
     }
 
+    public class Effect_SpawnSkyfaller : Effect
+    {
+        public ThingDef skyfaller;
+        public bool useTradeDropSpot;
+
+        public override void Execute(Window dialog = null)
+        {
+            if (skyfaller == null)
+            {
+                Log.Error("[SRA] Effect_SpawnSkyfaller is not configured correctly (missing skyfaller).");
+                return;
+            }
+            Map currentMap = Find.CurrentMap;
+            if (currentMap == null)
+            {
+                Log.Error("[SRA] Effect_StoreColonyWealth cannot execute without a current map.");
+                return;
+            }
+            IntVec3 result;
+            if (useTradeDropSpot)
+            {
+                result = DropCellFinder.TradeDropSpot(currentMap);
+            }
+            else
+            {
+                IntVec3 intVec;
+                if (CellFinderLoose.TryGetRandomCellWith((IntVec3 x) => x.Standable(currentMap) && !x.Roofed(currentMap) && !x.Fogged(currentMap) && currentMap.reachability.CanReachColony(x), currentMap, 1000, out intVec))
+                {
+                    result = intVec;
+                }
+                else
+                {
+                    result = DropCellFinder.RandomDropSpot(currentMap, true);
+                }
+            }
+            SkyfallerMaker.SpawnSkyfaller(skyfaller, result, currentMap);
+        }
+    }
+    public class Effect_SpawnOrbitTrader : Effect
+    {
+        public TraderKindDef traderKindDef;
+        public override void Execute(Window dialog = null)
+        {
+            // 如果parms中没有指定，我们可以使用一个默认的，或者从其他方式获取
+            if (traderKindDef == null)
+            {
+                // 如果没有指定，我们可以随机一个，或者返回false
+                return;
+            }
+            Map map = Find.CurrentMap;
+            TradeShip tradeShip = new TradeShip(traderKindDef);
+            map.passingShipManager.AddShip(tradeShip);
+            tradeShip.GenerateThings();
+            Find.LetterStack.ReceiveLetter(tradeShip.def.LabelCap, "TraderArrival".Translate(tradeShip.name, tradeShip.def.label, (tradeShip.Faction == null) ? "TraderArrivalNoFaction".Translate() : "TraderArrivalFromFaction".Translate(tradeShip.Faction.Named("FACTION"))), LetterDefOf.PositiveEvent,
+                lookTargets: new LookTargets(map.Center, map));
+
+            return;
+        }
+    }
     public enum VariableOperation
     {
         Add,
@@ -608,6 +697,26 @@ namespace SRA
         }
     }
 
+    public class Effect_StoreTicksPassed : Effect
+    {
+        public string variableName;
+
+        public override void Execute(Window dialog = null)
+        {
+            if (string.IsNullOrEmpty(variableName))
+            {
+                Log.Error("[SRA] Effect_StoreTicksPassed is not configured correctly (missing variableName).");
+                return;
+            }
+
+            var eventVarManager = Find.World.GetComponent<EventVariableManager>();
+            int ticksPassed = Find.TickManager.TicksGame;
+            Log.Message($"[EventSystem] Storing days passed ({ticksPassed}) into variable '{variableName}'.");
+            eventVarManager.SetVariable(variableName, ticksPassed);
+        }
+    }
+
+    
     public class Effect_StoreDaysPassed : Effect
     {
         public string variableName;
@@ -626,6 +735,8 @@ namespace SRA
             eventVarManager.SetVariable(variableName, daysPassed);
         }
     }
+
+
 
     public class Effect_StoreColonyWealth : Effect
     {

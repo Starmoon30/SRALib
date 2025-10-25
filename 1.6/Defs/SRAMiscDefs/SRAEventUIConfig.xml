@@ -15,7 +15,7 @@
     <portraitSize>(1200, 800)</portraitSize>
     <nameSize>(650, 100)</nameSize>
     <textSize>(650, 350)</textSize>
-    <optionsWidth>750</optionsWidth>
+    <optionsWidth>300</optionsWidth>
     
     <!-- Virtual Layout Offsets -->
     <textNameOffset>0</textNameOffset>

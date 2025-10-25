@@ -33,11 +33,10 @@ namespace SRA
         public List<ConditionalEffects> immediateEffects;
         public List<ConditionalEffects> dismissEffects;
         public List<ConditionalDescription> conditionalDescriptions;
-
+        public EventUIConfigDef eventUIConfig;
         public override void PostLoad()
         {
             base.PostLoad();
-#pragma warning disable 0618
             // If the old description field is used, move its value to the new list for processing.
             if (!description.NullOrEmpty())
             {
@@ -48,7 +47,6 @@ namespace SRA
                 descriptions.Insert(0, description);
                 description = null; // Clear the old field to prevent confusion
             }
-#pragma warning restore 0618
             // If hiddenWindow is true, merge immediateEffects into dismissEffects at load time.
             if (hiddenWindow && !immediateEffects.NullOrEmpty())
             {

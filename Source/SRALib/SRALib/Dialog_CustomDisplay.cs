@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using UnityEngine;
 using Verse;
@@ -9,23 +10,12 @@ namespace SRA
 {
     public class Dialog_CustomDisplay : Window
     {
-        private EventDef def;
-        private Texture2D portrait;
-        private Texture2D background;
-        private string selectedDescription;
+        protected EventDef def;
+        protected Texture2D portrait;
+        protected Texture2D background;
+        protected string selectedDescription;
 
-        private static EventUIConfigDef config;
-        public static EventUIConfigDef Config
-        {
-            get
-            {
-                if (config == null)
-                {
-                    config = DefDatabase<EventUIConfigDef>.GetNamed("SRA_EventUIConfig");
-                }
-                return config;
-            }
-        }
+        protected static EventUIConfigDef Config = DefDatabase<EventUIConfigDef>.GetNamed("SRA_EventUIConfig");
 
         public override Vector2 InitialSize
         {
@@ -45,7 +35,10 @@ namespace SRA
             this.forcePause = true;
             this.absorbInputAroundWindow = true;
             this.doCloseX = true;
-
+            if (def.eventUIConfig != null)
+            {
+                Config = def.eventUIConfig;
+            }
             var eventVarManager = Find.World.GetComponent<EventVariableManager>();
             if (!def.descriptions.NullOrEmpty())
             {
@@ -73,6 +66,13 @@ namespace SRA
         public override void PreOpen()
         {
             base.PreOpen();
+
+            if (def.eventUIConfig != null)
+            {
+                Config = def.eventUIConfig;
+            }
+
+
             if (!def.portraitPath.NullOrEmpty())
             {
                 portrait = ContentFinder<Texture2D>.Get(def.portraitPath);
@@ -83,7 +83,7 @@ namespace SRA
             {
                 background = ContentFinder<Texture2D>.Get(bgPath);
             }
-            
+
             HandleAction(def.immediateEffects);
             
             if (!def.conditionalDescriptions.NullOrEmpty())
@@ -112,14 +112,14 @@ namespace SRA
             {
                 Text.Font = GameFont.Tiny;
                 GUI.color = Color.gray;
-                Widgets.Label(new Rect(5, 5, inRect.width - 10, 20f), def.defName);
+                Widgets.Label(new Rect(5, 5, inRect.width - 10, 20f), def.defName.Translate());
                 GUI.color = Color.white;
             }
 
             if (Config.showLabel)
             {
                 Text.Font = Config.labelFont;
-                Widgets.Label(new Rect(5, 20f, inRect.width - 10, 30f), def.label);
+                Widgets.Label(new Rect(5, 20f, inRect.width - 10, 30f), def.label.Translate());
                 Text.Font = GameFont.Small;
             }
 
@@ -160,7 +160,7 @@ namespace SRA
             }
             Text.Anchor = TextAnchor.MiddleCenter;
             Text.Font = GameFont.Medium;
-            Widgets.Label(nameRect, def.characterName);
+            Widgets.Label(nameRect, def.characterName.Translate());
             Text.Font = GameFont.Small;
             Text.Anchor = TextAnchor.UpperLeft;
 
@@ -170,12 +170,17 @@ namespace SRA
                 Widgets.DrawBox(textRect);
             }
             Rect textInnerRect = textRect.ContractedBy(10f * scale);
-            Widgets.Label(textInnerRect, selectedDescription);
+            Widgets.Label(textInnerRect, selectedDescription.Translate());
 
             Rect optionRect = new Rect(nameRect.x, textRect.yMax + Config.optionsTextOffset * scale, scaledOptionsWidth, portraitRect.height - nameRect.height - textRect.height - (Config.textNameOffset + Config.optionsTextOffset) * scale);
-            
+
+            DrawOptions(optionRect);
+        }
+
+        protected virtual void DrawOptions(Rect optionRect)
+        {
             Listing_Standard listing = new Listing_Standard();
-            listing.Begin(optionRect.ContractedBy(10f * scale));
+            listing.Begin(optionRect); // 使用完整的 optionRect
             if (def.options != null)
             {
                 foreach (var option in def.options)
@@ -185,7 +190,7 @@ namespace SRA
 
                     if (conditionsMet)
                     {
-                        if (listing.ButtonText(option.label))
+                        if (listing.ButtonText(option.label.Translate()))
                         {
                             HandleAction(option.optionEffects);
                         }
@@ -197,15 +202,14 @@ namespace SRA
                             continue;
                         }
                         Rect rect = listing.GetRect(30f);
-                        Widgets.ButtonText(rect, option.label, false, true, false);
+                        Widgets.ButtonText(rect, option.label.Translate(), true, true, Color.gray, false);
                         TooltipHandler.TipRegion(rect, GetDisabledReason(option, reason));
                     }
                 }
             }
             listing.End();
         }
-
-        private void HandleAction(List<ConditionalEffects> conditionalEffects)
+        protected virtual void HandleAction(List<ConditionalEffects> conditionalEffects)
         {
             if (conditionalEffects.NullOrEmpty())
             {
@@ -221,7 +225,7 @@ namespace SRA
             }
         }
 
-        private bool AreConditionsMet(List<Condition> conditions, out string reason)
+        protected virtual bool AreConditionsMet(List<Condition> conditions, out string reason)
         {
             reason = "";
             if (conditions.NullOrEmpty())
@@ -240,11 +244,11 @@ namespace SRA
             return true;
         }
 
-        private string GetDisabledReason(EventOption option, string reason)
+        protected virtual string GetDisabledReason(EventOption option, string reason)
         {
             if (!option.disabledReason.NullOrEmpty())
             {
-                return option.disabledReason;
+                return option.disabledReason.Translate();
             }
             return reason;
         }
@@ -254,8 +258,8 @@ namespace SRA
             base.PostClose();
             HandleAction(def.dismissEffects);
         }
-        
-        private string FormatDescription(string description)
+
+        protected virtual string FormatDescription(string description)
         {
             var eventVarManager = Find.World.GetComponent<EventVariableManager>();
             // Use regex to find all placeholders like {variableName}

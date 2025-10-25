@@ -3,84 +3,32 @@
   "WorkspaceRootPath": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\compabilityeffect_excaliburbeam.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\compabilityeffect_excaliburbeam.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|d:\\steam\\steamapps\\common\\rimworld\\mods\\sralib\\source\\sralib\\sralib\\verb_meleeattackdamage_aoe.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\verb_meleeattackdamage_aoe.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\thing_excaliburbeam.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\thing_excaliburbeam.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\questnode_root_eventletter.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\questnode_root_eventletter.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\hediffcomp_srabarrier.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\hediffcomp_srabarrier.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\srabarriergizmo.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\srabarriergizmo.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\srabarrierharmonypatches.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\srabarrierharmonypatches.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\sralibsettings.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\sralibsettings.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\compvehicleweapon.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\compvehicleweapon.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\effect.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\effect.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\dialog_customdisplay.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\dialog_customdisplay.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
+      "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|d:\\steam\\steamapps\\common\\rimworld\\mods\\sralib\\source\\sralib\\sralib\\dialog_newlayoutdisplay.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\dialog_newlayoutdisplay.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\hediffcomp_sraregen.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\hediffcomp_sraregen.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\hediffcomp_srabarrier.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\hediffcomp_srabarrier.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\hediffcomp_countdowndeath.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\hediffcomp_countdowndeath.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\dialog_manageeventvariables.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\dialog_manageeventvariables.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\eventuiconfigdef.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\eventuiconfigdef.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\eventdef.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\eventdef.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\effect.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\effect.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\mortar_patch.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\mortar_patch.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\letter_eventchoice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\letter_eventchoice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\eventvariablemanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\eventvariablemanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\delayedactionmanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\delayedactionmanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\debugactions.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\debugactions.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\condition.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\condition.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\compopencustomui.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -91,12 +39,108 @@
       "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\comp_turretrenderdynamic.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
+      "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\eventdef.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\eventdef.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\eventcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\eventcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\verb_meleeattackdamage_aoe.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\verb_meleeattackdamage_aoe.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\srabarriergizmo.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\srabarriergizmo.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\hediffcomp_topturret.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\hediffcomp_topturret.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\eventvariablemanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\eventvariablemanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\compglobalmechcommand.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\compglobalmechcommand.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\comp_pawnrenderextra.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\comp_pawnrenderextra.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\compvehicleweapon.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\compvehicleweapon.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\mortar_patch.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\mortar_patch.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\projectile_multiexplosive.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\projectile_multiexplosive.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\comp_weaponrenderdynamic.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\comp_weaponrenderdynamic.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\condition.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\condition.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\eventuiconfigdef.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\eventuiconfigdef.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\compabilityeffect_excaliburbeam.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\compabilityeffect_excaliburbeam.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\comp_multiturretgun.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\comp_multiturretgun.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\building_turretgunhasspeed.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\building_turretgunhasspeed.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\projectile_sra_railgun.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\projectile_sra_railgun.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\debugactions.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\debugactions.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\thingdefof.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\thingdefof.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\sralibsettings.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\sralibsettings.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\questnode_root_eventletter.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\questnode_root_eventletter.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\thing_excaliburbeam.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\thing_excaliburbeam.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\srabarrierharmonypatches.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\srabarrierharmonypatches.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\letter_eventchoice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\letter_eventchoice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\delayedactionmanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\delayedactionmanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\comp_bodyshapeajuster.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -110,8 +154,34 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 6,
+          "SelectedChildIndex": 4,
           "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "Dialog_NewLayoutDisplay.cs",
+              "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\Dialog_NewLayoutDisplay.cs",
+              "RelativeDocumentMoniker": "SRALib\\Dialog_NewLayoutDisplay.cs",
+              "ToolTip": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\Dialog_NewLayoutDisplay.cs",
+              "RelativeToolTip": "SRALib\\Dialog_NewLayoutDisplay.cs",
+              "ViewState": "AQIAAEUAAAAAAAAAAAAYwFgAAABIAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-18T11:59:42.57Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "HediffComp_SRARegen.cs",
+              "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\HediffComp_SRARegen.cs",
+              "RelativeDocumentMoniker": "SRALib\\HediffComp_SRARegen.cs",
+              "ToolTip": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\HediffComp_SRARegen.cs",
+              "RelativeToolTip": "SRALib\\HediffComp_SRARegen.cs",
+              "ViewState": "AQIAAGkAAAAAAAAAAAAAAJUAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-24T14:37:45.136Z",
+              "EditorCaption": ""
+            },
             {
               "$type": "Document",
               "DocumentIndex": 4,
@@ -120,147 +190,65 @@
               "RelativeDocumentMoniker": "SRALib\\HediffComp_SRABarrier.cs",
               "ToolTip": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\HediffComp_SRABarrier.cs",
               "RelativeToolTip": "SRALib\\HediffComp_SRABarrier.cs",
-              "ViewState": "AQIAAEsAAAAAAAAAAAAiwFUAAAA+AAAA",
+              "ViewState": "AQIAAIYAAAAAAAAAAAAuwJsAAAAtAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-10-16T11:06:57.82Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 5,
-              "Title": "SRABarrierGizmo.cs",
-              "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\SRABarrierGizmo.cs",
-              "RelativeDocumentMoniker": "SRALib\\SRABarrierGizmo.cs",
-              "ToolTip": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\SRABarrierGizmo.cs",
-              "RelativeToolTip": "SRALib\\SRABarrierGizmo.cs",
-              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-10-16T11:06:37.478Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 6,
-              "Title": "SRABarrierHarmonyPatches.cs",
-              "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\SRABarrierHarmonyPatches.cs",
-              "RelativeDocumentMoniker": "SRALib\\SRABarrierHarmonyPatches.cs",
-              "ToolTip": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\SRABarrierHarmonyPatches.cs",
-              "RelativeToolTip": "SRALib\\SRABarrierHarmonyPatches.cs",
-              "ViewState": "AQIAADAAAAAAAAAAAAAYwAAAAAAAAAAA",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-10-16T11:06:32.815Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 3,
-              "Title": "QuestNode_Root_EventLetter.cs",
-              "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\QuestNode_Root_EventLetter.cs",
-              "RelativeDocumentMoniker": "SRALib\\QuestNode_Root_EventLetter.cs",
-              "ToolTip": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\QuestNode_Root_EventLetter.cs",
-              "RelativeToolTip": "SRALib\\QuestNode_Root_EventLetter.cs",
-              "ViewState": "AQIAAAsAAAAAAAAAAAAAwBcAAABoAAAA",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-10-15T10:04:18.955Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 2,
-              "Title": "Thing_ExcaliburBeam.cs",
-              "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\Thing_ExcaliburBeam.cs",
-              "RelativeDocumentMoniker": "SRALib\\Thing_ExcaliburBeam.cs",
-              "ToolTip": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\Thing_ExcaliburBeam.cs",
-              "RelativeToolTip": "SRALib\\Thing_ExcaliburBeam.cs",
-              "ViewState": "AQIAAFIAAAAAAAAAAAAkwHIAAAAzAAAA",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-10-16T11:04:31.91Z"
+              "WhenOpened": "2025-10-16T11:06:57.82Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
               "DocumentIndex": 1,
-              "Title": "Verb_MeleeAttackDamage_AOE.cs",
-              "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\Verb_MeleeAttackDamage_AOE.cs",
-              "RelativeDocumentMoniker": "SRALib\\Verb_MeleeAttackDamage_AOE.cs",
-              "ToolTip": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\Verb_MeleeAttackDamage_AOE.cs",
-              "RelativeToolTip": "SRALib\\Verb_MeleeAttackDamage_AOE.cs",
-              "ViewState": "AQIAAHoAAAAAAAAAAAAAAI4AAAAJAAAA",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-10-15T12:13:30.197Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "CompAbilityEffect_ExcaliburBeam.cs",
-              "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\CompAbilityEffect_ExcaliburBeam.cs",
-              "RelativeDocumentMoniker": "SRALib\\CompAbilityEffect_ExcaliburBeam.cs",
-              "ToolTip": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\CompAbilityEffect_ExcaliburBeam.cs",
-              "RelativeToolTip": "SRALib\\CompAbilityEffect_ExcaliburBeam.cs",
-              "ViewState": "AQIAAA8AAAAAAAAAAAAAwEgAAABSAAAA",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-10-16T11:04:44.414Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 7,
-              "Title": "SRALibSettings.cs",
-              "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\SRALibSettings.cs",
-              "RelativeDocumentMoniker": "SRALib\\SRALibSettings.cs",
-              "ToolTip": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\SRALibSettings.cs",
-              "RelativeToolTip": "SRALib\\SRALibSettings.cs",
-              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-10-16T11:06:32.06Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 11,
-              "Title": "EventUIConfigDef.cs",
-              "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\EventUIConfigDef.cs",
-              "RelativeDocumentMoniker": "SRALib\\EventUIConfigDef.cs",
-              "ToolTip": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\EventUIConfigDef.cs",
-              "RelativeToolTip": "SRALib\\EventUIConfigDef.cs",
-              "ViewState": "AQIAAAAAAAAAAAAAAAAAAA0AAAAoAAAA",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-10-15T10:03:34.393Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 13,
-              "Title": "Effect.cs",
-              "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\Effect.cs",
-              "RelativeDocumentMoniker": "SRALib\\Effect.cs",
-              "ToolTip": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\Effect.cs",
-              "RelativeToolTip": "SRALib\\Effect.cs",
-              "ViewState": "AQIAAAAAAAAAAAAAAAAAAE0AAAAAAAAA",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-10-15T10:03:05.38Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 9,
               "Title": "Dialog_CustomDisplay.cs",
               "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\Dialog_CustomDisplay.cs",
               "RelativeDocumentMoniker": "SRALib\\Dialog_CustomDisplay.cs",
               "ToolTip": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\Dialog_CustomDisplay.cs",
               "RelativeToolTip": "SRALib\\Dialog_CustomDisplay.cs",
-              "ViewState": "AQIAAMsAAAAAAAAAAAAowNIAAAANAAAA",
+              "ViewState": "AQIAALsAAAAAAAAAAAASwM0AAABXAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-10-15T10:02:43.27Z"
+              "WhenOpened": "2025-10-24T07:19:53.618Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 12,
-              "Title": "EventDef.cs",
-              "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\EventDef.cs",
-              "RelativeDocumentMoniker": "SRALib\\EventDef.cs",
-              "ToolTip": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\EventDef.cs",
-              "RelativeToolTip": "SRALib\\EventDef.cs",
-              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAYAAAANAAAA",
+              "DocumentIndex": 0,
+              "Title": "Effect.cs",
+              "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\Effect.cs",
+              "RelativeDocumentMoniker": "SRALib\\Effect.cs",
+              "ToolTip": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\Effect.cs",
+              "RelativeToolTip": "SRALib\\Effect.cs",
+              "ViewState": "AQIAAF8AAAAAAAAAAAAUwG8AAAANAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-10-15T10:03:31.099Z"
+              "WhenOpened": "2025-10-15T10:03:05.38Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "HediffComp_CountdownDeath.cs",
+              "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\HediffComp_CountdownDeath.cs",
+              "RelativeDocumentMoniker": "SRALib\\HediffComp_CountdownDeath.cs",
+              "ToolTip": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\HediffComp_CountdownDeath.cs",
+              "RelativeToolTip": "SRALib\\HediffComp_CountdownDeath.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAABEAAAAxAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-24T14:07:39.623Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
               "DocumentIndex": 10,
+              "Title": "EventContext.cs",
+              "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\EventContext.cs",
+              "RelativeDocumentMoniker": "SRALib\\EventContext.cs",
+              "ToolTip": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\EventContext.cs",
+              "RelativeToolTip": "SRALib\\EventContext.cs",
+              "ViewState": "AQIAABAAAAAAAAAAAAAQwAAAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-18T11:57:22.295Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
               "Title": "Dialog_ManageEventVariables.cs",
               "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\Dialog_ManageEventVariables.cs",
               "RelativeDocumentMoniker": "SRALib\\Dialog_ManageEventVariables.cs",
@@ -273,42 +261,150 @@
             {
               "$type": "Document",
               "DocumentIndex": 8,
-              "Title": "CompVehicleWeapon.cs",
-              "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\CompVehicleWeapon.cs",
-              "RelativeDocumentMoniker": "SRALib\\CompVehicleWeapon.cs",
-              "ToolTip": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\CompVehicleWeapon.cs",
-              "RelativeToolTip": "SRALib\\CompVehicleWeapon.cs",
-              "ViewState": "AQIAAFcAAAAAAAAAAAAowGkAAAARAAAA",
+              "Title": "Comp_TurretRenderDynamic.cs",
+              "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\Comp_TurretRenderDynamic.cs",
+              "RelativeDocumentMoniker": "SRALib\\Comp_TurretRenderDynamic.cs",
+              "ToolTip": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\Comp_TurretRenderDynamic.cs",
+              "RelativeToolTip": "SRALib\\Comp_TurretRenderDynamic.cs",
+              "ViewState": "AQIAABsAAAAAAAAAAAA1wCUAAAArAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-10-15T10:01:34.578Z"
+              "WhenOpened": "2025-10-15T10:01:18.092Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 16,
+              "DocumentIndex": 9,
+              "Title": "EventDef.cs",
+              "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\EventDef.cs",
+              "RelativeDocumentMoniker": "SRALib\\EventDef.cs",
+              "ToolTip": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\EventDef.cs",
+              "RelativeToolTip": "SRALib\\EventDef.cs",
+              "ViewState": "AQIAAGkAAAAAAAAAAAAuwHoAAABNAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-18T14:31:52.097Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 11,
+              "Title": "Verb_MeleeAttackDamage_AOE.cs",
+              "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\Verb_MeleeAttackDamage_AOE.cs",
+              "RelativeDocumentMoniker": "SRALib\\Verb_MeleeAttackDamage_AOE.cs",
+              "ToolTip": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\Verb_MeleeAttackDamage_AOE.cs",
+              "RelativeToolTip": "SRALib\\Verb_MeleeAttackDamage_AOE.cs",
+              "ViewState": "AQIAACABAAAAAAAAAAAAADUBAABXAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-15T12:13:30.197Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "CompOpenCustomUI.cs",
+              "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\CompOpenCustomUI.cs",
+              "RelativeDocumentMoniker": "SRALib\\CompOpenCustomUI.cs",
+              "ToolTip": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\CompOpenCustomUI.cs",
+              "RelativeToolTip": "SRALib\\CompOpenCustomUI.cs",
+              "ViewState": "AQIAACAAAAAAAAAAAAAAAC4AAABbAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-15T10:01:21.516Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 12,
+              "Title": "SRABarrierGizmo.cs",
+              "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\SRABarrierGizmo.cs",
+              "RelativeDocumentMoniker": "SRALib\\SRABarrierGizmo.cs",
+              "ToolTip": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\SRABarrierGizmo.cs",
+              "RelativeToolTip": "SRALib\\SRABarrierGizmo.cs",
+              "ViewState": "AQIAACQAAAAAAAAAAAAAADkAAAA+AAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-16T11:06:37.478Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 13,
+              "Title": "HediffComp_TopTurret.cs",
+              "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\HediffComp_TopTurret.cs",
+              "RelativeDocumentMoniker": "SRALib\\HediffComp_TopTurret.cs",
+              "ToolTip": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\HediffComp_TopTurret.cs",
+              "RelativeToolTip": "SRALib\\HediffComp_TopTurret.cs",
+              "ViewState": "AQIAAN0AAAAAAAAAAAAAAOoAAAAlAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-19T12:14:04.533Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 14,
               "Title": "EventVariableManager.cs",
               "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\EventVariableManager.cs",
               "RelativeDocumentMoniker": "SRALib\\EventVariableManager.cs",
               "ToolTip": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\EventVariableManager.cs",
               "RelativeToolTip": "SRALib\\EventVariableManager.cs",
-              "ViewState": "AQIAAHUAAAAAAAAAAAAAAH4AAAAmAAAA",
+              "ViewState": "AQIAAGYAAAAAAAAAAAAAAH4AAAAmAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-10-15T10:04:06.522Z"
             },
             {
               "$type": "Document",
               "DocumentIndex": 15,
-              "Title": "Letter_EventChoice.cs",
-              "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\Letter_EventChoice.cs",
-              "RelativeDocumentMoniker": "SRALib\\Letter_EventChoice.cs",
-              "ToolTip": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\Letter_EventChoice.cs",
-              "RelativeToolTip": "SRALib\\Letter_EventChoice.cs",
-              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAYAAAANAAAA",
+              "Title": "CompGlobalMechCommand.cs",
+              "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\CompGlobalMechCommand.cs",
+              "RelativeDocumentMoniker": "SRALib\\CompGlobalMechCommand.cs",
+              "ToolTip": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\CompGlobalMechCommand.cs",
+              "RelativeToolTip": "SRALib\\CompGlobalMechCommand.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-10-15T10:04:15.936Z"
+              "WhenOpened": "2025-10-18T12:51:45.032Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 14,
+              "DocumentIndex": 16,
+              "Title": "Comp_PawnRenderExtra.cs",
+              "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\Comp_PawnRenderExtra.cs",
+              "RelativeDocumentMoniker": "SRALib\\Comp_PawnRenderExtra.cs",
+              "ToolTip": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\Comp_PawnRenderExtra.cs",
+              "RelativeToolTip": "SRALib\\Comp_PawnRenderExtra.cs",
+              "ViewState": "AQIAAFsAAAAAAAAAAAAhwHMAAAAyAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-23T10:57:21.384Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 17,
+              "Title": "CompVehicleWeapon.cs",
+              "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\CompVehicleWeapon.cs",
+              "RelativeDocumentMoniker": "SRALib\\CompVehicleWeapon.cs",
+              "ToolTip": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\CompVehicleWeapon.cs",
+              "RelativeToolTip": "SRALib\\CompVehicleWeapon.cs",
+              "ViewState": "AQIAAKEAAAAAAAAAAAASwKgAAABNAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-23T15:49:50.351Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 19,
+              "Title": "Projectile_MultiExplosive.cs",
+              "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\Projectile_MultiExplosive.cs",
+              "RelativeDocumentMoniker": "SRALib\\Projectile_MultiExplosive.cs",
+              "ToolTip": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\Projectile_MultiExplosive.cs",
+              "RelativeToolTip": "SRALib\\Projectile_MultiExplosive.cs",
+              "ViewState": "AQIAAB8AAAAAAAAAAAAQwB4AAAAFAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-22T11:25:27.252Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 20,
+              "Title": "Comp_WeaponRenderDynamic.cs",
+              "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\Comp_WeaponRenderDynamic.cs",
+              "RelativeDocumentMoniker": "SRALib\\Comp_WeaponRenderDynamic.cs",
+              "ToolTip": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\Comp_WeaponRenderDynamic.cs",
+              "RelativeToolTip": "SRALib\\Comp_WeaponRenderDynamic.cs",
+              "ViewState": "AQIAAGMAAAAAAAAAAAAlwFcAAAA0AAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-24T13:47:26.233Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 18,
               "Title": "Mortar_Patch.cs",
               "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\Mortar_Patch.cs",
               "RelativeDocumentMoniker": "SRALib\\Mortar_Patch.cs",
@@ -320,67 +416,31 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 17,
-              "Title": "DelayedActionManager.cs",
-              "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\DelayedActionManager.cs",
-              "RelativeDocumentMoniker": "SRALib\\DelayedActionManager.cs",
-              "ToolTip": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\DelayedActionManager.cs",
-              "RelativeToolTip": "SRALib\\DelayedActionManager.cs",
-              "ViewState": "AQIAAEYAAAAAAAAAAAAAwFAAAAAgAAAA",
+              "DocumentIndex": 22,
+              "Title": "EventUIConfigDef.cs",
+              "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\EventUIConfigDef.cs",
+              "RelativeDocumentMoniker": "SRALib\\EventUIConfigDef.cs",
+              "ToolTip": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\EventUIConfigDef.cs",
+              "RelativeToolTip": "SRALib\\EventUIConfigDef.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAUAAAAhAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-10-15T10:02:31.256Z"
+              "WhenOpened": "2025-10-15T10:03:34.393Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 18,
-              "Title": "DebugActions.cs",
-              "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\DebugActions.cs",
-              "RelativeDocumentMoniker": "SRALib\\DebugActions.cs",
-              "ToolTip": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\DebugActions.cs",
-              "RelativeToolTip": "SRALib\\DebugActions.cs",
-              "ViewState": "AQIAADQAAAAAAAAAAAAQwEAAAAABAAAA",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-10-15T10:01:57.306Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 19,
+              "DocumentIndex": 21,
               "Title": "Condition.cs",
               "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\Condition.cs",
               "RelativeDocumentMoniker": "SRALib\\Condition.cs",
               "ToolTip": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\Condition.cs",
               "RelativeToolTip": "SRALib\\Condition.cs",
-              "ViewState": "AQIAANoAAAAAAAAAAAAowAwAAAAbAAAA",
+              "ViewState": "AQIAAMkAAAAAAAAAAAAIwNkAAAA0AAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-10-15T10:01:34.238Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 20,
-              "Title": "CompOpenCustomUI.cs",
-              "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\CompOpenCustomUI.cs",
-              "RelativeDocumentMoniker": "SRALib\\CompOpenCustomUI.cs",
-              "ToolTip": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\CompOpenCustomUI.cs",
-              "RelativeToolTip": "SRALib\\CompOpenCustomUI.cs",
-              "ViewState": "AQIAAC4AAAAAAAAAAAAkwD0AAAAAAAAA",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-10-15T10:01:21.516Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 21,
-              "Title": "Comp_TurretRenderDynamic.cs",
-              "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\Comp_TurretRenderDynamic.cs",
-              "RelativeDocumentMoniker": "SRALib\\Comp_TurretRenderDynamic.cs",
-              "ToolTip": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\Comp_TurretRenderDynamic.cs",
-              "RelativeToolTip": "SRALib\\Comp_TurretRenderDynamic.cs",
-              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-10-15T10:01:18.092Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 22,
+              "DocumentIndex": 24,
               "Title": "Comp_MultiTurretGun.cs",
               "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\Comp_MultiTurretGun.cs",
               "RelativeDocumentMoniker": "SRALib\\Comp_MultiTurretGun.cs",
@@ -392,7 +452,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 23,
+              "DocumentIndex": 25,
               "Title": "Building_TurretGunHasSpeed.cs",
               "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\Building_TurretGunHasSpeed.cs",
               "RelativeDocumentMoniker": "SRALib\\Building_TurretGunHasSpeed.cs",
@@ -404,7 +464,127 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 24,
+              "DocumentIndex": 23,
+              "Title": "CompAbilityEffect_ExcaliburBeam.cs",
+              "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\CompAbilityEffect_ExcaliburBeam.cs",
+              "RelativeDocumentMoniker": "SRALib\\CompAbilityEffect_ExcaliburBeam.cs",
+              "ToolTip": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\CompAbilityEffect_ExcaliburBeam.cs",
+              "RelativeToolTip": "SRALib\\CompAbilityEffect_ExcaliburBeam.cs",
+              "ViewState": "AQIAAA8AAAAAAAAAAAAAwEgAAABSAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-16T11:04:44.414Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 26,
+              "Title": "Projectile_SRA_Railgun.cs",
+              "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\Projectile_SRA_Railgun.cs",
+              "RelativeDocumentMoniker": "SRALib\\Projectile_SRA_Railgun.cs",
+              "ToolTip": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\Projectile_SRA_Railgun.cs",
+              "RelativeToolTip": "SRALib\\Projectile_SRA_Railgun.cs",
+              "ViewState": "AQIAAA8AAAAAAAAAAAAuwB0AAAA0AAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-22T10:32:11.146Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 28,
+              "Title": "ThingDefOf.cs",
+              "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\ThingDefOf.cs",
+              "RelativeDocumentMoniker": "SRALib\\ThingDefOf.cs",
+              "ToolTip": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\ThingDefOf.cs",
+              "RelativeToolTip": "SRALib\\ThingDefOf.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-18T18:48:07.61Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 32,
+              "Title": "SRABarrierHarmonyPatches.cs",
+              "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\SRABarrierHarmonyPatches.cs",
+              "RelativeDocumentMoniker": "SRALib\\SRABarrierHarmonyPatches.cs",
+              "ToolTip": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\SRABarrierHarmonyPatches.cs",
+              "RelativeToolTip": "SRALib\\SRABarrierHarmonyPatches.cs",
+              "ViewState": "AQIAADAAAAAAAAAAAAAYwAAAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-16T11:06:32.815Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 30,
+              "Title": "QuestNode_Root_EventLetter.cs",
+              "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\QuestNode_Root_EventLetter.cs",
+              "RelativeDocumentMoniker": "SRALib\\QuestNode_Root_EventLetter.cs",
+              "ToolTip": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\QuestNode_Root_EventLetter.cs",
+              "RelativeToolTip": "SRALib\\QuestNode_Root_EventLetter.cs",
+              "ViewState": "AQIAAB8AAAAAAAAAAAAQwBcAAABoAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-15T10:04:18.955Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 31,
+              "Title": "Thing_ExcaliburBeam.cs",
+              "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\Thing_ExcaliburBeam.cs",
+              "RelativeDocumentMoniker": "SRALib\\Thing_ExcaliburBeam.cs",
+              "ToolTip": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\Thing_ExcaliburBeam.cs",
+              "RelativeToolTip": "SRALib\\Thing_ExcaliburBeam.cs",
+              "ViewState": "AQIAAFIAAAAAAAAAAAAkwHIAAAAzAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-16T11:04:31.91Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 29,
+              "Title": "SRALibSettings.cs",
+              "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\SRALibSettings.cs",
+              "RelativeDocumentMoniker": "SRALib\\SRALibSettings.cs",
+              "ToolTip": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\SRALibSettings.cs",
+              "RelativeToolTip": "SRALib\\SRALibSettings.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-16T11:06:32.06Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 33,
+              "Title": "Letter_EventChoice.cs",
+              "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\Letter_EventChoice.cs",
+              "RelativeDocumentMoniker": "SRALib\\Letter_EventChoice.cs",
+              "ToolTip": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\Letter_EventChoice.cs",
+              "RelativeToolTip": "SRALib\\Letter_EventChoice.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAYAAAANAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-15T10:04:15.936Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 34,
+              "Title": "DelayedActionManager.cs",
+              "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\DelayedActionManager.cs",
+              "RelativeDocumentMoniker": "SRALib\\DelayedActionManager.cs",
+              "ToolTip": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\DelayedActionManager.cs",
+              "RelativeToolTip": "SRALib\\DelayedActionManager.cs",
+              "ViewState": "AQIAAEYAAAAAAAAAAAAAwFAAAAAgAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-15T10:02:31.256Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 27,
+              "Title": "DebugActions.cs",
+              "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\DebugActions.cs",
+              "RelativeDocumentMoniker": "SRALib\\DebugActions.cs",
+              "ToolTip": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\DebugActions.cs",
+              "RelativeToolTip": "SRALib\\DebugActions.cs",
+              "ViewState": "AQIAAAYAAAAAAAAAAAAswBMAAAAjAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-15T10:01:57.306Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 35,
               "Title": "Comp_BodyshapeAjuster.cs",
               "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\Comp_BodyshapeAjuster.cs",
               "RelativeDocumentMoniker": "SRALib\\Comp_BodyshapeAjuster.cs",

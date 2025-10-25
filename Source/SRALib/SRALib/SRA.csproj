@@ -94,6 +94,7 @@
     <Compile Include="CompWeaponHediffGiver.cs" />
     <Compile Include="Comp_BodyshapeAjuster.cs" />
     <Compile Include="Comp_MultiTurretGun.cs" />
+    <Compile Include="Comp_PawnRenderExtra.cs" />
     <Compile Include="Comp_RepairTower.cs" />
     <Compile Include="Comp_TurretRenderDynamic.cs" />
     <Compile Include="Comp_WeaponRenderDynamic.cs" />
@@ -108,6 +109,7 @@
     <Compile Include="EventDef.cs" />
     <Compile Include="EventUIConfigDef.cs" />
     <Compile Include="EventVariableManager.cs" />
+    <Compile Include="HediffComp_IgnoreTerrainCost.cs" />
     <Compile Include="Verb_MeleeAttackDamage_AOE.cs" />
     <Compile Include="HediffComp_CountdownDeath.cs" />
     <Compile Include="HediffComp_SRABarrier.cs" />
