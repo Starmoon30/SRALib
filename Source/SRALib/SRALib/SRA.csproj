@@ -10,7 +10,7 @@
     <RootNamespace>SRA</RootNamespace>
     <AssemblyName>SRALib</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
-    <LangVersion>8.0</LangVersion>
+    <LangVersion>9.0</LangVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
     <TargetFrameworkProfile />
@@ -109,6 +109,21 @@
     <Compile Include="EventDef.cs" />
     <Compile Include="EventUIConfigDef.cs" />
     <Compile Include="EventVariableManager.cs" />
+    <Compile Include="Flyover\SRA_AircraftHangar\CompAbilityEffect_AircraftStrike.cs" />
+    <Compile Include="Flyover\SRA_AircraftHangar\CompAircraftHangar.cs" />
+    <Compile Include="Flyover\SRA_AircraftHangar\WorldComponent_AircraftManager.cs" />
+    <Compile Include="Flyover\SRA_FlyOverDropPod\CompProperties_FlyOverDropPod.cs" />
+    <Compile Include="Flyover\SRA_FlyOverEscort\CompFlyOverEscort.cs" />
+    <Compile Include="Flyover\SRA_FlyOverEscort\CompProperties_FlyOverEscort.cs" />
+    <Compile Include="Flyover\SRA_GroundStrafing\CompGroundStrafing.cs" />
+    <Compile Include="Flyover\SRA_SectorSurveillance\CompSectorSurveillance.cs" />
+    <Compile Include="Flyover\SRA_SendLetterAfterTicks\CompProperties_SendLetterAfterTicks.cs" />
+    <Compile Include="Flyover\SRA_SendLetterAfterTicks\CompSendLetterAfterTicks.cs" />
+    <Compile Include="Flyover\SRA_ShipArtillery\CompProperties_ShipArtillery.cs" />
+    <Compile Include="Flyover\SRA_ShipArtillery\CompShipArtillery.cs" />
+    <Compile Include="Flyover\SRA_SpawnFlyOver\CompAbilityEffect_SpawnFlyOver.cs" />
+    <Compile Include="Flyover\SRA_SpawnFlyOver\CompProperties_AbilitySpawnFlyOver.cs" />
+    <Compile Include="Flyover\ThingclassFlyOver.cs" />
     <Compile Include="HediffComp_IgnoreTerrainCost.cs" />
     <Compile Include="Verb_MeleeAttackDamage_AOE.cs" />
     <Compile Include="HediffComp_CountdownDeath.cs" />
