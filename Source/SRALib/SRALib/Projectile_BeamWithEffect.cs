@@ -20,7 +20,7 @@ namespace SRA
         protected override void Impact(Thing hitThing, bool blockedByShield = false)
         {
             base.Impact(hitThing, blockedByShield);
-            if (this.Props.impactEffecter != null)
+            if (this.Props.impactEffecter != null && this.launcher != null && this.launcher.Map != null)
             {
                 this.Props.impactEffecter.Spawn().Trigger(new TargetInfo(this.ExactPosition.ToIntVec3(), this.launcher.Map, false), this.launcher, -1);
             }

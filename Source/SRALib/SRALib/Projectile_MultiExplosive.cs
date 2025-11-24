@@ -38,6 +38,63 @@ namespace SRA
 
     public class Projectile_MultiExplosive : Projectile
     {
+        private TailBulletDef tailBulletDefInt;
+        private int Fleck_MakeFleckTick;
+        private Vector3 lastTickPosition;
+
+        public TailBulletDef TailDef
+        {
+            get
+            {
+                if (tailBulletDefInt == null)
+                {
+                    tailBulletDefInt = def.GetModExtension<TailBulletDef>();
+                    if (tailBulletDefInt == null)
+                    {
+                        this.tailBulletDefInt = new TailBulletDef();
+                    }
+                }
+                return tailBulletDefInt;
+            }
+        }
+        protected override void Tick()
+        {
+            base.Tick();
+
+            // 处理拖尾特效
+            if (TailDef != null && TailDef.tailFleckDef != null)
+            {
+                Fleck_MakeFleckTick++;
+                if (Fleck_MakeFleckTick >= TailDef.fleckDelayTicks)
+                {
+                    if (Fleck_MakeFleckTick >= (TailDef.fleckDelayTicks + TailDef.fleckMakeFleckTickMax))
+                    {
+                        Fleck_MakeFleckTick = TailDef.fleckDelayTicks;
+                    }
+
+                    Map map = base.Map;
+                    int randomInRange = TailDef.fleckMakeFleckNum.RandomInRange;
+                    Vector3 currentPosition = base.ExactPosition;
+                    Vector3 previousPosition = lastTickPosition;
+
+                    for (int i = 0; i < randomInRange; i++)
+                    {
+                        float num = (currentPosition - previousPosition).AngleFlat();
+                        float velocityAngle = TailDef.fleckAngle.RandomInRange + num;
+                        float randomInRange2 = TailDef.fleckScale.RandomInRange;
+                        float randomInRange3 = TailDef.fleckSpeed.RandomInRange;
+
+                        FleckCreationData dataStatic = FleckMaker.GetDataStatic(currentPosition, map, TailDef.tailFleckDef, randomInRange2);
+                        dataStatic.rotation = (currentPosition - previousPosition).AngleFlat();
+                        dataStatic.rotationRate = TailDef.fleckRotation.RandomInRange;
+                        dataStatic.velocityAngle = velocityAngle;
+                        dataStatic.velocitySpeed = randomInRange3;
+                        map.flecks.CreateFleck(dataStatic);
+                    }
+                }
+            }
+            lastTickPosition = base.ExactPosition;
+        }
         protected override void Impact(Thing hitThing, bool blockedByShield = false)
         {
             var extension = this.def.GetModExtension<MultiExplosiveExtension>();

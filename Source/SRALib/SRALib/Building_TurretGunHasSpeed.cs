@@ -12,6 +12,7 @@ namespace SRA
     public class ModExt_HasSpeedTurret : DefModExtension
     {
         public float speed = 1f;
+        public bool noautoattack = false;
     }
     /// <summary>
     /// 非瞬时瞄准的炮塔建筑类
@@ -32,6 +33,14 @@ namespace SRA
             {
                 ModExt_HasSpeedTurret ext = this.ext;
                 return ext.speed;
+            }
+        }
+        public bool noautoattack
+        {
+            get
+            {
+                ModExt_HasSpeedTurret ext = this.ext;
+                return ext.noautoattack;
             }
         }
         /// <summary>
@@ -236,7 +245,10 @@ namespace SRA
             IAttackTargetSearcher attackTargetSearcher = this.TargSearcher();
             Faction faction = attackTargetSearcher.Thing.Faction;
             float range = this.AttackVerb.verbProps.range;
-
+            if(noautoattack)
+            {
+                return null;
+            }
             Building t;
             // 50%概率优先攻击殖民者建筑（如果敌对且使用抛射武器）
             if (Rand.Value < 0.5f && this.AttackVerb.ProjectileFliesOverhead() &&

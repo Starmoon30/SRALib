@@ -27,17 +27,20 @@ namespace SRA
     }
     public class Projectile_MultiExplosive_Beam : Beam
     {
-        private IntVec3 center;
+        private IntVec3 center = IntVec3.Invalid;
 
         public override void Launch(Thing launcher, Vector3 origin, LocalTargetInfo usedTarget, LocalTargetInfo intendedTarget, ProjectileHitFlags hitFlags, bool preventFriendlyFire = false, Thing equipment = null, ThingDef targetCoverDef = null)
         {
-            center = usedTarget.ToTargetInfo(base.Map).Cell;
+            if (this.usedTarget != null)
+            {
+                center = usedTarget.ToTargetInfo(base.Map).Cell;
+            }
             base.Launch(launcher, origin, usedTarget, intendedTarget, hitFlags, preventFriendlyFire, equipment, targetCoverDef);
         }
         protected override void Impact(Thing hitThing, bool blockedByShield = false)
         {
             var extension = this.def.GetModExtension<MultiExplosive_BeamExtension>();
-            if (extension != null && extension.MultiExplosive_Beams != null && extension.MultiExplosive_Beams.Count > 0)
+            if (center != IntVec3.Invalid && extension != null && extension.MultiExplosive_Beams != null && extension.MultiExplosive_Beams.Count > 0)
             {
                 foreach (var explosion in extension.MultiExplosive_Beams)
                 {

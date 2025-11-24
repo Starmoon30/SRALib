@@ -302,10 +302,10 @@ namespace SRA
         private Thing GetLauncher()
         {
             FlyOver flyOver = parent as FlyOver;
-            if (flyOver != null && flyOver.caster != null)
-            {
-                return flyOver.caster;
-            }
+            //if (flyOver != null && flyOver.caster != null)
+            //{
+            //    return flyOver.caster;
+            //}
             return parent;
         }
         

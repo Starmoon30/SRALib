@@ -651,11 +651,11 @@ namespace SRA
         private Thing GetLauncher()
         {
             FlyOver flyOver = parent as FlyOver;
-            if (flyOver != null && flyOver.caster != null)
-            {
-                Log.Message($"SectorSurveillance: Using caster as launcher: {flyOver.caster.Label}");
-                return flyOver.caster;
-            }
+            //if (flyOver != null && flyOver.caster != null)
+            //{
+            //    Log.Message($"SectorSurveillance: Using caster as launcher: {flyOver.caster.Label}");
+            //    return flyOver.caster;
+            //}
             
             Log.Message($"SectorSurveillance: Using parent as launcher: {parent.Label}");
             return parent;

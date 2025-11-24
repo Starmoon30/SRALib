@@ -31,6 +31,11 @@ namespace SRA
         public float fadeOutStartProgress = 0.7f;  // 开始淡出的进度阈值（0-1）
         public float defaultFadeOutDuration = 1.5f; // 默认淡出持续时间（仅用于销毁）
 
+        // 新增：淡入淡出开关
+        private bool useFadeEffects = true;
+        private bool useFadeIn = true;
+        private bool useFadeOut = true;
+
         // 进场动画相关 - 新增
         public float approachDuration = 1.0f;      // 进场动画持续时间（秒）
         public float currentApproachTime = 0f;     // 当前进场动画时间
@@ -183,33 +188,13 @@ namespace SRA
             }
         }
 
-        // 淡入透明度（0-1）
+        // 修改后的淡入透明度属性
         public float FadeInAlpha
         {
             get
             {
-                if (fadeInCompleted) return 1f;
+                if (!useFadeIn || fadeInCompleted) return 1f;
                 return Mathf.Clamp01(currentFadeInTime / fadeInDuration);
-            }
-        }
-
-        // 淡出透明度（0-1）
-        public float FadeOutAlpha
-        {
-            get
-            {
-                if (!fadeOutStarted) return 1f;
-                if (fadeOutCompleted) return 0f;
-                return Mathf.Clamp01(1f - (currentFadeOutTime / fadeOutDuration));
-            }
-        }
-
-        // 总体透明度（淡入 * 淡出）
-        public float OverallAlpha
-        {
-            get
-            {
-                return FadeInAlpha * FadeOutAlpha;
             }
         }
 
@@ -220,6 +205,149 @@ namespace SRA
             {
                 float remainingProgress = 1f - currentProgress;
                 return remainingProgress / (flightSpeed * 0.001f) * (1f / 60f);
+            }
+        }
+
+        // 修改后的紧急销毁方法 - 急速加速版本
+        public void EmergencyDestroy()
+        {
+            if (Destroyed || hasCompleted) return;
+            
+            // 计算剩余进度
+            float remainingProgress = 1f - currentProgress;
+
+            // 计算需要的速度：确保在1秒内完成剩余进度
+            float requiredSpeed = remainingProgress / 0.06f;
+
+            // 设置新的飞行速度，确保至少是当前速度的2倍
+            flightSpeed = Mathf.Max(requiredSpeed, flightSpeed * 2f);
+
+            // 标记为紧急销毁状态
+            hasCompleted = false; // 确保可以继续飞行
+        }
+
+        // 修改后的淡出透明度属性 - 紧急销毁时强制启用淡出
+        public float FadeOutAlpha
+        {
+            get
+            {
+                // 如果已经开始了淡出（包括紧急销毁），就应用淡出效果
+                if (!fadeOutStarted) return 1f;
+                if (fadeOutCompleted) return 0f;
+                return Mathf.Clamp01(1f - (currentFadeOutTime / fadeOutDuration));
+            }
+        }
+
+        // 修改后的总体透明度属性 - 紧急销毁时强制计算淡出
+        public float OverallAlpha
+        {
+            get
+            {
+                if (!useFadeEffects && !fadeOutStarted) return 1f;
+                return FadeInAlpha * FadeOutAlpha;
+            }
+        }
+
+        // 修改后的 Tick 方法，优化紧急销毁逻辑
+        protected override void Tick()
+        {
+            base.Tick();
+            if (!hasStarted || hasCompleted)
+                return;
+
+            // 更新进场动画
+            if (useApproachAnimation && !approachCompleted)
+            {
+                currentApproachTime += 1f / 60f;
+                if (currentApproachTime >= approachDuration)
+                {
+                    approachCompleted = true;
+                    currentApproachTime = approachDuration;
+                }
+            }
+
+            // 更新淡入效果（仅在启用时）
+            if (useFadeIn && !fadeInCompleted)
+            {
+                currentFadeInTime += 1f / 60f;
+                if (currentFadeInTime >= fadeInDuration)
+                {
+                    fadeInCompleted = true;
+                    currentFadeInTime = fadeInDuration;
+                }
+            }
+
+            // 更新飞行进度
+            currentProgress += flightSpeed * 0.001f;
+
+            // 检查是否应该开始淡出（仅在启用时且未紧急销毁）
+            if (useFadeOut && !fadeOutStarted && currentProgress >= fadeOutStartProgress)
+            {
+                StartFadeOut();
+            }
+
+            // 更新淡出效果（仅在启用时）
+            if (useFadeOut && fadeOutStarted && !fadeOutCompleted)
+            {
+                currentFadeOutTime += 1f / 60f;
+                if (currentFadeOutTime >= fadeOutDuration)
+                {
+                    fadeOutCompleted = true;
+                    currentFadeOutTime = fadeOutDuration;
+                }
+            }
+
+            // 更新当前位置
+            UpdatePosition();
+
+            // 维持飞行音效
+            UpdateFlightSound();
+
+            // 检查是否到达终点
+            if (currentProgress >= 1f)
+            {
+                CompleteFlyOver();
+                return; // 立即返回，避免后续处理
+            }
+
+            // 生成飞行轨迹特效
+            CreateFlightEffects();
+        }
+
+        // 修改后的 CompleteFlyOver 方法，添加紧急销毁处理
+        private void CompleteFlyOver()
+        {
+            if (hasCompleted) return;
+            hasCompleted = true;
+            currentProgress = 1f;
+
+            // 生成内容物（如果需要）
+            if (spawnContentsOnImpact && innerContainer.Any)
+            {
+                SpawnContents();
+            }
+
+            // 播放完成音效
+            if (def.skyfaller?.impactSound != null)
+            {
+                def.skyfaller.impactSound.PlayOneShot(
+                    SoundInfo.InMap(new TargetInfo(endPosition, base.Map)));
+            }
+
+            // 立即销毁
+            Destroy();
+        }
+
+        // 修改后的 UpdatePosition 方法，添加安全检查
+        private void UpdatePosition()
+        {
+            if (hasCompleted) return;
+
+            Vector3 currentWorldPos = Vector3.Lerp(startPosition.ToVector3(), endPosition.ToVector3(), currentProgress);
+            IntVec3 newPos = currentWorldPos.ToIntVec3();
+            if (newPos != base.Position && newPos.InBounds(base.Map))
+            {
+                base.Position = newPos;
             }
         }
 
@@ -262,7 +390,7 @@ namespace SRA
             Scribe_Values.Look(ref fadeInDuration, "fadeInDuration", 1.5f);
             Scribe_Values.Look(ref currentFadeInTime, "currentFadeInTime", 0f);
             Scribe_Values.Look(ref fadeInCompleted, "fadeInCompleted", false);
-
+            
             // 淡出效果数据保存
             Scribe_Values.Look(ref fadeOutDuration, "fadeOutDuration", 0f);
             Scribe_Values.Look(ref currentFadeOutTime, "currentFadeOutTime", 0f);
@@ -270,14 +398,18 @@ namespace SRA
             Scribe_Values.Look(ref fadeOutCompleted, "fadeOutCompleted", false);
             Scribe_Values.Look(ref fadeOutStartProgress, "fadeOutStartProgress", 0.7f);
             Scribe_Values.Look(ref defaultFadeOutDuration, "defaultFadeOutDuration", 1.5f);
-
-            // 进场动画数据保存 - 新增
+            
+            // 进场动画数据保存
             Scribe_Values.Look(ref approachDuration, "approachDuration", 1.0f);
             Scribe_Values.Look(ref currentApproachTime, "currentApproachTime", 0f);
             Scribe_Values.Look(ref approachCompleted, "approachCompleted", false);
             Scribe_Values.Look(ref approachOffsetDistance, "approachOffsetDistance", 3f);
             Scribe_Values.Look(ref useApproachAnimation, "useApproachAnimation", true);
-
+            
+            // 新增：淡入淡出开关保存
+            Scribe_Values.Look(ref useFadeEffects, "useFadeEffects", true);
+            Scribe_Values.Look(ref useFadeIn, "useFadeIn", true);
+            Scribe_Values.Look(ref useFadeOut, "useFadeOut", true);
             Scribe_References.Look(ref caster, "caster");
             Scribe_References.Look(ref faction, "faction");
         }
@@ -285,116 +417,53 @@ namespace SRA
         public override void SpawnSetup(Map map, bool respawningAfterLoad)
         {
             base.SpawnSetup(map, respawningAfterLoad);
-
-            Log.Message($"FlyOver Spawned - Start: {startPosition}, End: {endPosition}, Speed: {flightSpeed}, Altitude: {altitude}");
+            
             if (!respawningAfterLoad)
             {
-                Log.Message($"FlyOver Direction - Vector: {MovementDirection}, Rotation: {ExactRotation.eulerAngles}");
-
                 // 设置初始位置
                 base.Position = startPosition;
                 hasStarted = true;
-
-                // 重置淡入状态
-                currentFadeInTime = 0f;
-                fadeInCompleted = false;
-
-                // 重置淡出状态
-                currentFadeOutTime = 0f;
-                fadeOutStarted = false;
-                fadeOutCompleted = false;
-                fadeOutDuration = 0f;
-
-                // 重置进场动画状态 - 新增
-                currentApproachTime = 0f;
-                approachCompleted = false;
-
-                // 从 ModExtension 加载进场动画配置
+                
+                // 从 ModExtension 加载配置
                 var extension = def.GetModExtension<FlyOverShadowExtension>();
                 if (extension != null)
                 {
                     useApproachAnimation = extension.useApproachAnimation;
                     approachDuration = extension.approachDuration;
                     approachOffsetDistance = extension.approachOffsetDistance;
-                }
 
-                Log.Message($"FlyOver approach animation: {useApproachAnimation}, duration: {approachDuration}s, offset: {approachOffsetDistance}");
+                    // 加载淡入淡出配置
+                    useFadeEffects = extension.useFadeEffects;
+                    useFadeIn = extension.useFadeIn;
+                    useFadeOut = extension.useFadeOut;
+
+                    // 设置淡入淡出持续时间
+                    fadeInDuration = extension.defaultFadeInDuration;
+                    defaultFadeOutDuration = extension.defaultFadeOutDuration;
+                    fadeOutStartProgress = extension.fadeOutStartProgress;
+                }
+                
+                // 重置淡入状态
+                currentFadeInTime = 0f;
+                fadeInCompleted = !useFadeIn; // 如果不使用淡入，直接标记为完成
+                                              
+                // 重置淡出状态
+                currentFadeOutTime = 0f;
+                fadeOutStarted = false;
+                fadeOutCompleted = false;
+                fadeOutDuration = 0f;
+                
+                // 重置进场动画状态
+                currentApproachTime = 0f;
+                approachCompleted = !useApproachAnimation; // 如果不使用进场动画，直接标记为完成
 
                 // 开始飞行音效
                 if (playFlyOverSound && def.skyfaller?.floatingSound != null)
                 {
                     flightSoundPlaying = def.skyfaller.floatingSound.TrySpawnSustainer(
                         SoundInfo.InMap(new TargetInfo(startPosition, map), MaintenanceType.PerTick));
-                    Log.Message("FlyOver sound started");
                 }
             }
-        }
-
-        protected override void Tick()
-        {
-            base.Tick();
-
-            if (!hasStarted || hasCompleted)
-                return;
-
-            // 更新进场动画 - 新增
-            if (useApproachAnimation && !approachCompleted)
-            {
-                currentApproachTime += 1f / 60f;
-                if (currentApproachTime >= approachDuration)
-                {
-                    approachCompleted = true;
-                    currentApproachTime = approachDuration;
-                    Log.Message("FlyOver approach animation completed");
-                }
-            }
-
-            // 更新淡入效果
-            if (!fadeInCompleted)
-            {
-                currentFadeInTime += 1f / 60f;
-                if (currentFadeInTime >= fadeInDuration)
-                {
-                    fadeInCompleted = true;
-                    currentFadeInTime = fadeInDuration;
-                }
-            }
-
-            // 更新飞行进度
-            currentProgress += flightSpeed * 0.001f;
-
-            // 检查是否应该开始淡出（基于剩余距离动态计算）
-            if (!fadeOutStarted && currentProgress >= fadeOutStartProgress)
-            {
-                StartFadeOut();
-            }
-
-            // 更新淡出效果
-            if (fadeOutStarted && !fadeOutCompleted)
-            {
-                currentFadeOutTime += 1f / 60f;
-                if (currentFadeOutTime >= fadeOutDuration)
-                {
-                    fadeOutCompleted = true;
-                    currentFadeOutTime = fadeOutDuration;
-                    Log.Message("FlyOver fade out completed");
-                }
-            }
-
-            // 更新当前位置
-            UpdatePosition();
-
-            // 维持飞行音效（在淡出时逐渐降低音量）
-            UpdateFlightSound();
-
-            // 检查是否到达终点
-            if (currentProgress >= 1f)
-            {
-                CompleteFlyOver();
-            }
-
-            // 生成飞行轨迹特效（在淡出时减少特效）
-            CreateFlightEffects();
         }
 
         // 新增：开始淡出效果
@@ -404,71 +473,21 @@ namespace SRA
 
             // 基于剩余距离动态计算淡出持续时间
             fadeOutDuration = CalculateDynamicFadeOutDuration();
-
-            Log.Message($"FlyOver started fade out at progress {currentProgress:F2}, duration: {fadeOutDuration:F2}s, remaining time: {RemainingFlightTime:F2}s");
         }
 
-        private void UpdatePosition()
-        {
-            Vector3 currentWorldPos = Vector3.Lerp(startPosition.ToVector3(), endPosition.ToVector3(), currentProgress);
-            IntVec3 newPos = currentWorldPos.ToIntVec3();
-
-            if (newPos != base.Position && newPos.InBounds(base.Map))
-            {
-                base.Position = newPos;
-            }
-        }
-
+        // 修改后的 UpdateFlightSound 方法，添加紧急销毁时的音效处理
         private void UpdateFlightSound()
         {
             if (flightSoundPlaying != null)
             {
-                if (fadeOutStarted)
+                // 紧急销毁时提高音效音量或频率
+                if (flightSoundPlaying != null && flightSoundPlaying.externalParams != null)
                 {
-                    // 淡出时逐渐降低音效音量
-                    flightSoundPlaying.externalParams["VolumeFactor"] = FadeOutAlpha;
+                    // 可以根据需要调整紧急销毁时的音效参数
+                    flightSoundPlaying.externalParams["VolumeFactor"] = 1f; // 保持最大音量
                 }
                 flightSoundPlaying?.Maintain();
             }
-        }
-
-        private void CompleteFlyOver()
-        {
-            hasCompleted = true;
-            currentProgress = 1f;
-
-            // 生成内容物（如果需要）
-            if (spawnContentsOnImpact && innerContainer.Any)
-            {
-                SpawnContents();
-            }
-
-            // 播放完成音效
-            if (def.skyfaller?.impactSound != null)
-            {
-                def.skyfaller.impactSound.PlayOneShot(
-                    SoundInfo.InMap(new TargetInfo(endPosition, base.Map)));
-            }
-
-            Log.Message($"FlyOver completed at {endPosition}");
-
-            // 销毁自身
-            Destroy();
-        }
-
-        // 新增：紧急销毁方法（使用默认淡出时间）
-        public void EmergencyDestroy()
-        {
-            if (!fadeOutStarted)
-            {
-                // 如果还没有开始淡出，使用默认淡出时间
-                fadeOutStarted = true;
-                fadeOutDuration = defaultFadeOutDuration;
-                Log.Message($"FlyOver emergency destroy with default fade out: {defaultFadeOutDuration}s");
-            }
-
-            // 设置标记，下一帧会处理淡出
-            hasCompleted = true;
         }
 
         private void SpawnContents()
@@ -483,20 +502,21 @@ namespace SRA
             innerContainer.Clear();
         }
 
+        // 修改后的 CreateFlightEffects 方法，添加紧急销毁时的特效增强
         private void CreateFlightEffects()
         {
             // 在飞行轨迹上生成粒子效果
-            if (Rand.MTBEventOccurs(0.5f, 1f, 1f) && def.skyfaller?.motesPerCell > 0 && !fadeOutCompleted)
+            if (Rand.MTBEventOccurs(0.5f, 1f, 1f) && def.skyfaller?.motesPerCell > 0)
             {
                 Vector3 effectPos = DrawPos;
                 effectPos.y = AltitudeLayer.MoteOverhead.AltitudeFor();
 
-                // 淡出时减少粒子效果强度
-                float effectIntensity = fadeOutStarted ? FadeOutAlpha : 1f;
+                // 紧急销毁时增强粒子效果
+                float effectIntensity = 1f;
                 FleckMaker.ThrowSmoke(effectPos, base.Map, 1f * effectIntensity);
 
-                // 可选：根据速度生成更多效果
-                if (flightSpeed > 2f && !fadeOutStarted)
+                // 紧急销毁时生成更多效果
+                if (flightSpeed > 2f)
                 {
                     FleckMaker.ThrowAirPuffUp(effectPos, base.Map);
                 }
@@ -551,6 +571,7 @@ namespace SRA
             }
             fadePropertyBlock.SetColor(ShaderPropertyIDs.Color,
                 new Color(graphic.Color.r, graphic.Color.g, graphic.Color.b, graphic.Color.a * alpha));
+            
             // 应用伴飞缩放
             Vector3 scale = Vector3.one;
             if (def.graphicData != null)
@@ -561,6 +582,7 @@ namespace SRA
             {
                 scale = new Vector3(escortScale, 1f, escortScale);
             }
+            
             Vector3 highPos = drawPos;
             highPos.y = AltitudeLayer.MetaOverlays.AltitudeFor();
             Matrix4x4 matrix2 = Matrix4x4.TRS(highPos, ExactRotation, scale);
@@ -628,11 +650,12 @@ namespace SRA
             return innerContainer[0];
         }
 
-        // 工具方法：创建飞越物体
+        // 修改后的 MakeFlyOver 方法，添加淡入淡出参数
         public static FlyOver MakeFlyOver(ThingDef flyOverDef, IntVec3 start, IntVec3 end, Map map,
             float speed = 1f, float height = 10f, ThingOwner contents = null,
             float fadeInDuration = 1.5f, float defaultFadeOutDuration = 1.5f, Pawn casterPawn = null,
-            bool useApproachAnimation = true, float approachDuration = 1.0f, float approachOffsetDistance = 3f) // 新增参数
+            bool useApproachAnimation = true, float approachDuration = 1.0f, float approachOffsetDistance = 3f,
+            bool? useFadeEffects = null, bool? useFadeIn = null, bool? useFadeOut = null) // 新增参数
         {
             FlyOver flyOver = (FlyOver)ThingMaker.MakeThing(flyOverDef);
             flyOver.startPosition = start;
@@ -642,36 +665,34 @@ namespace SRA
             flyOver.fadeInDuration = fadeInDuration;
             flyOver.defaultFadeOutDuration = defaultFadeOutDuration;
             flyOver.caster = casterPawn;
-            
-            // 进场动画参数 - 新增
+
+            // 进场动画参数
             flyOver.useApproachAnimation = useApproachAnimation;
             flyOver.approachDuration = approachDuration;
             flyOver.approachOffsetDistance = approachOffsetDistance;
-
-            // 简化派系设置 - 直接设置 faction 字段
+            
+            // 淡入淡出参数 - 新增
+            if (useFadeEffects.HasValue) flyOver.useFadeEffects = useFadeEffects.Value;
+            if (useFadeIn.HasValue) flyOver.useFadeIn = useFadeIn.Value;
+            if (useFadeOut.HasValue) flyOver.useFadeOut = useFadeOut.Value;
+            
+            // 简化派系设置
             if (casterPawn != null && casterPawn.Faction != null)
             {
                 flyOver.faction = casterPawn.Faction;
-                Log.Message($"FlyOver faction set to: {casterPawn.Faction.Name}");
-            }
-            else
-            {
-                Log.Warning($"FlyOver: Cannot set faction - casterPawn: {casterPawn?.Label ?? "NULL"}, casterFaction: {casterPawn?.Faction?.Name ?? "NULL"}");
             }
 
             if (contents != null)
             {
                 flyOver.innerContainer.TryAddRangeOrTransfer(contents);
             }
-
+            
             GenSpawn.Spawn(flyOver, start, map);
-
-            Log.Message($"FlyOver created: {flyOver} from {start} to {end} at altitude {height}, Faction: {flyOver.faction?.Name ?? "NULL"}");
             return flyOver;
         }
     }
 
-    // 扩展的 ModExtension 配置 - 新增进场动画参数
+    // 扩展的 ModExtension 配置 - 新增进场动画参数和淡入淡出开关
     public class FlyOverShadowExtension : DefModExtension
     {
         public string customShadowPath;
@@ -684,17 +705,22 @@ namespace SRA
         public float defaultFadeInDuration = 1.5f;
         public float defaultFadeOutDuration = 0.5f;
         public float fadeOutStartProgress = 0.98f;
-        
+
         // 动态淡出配置
         public float minFadeOutDuration = 0.5f;
         public float maxFadeOutDuration = 0.5f;
         public float fadeOutDistanceFactor = 0.01f;
-        
-        public float ActuallyHeight = 150f;
 
-        // 进场动画配置 - 新增
+        public float ActuallyHeight = 150f;
+        
+        // 进场动画配置
         public bool useApproachAnimation = true;
         public float approachDuration = 1.0f;
         public float approachOffsetDistance = 3f;
+        
+        // 新增：淡入淡出开关
+        public bool useFadeEffects = true; // 是否启用淡入淡出效果
+        public bool useFadeIn = true;      // 是否启用淡入效果
+        public bool useFadeOut = true;     // 是否启用淡出效果
     }
 }

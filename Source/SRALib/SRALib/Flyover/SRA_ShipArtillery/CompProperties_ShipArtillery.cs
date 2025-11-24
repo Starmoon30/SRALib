@@ -42,10 +42,15 @@ namespace SRA
         public bool avoidHittingFlyOver = true;
         
         // 信件通知
-        public bool sendAttackLetter = true; // 是否发送攻击信件
+        public bool sendAttackLetter = false; // 是否发送攻击信件
         public string customLetterLabel; // 自定义信件标题
         public string customLetterText; // 自定义信件内容
         public LetterDef letterDef = LetterDefOf.ThreatBig; // 信件类型
+
+        // 新增：派系甄别系统
+        public bool useFactionDiscrimination = false; // 是否使用派系甄别
+        public FactionDef targetFaction; // 目标派系（友军派系）
+        public bool useMicroTracking = false; // 是否启用微追踪
 
         public CompProperties_ShipArtillery()
         {

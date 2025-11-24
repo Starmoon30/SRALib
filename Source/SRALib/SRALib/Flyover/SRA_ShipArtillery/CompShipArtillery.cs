@@ -24,6 +24,16 @@ namespace SRA
         // 目标跟踪
         private List<IntVec3> previousTargets = new List<IntVec3>();
 
+        // 新增：微追踪目标列表
+        private List<LocalTargetInfo> microTrackingTargets = new List<LocalTargetInfo>();
+        private List<float> microTrackingWeights = new List<float>(); // 新增：权重列表
+
+        // 新增：目标类型权重配置
+        private const float PAWN_WEIGHT = 5.0f;        // Pawn权重：5倍
+        private const float OWNED_BUILDING_WEIGHT = 1.0f; // 有主建筑权重：1倍
+        private const float UNOWNED_BUILDING_WEIGHT = 0.01f; // 无主建筑权重：0.01倍
+        private const float OTHER_WEIGHT = 1.0f;       // 其他目标权重：1倍
+
         public override void Initialize(CompProperties props)
         {
             base.Initialize(props);
@@ -31,6 +41,7 @@ namespace SRA
             ticksUntilNextAttack = Props.ticksBetweenAttacks;
             
             Log.Message($"Ship Artillery initialized: {Props.ticksBetweenAttacks} ticks between attacks, {Props.attackRadius} radius");
+            Log.Message($"Faction Discrimination: {Props.useFactionDiscrimination}, Target Faction: {Props.targetFaction?.defName ?? "None"}, Micro Tracking: {Props.useMicroTracking}");
         }
 
         public override void CompTick()
@@ -39,6 +50,12 @@ namespace SRA
 
             if (parent is not FlyOver flyOver || !flyOver.Spawned || flyOver.Map == null)
                 return;
+
+            // 更新微追踪目标列表（如果需要）
+            if (Props.useMicroTracking && Props.useFactionDiscrimination)
+            {
+                UpdateMicroTrackingTargets(flyOver);
+            }
 
             // 更新预热状态
             if (isWarmingUp)
@@ -63,6 +80,173 @@ namespace SRA
             {
                 ticksUntilNextAttack--;
             }
+        }
+
+        // 新增：更新微追踪目标列表
+        private void UpdateMicroTrackingTargets(FlyOver flyOver)
+        {
+            microTrackingTargets.Clear();
+            microTrackingWeights.Clear();
+            
+            Faction targetFaction = GetTargetFaction(flyOver);
+            if (targetFaction == null) return;
+
+            // 获取飞越物体当前位置
+            IntVec3 center = GetFlyOverPosition(flyOver);
+            
+            // 搜索范围内的所有潜在目标
+            foreach (IntVec3 cell in GenRadial.RadialCellsAround(center, Props.attackRadius, true))
+            {
+                if (!cell.InBounds(flyOver.Map)) continue;
+
+                // 检查建筑
+                Building building = cell.GetEdifice(flyOver.Map);
+                if (building != null && IsValidMicroTrackingTarget(building, targetFaction))
+                {
+                    microTrackingTargets.Add(new LocalTargetInfo(building));
+                    float weight = GetTargetWeight(building);
+                    microTrackingWeights.Add(weight);
+                }
+
+                // 检查生物
+                List<Thing> thingList = cell.GetThingList(flyOver.Map);
+                foreach (Thing thing in thingList)
+                {
+                    if (thing is Pawn pawn && IsValidMicroTrackingTarget(pawn, targetFaction))
+                    {
+                        microTrackingTargets.Add(new LocalTargetInfo(pawn));
+                        float weight = GetTargetWeight(pawn);
+                        microTrackingWeights.Add(weight);
+                    }
+                }
+            }
+
+            // 移除重复目标（基于位置）
+            for (int i = microTrackingTargets.Count - 1; i >= 0; i--)
+            {
+                for (int j = 0; j < i; j++)
+                {
+                    if (microTrackingTargets[i].Cell == microTrackingTargets[j].Cell)
+                    {
+                        microTrackingTargets.RemoveAt(i);
+                        microTrackingWeights.RemoveAt(i);
+                        break;
+                    }
+                }
+            }
+
+            if (DebugSettings.godMode)
+            {
+                Log.Message($"MicroTracking: Found {microTrackingTargets.Count} targets for faction {targetFaction.def.defName}");
+                // 输出目标统计信息
+                var targetStats = GetTargetStatistics();
+                Log.Message($"Target Statistics - Pawns: {targetStats.pawnCount}, Owned Buildings: {targetStats.ownedBuildingCount}, Unowned Buildings: {targetStats.unownedBuildingCount}, Others: {targetStats.otherCount}");
+            }
+        }
+
+        // 新增：获取目标权重
+        private float GetTargetWeight(Thing thing)
+        {
+            if (thing is Pawn)
+            {
+                return PAWN_WEIGHT;
+            }
+            else if (thing is Building building)
+            {
+                if (building.Faction == null)
+                {
+                    return UNOWNED_BUILDING_WEIGHT;
+                }
+                else
+                {
+                    return OWNED_BUILDING_WEIGHT;
+                }
+            }
+            else
+            {
+                return OTHER_WEIGHT;
+            }
+        }
+
+        // 新增：获取目标统计信息
+        private (int pawnCount, int ownedBuildingCount, int unownedBuildingCount, int otherCount) GetTargetStatistics()
+        {
+            int pawnCount = 0;
+            int ownedBuildingCount = 0;
+            int unownedBuildingCount = 0;
+            int otherCount = 0;
+
+            for (int i = 0; i < microTrackingTargets.Count; i++)
+            {
+                Thing thing = microTrackingTargets[i].Thing;
+                if (thing == null) continue;
+
+                if (thing is Pawn)
+                {
+                    pawnCount++;
+                }
+                else if (thing is Building building)
+                {
+                    if (building.Faction == null)
+                    {
+                        unownedBuildingCount++;
+                    }
+                    else
+                    {
+                        ownedBuildingCount++;
+                    }
+                }
+                else
+                {
+                    otherCount++;
+                }
+            }
+
+            return (pawnCount, ownedBuildingCount, unownedBuildingCount, otherCount);
+        }
+
+        // 新增：检查是否为有效的微追踪目标
+        private bool IsValidMicroTrackingTarget(Thing thing, Faction targetFaction)
+        {
+            if (thing == null || thing.Destroyed) return false;
+
+            // 检查派系关系：目标派系的友军不应该被攻击
+            if (thing.Faction != null)
+            {
+                if (thing.Faction == targetFaction) return false;
+                if (thing.Faction.RelationKindWith(targetFaction) == FactionRelationKind.Ally) return false;
+            }
+
+            // 检查是否在保护范围内
+            if (Props.avoidPlayerAssets && IsNearPlayerAssets(thing.Position, thing.Map))
+            {
+                return false;
+            }
+
+            // 避免击中飞越物体本身
+            if (Props.avoidHittingFlyOver && thing.Position.DistanceTo(parent.Position) < 10f)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        // 新增：获取目标派系
+        private Faction GetTargetFaction(FlyOver flyOver)
+        {
+            if (!Props.useFactionDiscrimination)
+                return null;
+
+            // 如果指定了目标派系，使用指定的派系
+            if (Props.targetFaction != null)
+            {
+                Faction faction = Find.FactionManager.FirstFactionOfDef(Props.targetFaction);
+                if (faction != null) return faction;
+            }
+
+            // 否则使用玩家当前派系
+            return Faction.OfPlayer;
         }
 
         private void StartAttack(FlyOver flyOver)
@@ -195,8 +379,16 @@ namespace SRA
                     return;
                 }
 
-                // 直接选择随机目标
-                IntVec3 shellTarget = SelectRandomTarget(flyOver);
+                // 选择目标
+                IntVec3 shellTarget;
+                if (Props.useMicroTracking && Props.useFactionDiscrimination && microTrackingTargets.Count > 0)
+                {
+                    shellTarget = SelectMicroTrackingTarget(flyOver);
+                }
+                else
+                {
+                    shellTarget = SelectRandomTarget(flyOver);
+                }
 
                 // 关键修复：使用 SkyfallerMaker 创建并立即生成 Skyfaller
                 SkyfallerMaker.SpawnSkyfaller(shellDef, shellTarget, flyOver.Map);
@@ -214,6 +406,79 @@ namespace SRA
             {
                 Log.Error($"Error firing ship artillery shell: {ex}");
             }
+        }
+
+        // 修改：微追踪目标选择 - 现在使用权重系统
+        private IntVec3 SelectMicroTrackingTarget(FlyOver flyOver)
+        {
+            if (microTrackingTargets.Count == 0)
+            {
+                Log.Warning("MicroTracking: No targets available, falling back to random target");
+                return SelectRandomTarget(flyOver);
+            }
+
+            // 使用权重系统选择目标
+            LocalTargetInfo selectedTarget = SelectTargetByWeight();
+            IntVec3 targetCell = selectedTarget.Cell;
+
+            // 在目标周围添加随机偏移，避免过于精确
+            float offsetDistance = Rand.Range(0f, 2f);
+            float angle = Rand.Range(0f, 360f);
+            
+            IntVec3 offsetTarget = targetCell;
+            offsetTarget.x += Mathf.RoundToInt(Mathf.Cos(angle * Mathf.Deg2Rad) * offsetDistance);
+            offsetTarget.z += Mathf.RoundToInt(Mathf.Sin(angle * Mathf.Deg2Rad) * offsetDistance);
+
+            // 确保目标在地图内
+            if (!offsetTarget.InBounds(flyOver.Map))
+            {
+                offsetTarget = targetCell;
+            }
+
+            if (DebugSettings.godMode)
+            {
+                Thing selectedThing = selectedTarget.Thing;
+                string targetType = selectedThing is Pawn ? "Pawn" : 
+                                  selectedThing is Building building ? 
+                                  (building.Faction == null ? "Unowned Building" : "Owned Building") : "Other";
+                
+                Log.Message($"MicroTracking: Targeting {selectedThing?.Label ?? "unknown"} ({targetType}) at {targetCell}, final target: {offsetTarget}");
+            }
+
+            return offsetTarget;
+        }
+
+        // 新增：基于权重的目标选择
+        private LocalTargetInfo SelectTargetByWeight()
+        {
+            if (microTrackingTargets.Count == 0) 
+                return LocalTargetInfo.Invalid;
+                
+            if (microTrackingTargets.Count == 1)
+                return microTrackingTargets[0];
+
+            // 计算总权重
+            float totalWeight = 0f;
+            foreach (float weight in microTrackingWeights)
+            {
+                totalWeight += weight;
+            }
+
+            // 随机选择
+            float randomValue = Rand.Range(0f, totalWeight);
+            float currentSum = 0f;
+
+            for (int i = 0; i < microTrackingTargets.Count; i++)
+            {
+                currentSum += microTrackingWeights[i];
+                if (randomValue <= currentSum)
+                {
+                    return microTrackingTargets[i];
+                }
+            }
+
+            // 回退到最后一个目标
+            return microTrackingTargets[microTrackingTargets.Count - 1];
         }
 
         private ThingDef SelectShellDef()
@@ -352,6 +617,45 @@ namespace SRA
             if (!Props.avoidPlayerAssets)
                 return false;
 
+            // 如果启用了派系甄别，检查目标派系
+            if (Props.useFactionDiscrimination)
+            {
+                Faction targetFaction = GetTargetFaction(parent as FlyOver);
+                if (targetFaction != null)
+                {
+                    foreach (IntVec3 checkCell in GenRadial.RadialCellsAround(cell, Props.playerAssetAvoidanceRadius, true))
+                    {
+                        if (!checkCell.InBounds(map))
+                            continue;
+
+                        // 检查目标派系建筑
+                        var building = checkCell.GetEdifice(map);
+                        if (building != null && building.Faction == targetFaction)
+                            return true;
+
+                        // 检查目标派系殖民者
+                        var pawn = map.thingGrid.ThingAt<Pawn>(checkCell);
+                        if (pawn != null && pawn.Faction == targetFaction && pawn.RaceProps.Humanlike)
+                            return true;
+
+                        // 检查目标派系动物
+                        var animal = map.thingGrid.ThingAt<Pawn>(checkCell);
+                        if (animal != null && animal.Faction == targetFaction && animal.RaceProps.Animal)
+                            return true;
+
+                        // 检查目标派系物品
+                        var items = checkCell.GetThingList(map);
+                        foreach (var item in items)
+                        {
+                            if (item.Faction == targetFaction && item.def.category == ThingCategory.Item)
+                                return true;
+                        }
+                    }
+                    return false;
+                }
+            }
+
+            // 默认行为：检查玩家资产
             foreach (IntVec3 checkCell in GenRadial.RadialCellsAround(cell, Props.playerAssetAvoidanceRadius, true))
             {
                 if (!checkCell.InBounds(map))
@@ -470,6 +774,8 @@ namespace SRA
             Scribe_Values.Look(ref isWarmingUp, "isWarmingUp", false);
             Scribe_Values.Look(ref currentTarget, "currentTarget");
             Scribe_Collections.Look(ref previousTargets, "previousTargets", LookMode.Value);
+            Scribe_Collections.Look(ref microTrackingTargets, "microTrackingTargets", LookMode.LocalTargetInfo);
+            Scribe_Collections.Look(ref microTrackingWeights, "microTrackingWeights", LookMode.Value);
         }
 
         public override IEnumerable<Gizmo> CompGetGizmosExtra()
@@ -504,9 +810,44 @@ namespace SRA
                             IntVec3 flyOverPos = GetFlyOverPosition(flyOver);
                             Log.Message($"FlyOver - DrawPos: {flyOver.DrawPos}, Position: {flyOver.Position}, Calculated: {flyOverPos}");
                             Log.Message($"Current Target: {currentTarget}, Distance: {flyOverPos.DistanceTo(currentTarget):F1}");
+                            
+                            // 显示派系甄别信息
+                            Faction targetFaction = GetTargetFaction(flyOver);
+                            Log.Message($"Faction Discrimination: {Props.useFactionDiscrimination}, Target Faction: {targetFaction?.def.defName ?? "None"}");
+                            Log.Message($"Micro Tracking: {Props.useMicroTracking}, Targets Found: {microTrackingTargets.Count}");
+                            
+                            // 显示目标统计
+                            var stats = GetTargetStatistics();
+                            Log.Message($"Target Stats - Pawns: {stats.pawnCount}, Owned Buildings: {stats.ownedBuildingCount}, Unowned Buildings: {stats.unownedBuildingCount}, Others: {stats.otherCount}");
                         }
                     }
                 };
+
+                // 显示微追踪目标信息
+                if (Props.useMicroTracking && Props.useFactionDiscrimination)
+                {
+                    yield return new Command_Action
+                    {
+                        defaultLabel = $"Dev: Show Micro Targets ({microTrackingTargets.Count})",
+                        action = () => 
+                        {
+                            if (parent is FlyOver flyOver)
+                            {
+                                for (int i = 0; i < microTrackingTargets.Count; i++)
+                                {
+                                    var target = microTrackingTargets[i];
+                                    float weight = microTrackingWeights[i];
+                                    Thing thing = target.Thing;
+                                    string type = thing is Pawn ? "Pawn" : 
+                                                thing is Building building ? 
+                                                (building.Faction == null ? "Unowned Building" : "Owned Building") : "Other";
+                                    
+                                    Log.Message($"Micro Target: {thing?.Label ?? "Unknown"} ({type}) at {target.Cell}, Weight: {weight:F2}");
+                                }
+                            }
+                        }
+                    };
+                }
             }
         }
 
