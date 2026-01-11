@@ -24,20 +24,27 @@ namespace SRA
         // 目标跟踪
         private List<IntVec3> previousTargets = new List<IntVec3>();
 
-        // 新增：微追踪目标列表
-        private List<LocalTargetInfo> microTrackingTargets = new List<LocalTargetInfo>();
-        private List<float> microTrackingWeights = new List<float>(); // 新增：权重列表
+        // 优化：缓存目标列表，避免每帧重新计算
+        private List<LocalTargetInfo> cachedTargets = new List<LocalTargetInfo>();
+        private List<float> cachedTargetWeights = new List<float>();
+        private int lastTargetUpdateTick = -9999;
+        private const int TARGET_UPDATE_INTERVAL = 60; // 每60 ticks更新一次目标列表
 
-        // 新增：目标类型权重配置
-        private const float PAWN_WEIGHT = 5.0f;        // Pawn权重：5倍
-        private const float OWNED_BUILDING_WEIGHT = 1.0f; // 有主建筑权重：1倍
-        private const float UNOWNED_BUILDING_WEIGHT = 0.01f; // 无主建筑权重：0.01倍
-        private const float OTHER_WEIGHT = 1.0f;       // 其他目标权重：1倍
+        // 优化：一轮炮击的目标缓存
+        private IntVec3 currentVolleyCenter;
+        private List<IntVec3> currentVolleyTargets = new List<IntVec3>();
+        private int currentVolleyIndex = 0;
+
+        // 目标类型权重配置
+        private const float PAWN_WEIGHT = 5.0f;
+        private const float OWNED_BUILDING_WEIGHT = 1.0f;
+        private const float UNOWNED_BUILDING_WEIGHT = 0.01f;
+        private const float WALL_WEIGHT = 0.001f; // 墙的权重极低
+        private const float OTHER_WEIGHT = 1.0f;
 
         public override void Initialize(CompProperties props)
         {
             base.Initialize(props);
-            
             ticksUntilNextAttack = Props.ticksBetweenAttacks;
             
             Log.Message($"Ship Artillery initialized: {Props.ticksBetweenAttacks} ticks between attacks, {Props.attackRadius} radius");
@@ -51,10 +58,14 @@ namespace SRA
             if (parent is not FlyOver flyOver || !flyOver.Spawned || flyOver.Map == null)
                 return;
 
-            // 更新微追踪目标列表（如果需要）
+            // 优化：减少目标更新频率
             if (Props.useMicroTracking && Props.useFactionDiscrimination)
             {
-                UpdateMicroTrackingTargets(flyOver);
+                if (Find.TickManager.TicksGame - lastTargetUpdateTick > TARGET_UPDATE_INTERVAL)
+                {
+                    UpdateTargetCache(flyOver);
+                    lastTargetUpdateTick = Find.TickManager.TicksGame;
+                }
             }
 
             // 更新预热状态
@@ -82,103 +93,99 @@ namespace SRA
             }
         }
 
-        // 新增：更新微追踪目标列表
-        private void UpdateMicroTrackingTargets(FlyOver flyOver)
+        // 优化：缓存目标列表
+        private void UpdateTargetCache(FlyOver flyOver)
         {
-            microTrackingTargets.Clear();
-            microTrackingWeights.Clear();
+            cachedTargets.Clear();
+            cachedTargetWeights.Clear();
             
             Faction targetFaction = GetTargetFaction(flyOver);
             if (targetFaction == null) return;
 
-            // 获取飞越物体当前位置
             IntVec3 center = GetFlyOverPosition(flyOver);
             
-            // 搜索范围内的所有潜在目标
-            foreach (IntVec3 cell in GenRadial.RadialCellsAround(center, Props.attackRadius, true))
+            // 优化：使用更高效的目标搜索
+            var potentialTargets = GenRadial.RadialDistinctThingsAround(center, flyOver.Map, Props.attackRadius, true)
+                .Where(thing => IsValidMicroTrackingTarget(thing, targetFaction))
+                .Distinct(); // 避免重复
+
+            foreach (Thing thing in potentialTargets)
             {
-                if (!cell.InBounds(flyOver.Map)) continue;
-
-                // 检查建筑
-                Building building = cell.GetEdifice(flyOver.Map);
-                if (building != null && IsValidMicroTrackingTarget(building, targetFaction))
-                {
-                    microTrackingTargets.Add(new LocalTargetInfo(building));
-                    float weight = GetTargetWeight(building);
-                    microTrackingWeights.Add(weight);
-                }
-
-                // 检查生物
-                List<Thing> thingList = cell.GetThingList(flyOver.Map);
-                foreach (Thing thing in thingList)
-                {
-                    if (thing is Pawn pawn && IsValidMicroTrackingTarget(pawn, targetFaction))
-                    {
-                        microTrackingTargets.Add(new LocalTargetInfo(pawn));
-                        float weight = GetTargetWeight(pawn);
-                        microTrackingWeights.Add(weight);
-                    }
-                }
+                cachedTargets.Add(new LocalTargetInfo(thing));
+                cachedTargetWeights.Add(GetTargetWeight(thing));
             }
 
-            // 移除重复目标（基于位置）
-            for (int i = microTrackingTargets.Count - 1; i >= 0; i--)
+            if (DebugSettings.godMode && cachedTargets.Count > 0)
             {
-                for (int j = 0; j < i; j++)
-                {
-                    if (microTrackingTargets[i].Cell == microTrackingTargets[j].Cell)
-                    {
-                        microTrackingTargets.RemoveAt(i);
-                        microTrackingWeights.RemoveAt(i);
-                        break;
-                    }
-                }
-            }
-
-            if (DebugSettings.godMode)
-            {
-                Log.Message($"MicroTracking: Found {microTrackingTargets.Count} targets for faction {targetFaction.def.defName}");
-                // 输出目标统计信息
-                var targetStats = GetTargetStatistics();
-                Log.Message($"Target Statistics - Pawns: {targetStats.pawnCount}, Owned Buildings: {targetStats.ownedBuildingCount}, Unowned Buildings: {targetStats.unownedBuildingCount}, Others: {targetStats.otherCount}");
+                Log.Message($"Target Cache Updated: Found {cachedTargets.Count} targets");
+                var stats = GetTargetStatistics();
+                Log.Message($"Target Statistics - Pawns: {stats.pawnCount}, Owned Buildings: {stats.ownedBuildingCount}, Unowned Buildings: {stats.unownedBuildingCount}, Walls: {stats.wallCount}, Others: {stats.otherCount}");
             }
         }
 
-        // 新增：获取目标权重
+        // 优化：改进的目标有效性检查
+        private bool IsValidMicroTrackingTarget(Thing thing, Faction targetFaction)
+        {
+            if (thing == null || thing.Destroyed) return false;
+
+            // 修复1：无主建筑总是被排除
+            if (thing is Building building && building.Faction == null)
+                return false;
+
+            // 修复2：isWall的建筑总是不考虑
+            if (thing.def?.building?.isWall == true)
+                return false;
+
+            // 检查派系关系
+            if (thing.Faction != null)
+            {
+                if (thing.Faction == targetFaction) return false;
+                if (thing.Faction.RelationKindWith(targetFaction) == FactionRelationKind.Ally) return false;
+            }
+
+            // 检查保护范围
+            if (Props.avoidPlayerAssets && IsNearPlayerAssets(thing.Position, thing.Map))
+                return false;
+
+            // 避免击中飞越物体本身
+            if (Props.avoidHittingFlyOver && thing.Position.DistanceTo(parent.Position) < 10f)
+                return false;
+
+            return true;
+        }
+
+        // 优化：获取目标权重
         private float GetTargetWeight(Thing thing)
         {
             if (thing is Pawn)
-            {
                 return PAWN_WEIGHT;
-            }
             else if (thing is Building building)
             {
+                // 修复2：墙的权重极低
+                if (building.def?.building?.isWall == true)
+                    return WALL_WEIGHT;
+                    
                 if (building.Faction == null)
-                {
                     return UNOWNED_BUILDING_WEIGHT;
-                }
                 else
-                {
                     return OWNED_BUILDING_WEIGHT;
-                }
             }
             else
-            {
                 return OTHER_WEIGHT;
-            }
         }
 
         // 新增：获取目标统计信息
-        private (int pawnCount, int ownedBuildingCount, int unownedBuildingCount, int otherCount) GetTargetStatistics()
+        private (int pawnCount, int ownedBuildingCount, int unownedBuildingCount, int wallCount, int otherCount) GetTargetStatistics()
         {
             int pawnCount = 0;
             int ownedBuildingCount = 0;
             int unownedBuildingCount = 0;
+            int wallCount = 0;
             int otherCount = 0;
 
-            for (int i = 0; i < microTrackingTargets.Count; i++)
+            foreach (var target in cachedTargets)
             {
-                Thing thing = microTrackingTargets[i].Thing;
+                Thing thing = target.Thing;
                 if (thing == null) continue;
 
                 if (thing is Pawn)
@@ -187,7 +194,11 @@ namespace SRA
                 }
                 else if (thing is Building building)
                 {
-                    if (building.Faction == null)
+                    if (building.def?.building?.isWall == true)
+                    {
+                        wallCount++;
+                    }
+                    else if (building.Faction == null)
                     {
                         unownedBuildingCount++;
                     }
@@ -202,50 +213,20 @@ namespace SRA
                 }
             }
 
-            return (pawnCount, ownedBuildingCount, unownedBuildingCount, otherCount);
+            return (pawnCount, ownedBuildingCount, unownedBuildingCount, wallCount, otherCount);
         }
 
-        // 新增：检查是否为有效的微追踪目标
-        private bool IsValidMicroTrackingTarget(Thing thing, Faction targetFaction)
-        {
-            if (thing == null || thing.Destroyed) return false;
-
-            // 检查派系关系：目标派系的友军不应该被攻击
-            if (thing.Faction != null)
-            {
-                if (thing.Faction == targetFaction) return false;
-                if (thing.Faction.RelationKindWith(targetFaction) == FactionRelationKind.Ally) return false;
-            }
-
-            // 检查是否在保护范围内
-            if (Props.avoidPlayerAssets && IsNearPlayerAssets(thing.Position, thing.Map))
-            {
-                return false;
-            }
-
-            // 避免击中飞越物体本身
-            if (Props.avoidHittingFlyOver && thing.Position.DistanceTo(parent.Position) < 10f)
-            {
-                return false;
-            }
-
-            return true;
-        }
-
-        // 新增：获取目标派系
         private Faction GetTargetFaction(FlyOver flyOver)
         {
             if (!Props.useFactionDiscrimination)
                 return null;
 
-            // 如果指定了目标派系，使用指定的派系
             if (Props.targetFaction != null)
             {
                 Faction faction = Find.FactionManager.FirstFactionOfDef(Props.targetFaction);
                 if (faction != null) return faction;
             }
 
-            // 否则使用玩家当前派系
             return Faction.OfPlayer;
         }
 
@@ -266,11 +247,15 @@ namespace SRA
 
             Log.Message($"Ship Artillery starting attack on target area: {currentTarget} (attack radius: {Props.attackRadius})");
 
-            // 开始预热
+            // 修复3：在一轮炮击中，只进行一次目标选择
+            currentVolleyCenter = currentTarget;
+            currentVolleyTargets.Clear();
+            currentVolleyIndex = 0;
+
+            // 预热阶段
             isWarmingUp = true;
             warmupTicksRemaining = Props.warmupTicks;
 
-            // 启动预热效果
             if (Props.warmupEffect != null)
             {
                 warmupEffecter = Props.warmupEffect.Spawn();
@@ -282,19 +267,16 @@ namespace SRA
         {
             warmupTicksRemaining--;
 
-            // 维持预热效果
             if (warmupEffecter != null)
             {
                 warmupEffecter.EffectTick(new TargetInfo(currentTarget, flyOver.Map), new TargetInfo(currentTarget, flyOver.Map));
             }
 
-            // 生成预热粒子
             if (Props.warmupFleck != null && Rand.MTBEventOccurs(0.1f, 1f, 1f))
             {
                 FleckMaker.Static(currentTarget.ToVector3Shifted(), flyOver.Map, Props.warmupFleck);
             }
 
-            // 预热完成，开始攻击
             if (warmupTicksRemaining <= 0)
             {
                 StartFiring(flyOver);
@@ -307,11 +289,9 @@ namespace SRA
             isAttacking = true;
             attackTicksRemaining = Props.attackDurationTicks;
 
-            // 清理预热效果
             warmupEffecter?.Cleanup();
             warmupEffecter = null;
 
-            // 启动攻击效果
             if (Props.attackEffect != null)
             {
                 attackEffecter = Props.attackEffect.Spawn();
@@ -333,26 +313,23 @@ namespace SRA
         {
             attackTicksRemaining--;
 
-            // 维持攻击效果
             if (attackEffecter != null)
             {
                 attackEffecter.EffectTick(new TargetInfo(currentTarget, flyOver.Map), new TargetInfo(currentTarget, flyOver.Map));
             }
 
             // 在攻击期间定期发射炮弹
-            if (attackTicksRemaining % 60 == 0) // 每秒发射一次
+            if (attackTicksRemaining % 60 == 0)
             {
                 ExecuteVolley(flyOver);
             }
 
-            // 生成攻击粒子
             if (Props.attackFleck != null && Rand.MTBEventOccurs(0.2f, 1f, 1f))
             {
                 Vector3 randomOffset = new Vector3(Rand.Range(-3f, 3f), 0f, Rand.Range(-3f, 3f));
                 FleckMaker.Static((currentTarget.ToVector3Shifted() + randomOffset), flyOver.Map, Props.attackFleck);
             }
 
-            // 攻击结束
             if (attackTicksRemaining <= 0)
             {
                 EndAttack(flyOver);
@@ -361,17 +338,66 @@ namespace SRA
 
         private void ExecuteVolley(FlyOver flyOver)
         {
+            // 修复3：为这一轮炮击生成所有目标
+            if (currentVolleyTargets.Count == 0)
+            {
+                GenerateVolleyTargets(flyOver);
+            }
+
             for (int i = 0; i < Props.shellsPerVolley; i++)
             {
-                FireShell(flyOver);
+                if (currentVolleyIndex < currentVolleyTargets.Count)
+                {
+                    FireShell(flyOver, currentVolleyTargets[currentVolleyIndex]);
+                    currentVolleyIndex++;
+                }
+                else
+                {
+                    // 如果目标用完了，重新生成（对于持续攻击）
+                    GenerateVolleyTargets(flyOver);
+                    if (currentVolleyTargets.Count > 0)
+                    {
+                        FireShell(flyOver, currentVolleyTargets[0]);
+                        currentVolleyIndex = 1;
+                    }
+                }
             }
         }
 
-        private void FireShell(FlyOver flyOver)
+        // 修复3：生成一轮炮击的所有目标
+        private void GenerateVolleyTargets(FlyOver flyOver)
+        {
+            currentVolleyTargets.Clear();
+            currentVolleyIndex = 0;
+
+            for (int i = 0; i < Props.shellsPerVolley * 3; i++) // 生成足够的目标
+            {
+                IntVec3 target;
+                if (Props.useMicroTracking && Props.useFactionDiscrimination && cachedTargets.Count > 0)
+                {
+                    target = SelectTargetFromCache(flyOver);
+                }
+                else
+                {
+                    target = SelectRandomTargetInRadius(currentVolleyCenter, flyOver.Map, Props.attackRadius);
+                }
+                
+                if (target.IsValid && target.InBounds(flyOver.Map))
+                {
+                    currentVolleyTargets.Add(target);
+                }
+            }
+
+            if (DebugSettings.godMode)
+            {
+                Log.Message($"Generated {currentVolleyTargets.Count} targets for volley around {currentVolleyCenter}");
+            }
+        }
+
+        private void FireShell(FlyOver flyOver, IntVec3 shellTarget)
         {
             try
             {
-                // 选择炮弹类型
                 ThingDef shellDef = SelectShellDef();
                 if (shellDef == null)
                 {
@@ -379,24 +405,14 @@ namespace SRA
                     return;
                 }
 
-                // 选择目标
-                IntVec3 shellTarget;
-                if (Props.useMicroTracking && Props.useFactionDiscrimination && microTrackingTargets.Count > 0)
-                {
-                    shellTarget = SelectMicroTrackingTarget(flyOver);
-                }
-                else
-                {
-                    shellTarget = SelectRandomTarget(flyOver);
-                }
-
-                // 关键修复：使用 SkyfallerMaker 创建并立即生成 Skyfaller
                 SkyfallerMaker.SpawnSkyfaller(shellDef, shellTarget, flyOver.Map);
 
-                float distanceFromCenter = shellTarget.DistanceTo(currentTarget);
-                Log.Message($"Ship Artillery fired shell at {shellTarget} (distance from center: {distanceFromCenter:F1})");
+                float distanceFromCenter = shellTarget.DistanceTo(currentVolleyCenter);
+                if (DebugSettings.godMode)
+                {
+                    Log.Message($"Ship Artillery fired shell at {shellTarget} (distance from center: {distanceFromCenter:F1})");
+                }
 
-                // 播放音效
                 if (Props.attackSound != null)
                 {
                     Props.attackSound.PlayOneShot(new TargetInfo(shellTarget, flyOver.Map));
@@ -408,16 +424,15 @@ namespace SRA
             }
         }
 
-        // 修改：微追踪目标选择 - 现在使用权重系统
-        private IntVec3 SelectMicroTrackingTarget(FlyOver flyOver)
+        // 优化：从缓存中选择目标
+        private IntVec3 SelectTargetFromCache(FlyOver flyOver)
         {
-            if (microTrackingTargets.Count == 0)
+            if (cachedTargets.Count == 0)
             {
                 Log.Warning("MicroTracking: No targets available, falling back to random target");
-                return SelectRandomTarget(flyOver);
+                return SelectRandomTargetInRadius(currentVolleyCenter, flyOver.Map, Props.attackRadius);
             }
 
-            // 使用权重系统选择目标
             LocalTargetInfo selectedTarget = SelectTargetByWeight();
             IntVec3 targetCell = selectedTarget.Cell;
 
@@ -429,7 +444,6 @@ namespace SRA
             offsetTarget.x += Mathf.RoundToInt(Mathf.Cos(angle * Mathf.Deg2Rad) * offsetDistance);
             offsetTarget.z += Mathf.RoundToInt(Mathf.Sin(angle * Mathf.Deg2Rad) * offsetDistance);
 
-            // 确保目标在地图内
             if (!offsetTarget.InBounds(flyOver.Map))
             {
                 offsetTarget = targetCell;
@@ -448,37 +462,34 @@ namespace SRA
             return offsetTarget;
         }
 
-        // 新增：基于权重的目标选择
+        // 基于权重的目标选择
         private LocalTargetInfo SelectTargetByWeight()
         {
-            if (microTrackingTargets.Count == 0) 
+            if (cachedTargets.Count == 0) 
                 return LocalTargetInfo.Invalid;
                 
-            if (microTrackingTargets.Count == 1)
-                return microTrackingTargets[0];
+            if (cachedTargets.Count == 1)
+                return cachedTargets[0];
 
-            // 计算总权重
             float totalWeight = 0f;
-            foreach (float weight in microTrackingWeights)
+            foreach (float weight in cachedTargetWeights)
             {
                 totalWeight += weight;
             }
 
-            // 随机选择
             float randomValue = Rand.Range(0f, totalWeight);
             float currentSum = 0f;
 
-            for (int i = 0; i < microTrackingTargets.Count; i++)
+            for (int i = 0; i < cachedTargets.Count; i++)
             {
-                currentSum += microTrackingWeights[i];
+                currentSum += cachedTargetWeights[i];
                 if (randomValue <= currentSum)
                 {
-                    return microTrackingTargets[i];
+                    return cachedTargets[i];
                 }
             }
 
-            // 回退到最后一个目标
-            return microTrackingTargets[microTrackingTargets.Count - 1];
+            return cachedTargets[cachedTargets.Count - 1];
         }
 
         private ThingDef SelectShellDef()
@@ -512,26 +523,18 @@ namespace SRA
             return launchPos;
         }
 
-        // 简化的目标选择 - 每次直接随机选择目标
-        private IntVec3 SelectRandomTarget(FlyOver flyOver)
+        private IntVec3 SelectTarget(FlyOver flyOver)
         {
             IntVec3 center = GetFlyOverPosition(flyOver) + Props.targetOffset;
             return FindRandomTargetInRadius(center, flyOver.Map, Props.attackRadius);
         }
 
-        private IntVec3 SelectTarget(FlyOver flyOver)
+        // 简化的目标选择 - 每次直接随机选择目标
+        private IntVec3 SelectRandomTargetInRadius(IntVec3 center, Map map, float radius)
         {
-            // 获取飞越物体当前位置作为基础中心
-            IntVec3 flyOverPos = GetFlyOverPosition(flyOver);
-            IntVec3 center = flyOverPos + Props.targetOffset;
-
-            Log.Message($"FlyOver position: {flyOverPos}, Center for targeting: {center}");
-
-            // 在攻击半径内选择随机目标
-            return FindRandomTargetInRadius(center, flyOver.Map, Props.attackRadius);
+            return FindRandomTargetInRadius(center, map, radius);
         }
 
-        // 改进的飞越物体位置获取
         private IntVec3 GetFlyOverPosition(FlyOver flyOver)
         {
             // 优先使用 DrawPos，因为它反映实际视觉位置
@@ -554,15 +557,13 @@ namespace SRA
         // 目标查找逻辑 - 基于攻击半径
         private IntVec3 FindRandomTargetInRadius(IntVec3 center, Map map, float radius)
         {
-            Log.Message($"Finding target around {center} with radius {radius}");
-
-            // 如果半径为0，直接返回中心
             if (radius <= 0)
                 return center;
 
             bool ignoreProtectionForThisTarget = Rand.Value < Props.ignoreProtectionChance;
             
-            for (int i = 0; i < 30; i++)
+            // 优化：减少尝试次数
+            for (int i = 0; i < 15; i++)
             {
                 // 在圆形区域内随机选择
                 float angle = Rand.Range(0f, 360f);
@@ -582,12 +583,15 @@ namespace SRA
                         
                         previousTargets.Add(potentialTarget);
                         
-                        float actualDistance = potentialTarget.DistanceTo(center);
-                        Log.Message($"Found valid target at {potentialTarget} (distance from center: {actualDistance:F1})");
-                        
-                        if (ignoreProtectionForThisTarget)
+                        if (DebugSettings.godMode)
                         {
-                            Log.Warning($"Protection ignored for target selection! May target player assets.");
+                            float actualDistance = potentialTarget.DistanceTo(center);
+                            Log.Message($"Found valid target at {potentialTarget} (distance from center: {actualDistance:F1})");
+                            
+                            if (ignoreProtectionForThisTarget)
+                            {
+                                Log.Warning($"Protection ignored for target selection! May target player assets.");
+                            }
                         }
                         
                         return potentialTarget;
@@ -598,7 +602,7 @@ namespace SRA
             // 回退：使用地图随机位置
             Log.Warning("Could not find valid target in radius, using fallback");
             CellRect mapRect = CellRect.WholeMap(map);
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < 5; i++)
             {
                 IntVec3 fallbackTarget = mapRect.RandomCell;
                 if (IsValidTarget(fallbackTarget, map, ignoreProtectionForThisTarget))
@@ -731,6 +735,10 @@ namespace SRA
             attackEffecter?.Cleanup();
             attackEffecter = null;
 
+            // 清理缓存
+            currentVolleyTargets.Clear();
+            currentVolleyIndex = 0;
+
             // 重置计时器
             if (Props.continuousAttack && !flyOver.hasCompleted)
             {
@@ -773,9 +781,13 @@ namespace SRA
             Scribe_Values.Look(ref isAttacking, "isAttacking", false);
             Scribe_Values.Look(ref isWarmingUp, "isWarmingUp", false);
             Scribe_Values.Look(ref currentTarget, "currentTarget");
+            Scribe_Values.Look(ref currentVolleyCenter, "currentVolleyCenter");
+            Scribe_Values.Look(ref currentVolleyIndex, "currentVolleyIndex");
+            Scribe_Values.Look(ref lastTargetUpdateTick, "lastTargetUpdateTick", -9999);
             Scribe_Collections.Look(ref previousTargets, "previousTargets", LookMode.Value);
-            Scribe_Collections.Look(ref microTrackingTargets, "microTrackingTargets", LookMode.LocalTargetInfo);
-            Scribe_Collections.Look(ref microTrackingWeights, "microTrackingWeights", LookMode.Value);
+            Scribe_Collections.Look(ref cachedTargets, "cachedTargets", LookMode.LocalTargetInfo);
+            Scribe_Collections.Look(ref cachedTargetWeights, "cachedTargetWeights", LookMode.Value);
+            Scribe_Collections.Look(ref currentVolleyTargets, "currentVolleyTargets", LookMode.Value);
         }
 
         public override IEnumerable<Gizmo> CompGetGizmosExtra()
@@ -791,7 +803,14 @@ namespace SRA
                 yield return new Command_Action
                 {
                     defaultLabel = "Dev: Fire Single Shell",
-                    action = () => FireShell(parent as FlyOver)
+                    action = () => 
+                    {
+                        if (parent is FlyOver flyOver)
+                        {
+                            IntVec3 target = SelectRandomTargetInRadius(GetFlyOverPosition(flyOver), flyOver.Map, Props.attackRadius);
+                            FireShell(flyOver, target);
+                        }
+                    }
                 };
 
                 yield return new Command_Action
@@ -814,11 +833,14 @@ namespace SRA
                             // 显示派系甄别信息
                             Faction targetFaction = GetTargetFaction(flyOver);
                             Log.Message($"Faction Discrimination: {Props.useFactionDiscrimination}, Target Faction: {targetFaction?.def.defName ?? "None"}");
-                            Log.Message($"Micro Tracking: {Props.useMicroTracking}, Targets Found: {microTrackingTargets.Count}");
+                            Log.Message($"Micro Tracking: {Props.useMicroTracking}, Targets Found: {cachedTargets.Count}");
                             
                             // 显示目标统计
                             var stats = GetTargetStatistics();
-                            Log.Message($"Target Stats - Pawns: {stats.pawnCount}, Owned Buildings: {stats.ownedBuildingCount}, Unowned Buildings: {stats.unownedBuildingCount}, Others: {stats.otherCount}");
+                            Log.Message($"Target Stats - Pawns: {stats.pawnCount}, Owned Buildings: {stats.ownedBuildingCount}, Unowned Buildings: {stats.unownedBuildingCount}, Walls: {stats.wallCount}, Others: {stats.otherCount}");
+                            
+                            // 显示炮击信息
+                            Log.Message($"Volley - Center: {currentVolleyCenter}, Targets: {currentVolleyTargets.Count}, Index: {currentVolleyIndex}");
                         }
                     }
                 };
@@ -828,26 +850,56 @@ namespace SRA
                 {
                     yield return new Command_Action
                     {
-                        defaultLabel = $"Dev: Show Micro Targets ({microTrackingTargets.Count})",
+                        defaultLabel = $"Dev: Show Cached Targets ({cachedTargets.Count})",
                         action = () => 
                         {
                             if (parent is FlyOver flyOver)
                             {
-                                for (int i = 0; i < microTrackingTargets.Count; i++)
+                                for (int i = 0; i < cachedTargets.Count; i++)
                                 {
-                                    var target = microTrackingTargets[i];
-                                    float weight = microTrackingWeights[i];
+                                    var target = cachedTargets[i];
+                                    float weight = cachedTargetWeights[i];
                                     Thing thing = target.Thing;
                                     string type = thing is Pawn ? "Pawn" : 
                                                 thing is Building building ? 
                                                 (building.Faction == null ? "Unowned Building" : "Owned Building") : "Other";
                                     
-                                    Log.Message($"Micro Target: {thing?.Label ?? "Unknown"} ({type}) at {target.Cell}, Weight: {weight:F2}");
+                                    Log.Message($"Cached Target: {thing?.Label ?? "Unknown"} ({type}) at {target.Cell}, Weight: {weight:F2}");
                                 }
                             }
                         }
                     };
                 }
+
+                // 显示当前炮击目标
+                if (currentVolleyTargets.Count > 0)
+                {
+                    yield return new Command_Action
+                    {
+                        defaultLabel = $"Dev: Show Volley Targets ({currentVolleyTargets.Count})",
+                        action = () => 
+                        {
+                            for (int i = 0; i < currentVolleyTargets.Count; i++)
+                            {
+                                Log.Message($"Volley Target {i}: {currentVolleyTargets[i]} ({(i == currentVolleyIndex ? "NEXT" : "queued")})");
+                            }
+                        }
+                    };
+                }
+
+                // 强制更新目标缓存
+                yield return new Command_Action
+                {
+                    defaultLabel = "Dev: Force Update Target Cache",
+                    action = () => 
+                    {
+                        if (parent is FlyOver flyOver)
+                        {
+                            UpdateTargetCache(flyOver);
+                            Log.Message($"Force updated target cache: {cachedTargets.Count} targets found");
+                        }
+                    }
+                };
             }
         }
 
@@ -862,6 +914,22 @@ namespace SRA
         public void SetTarget(IntVec3 target)
         {
             currentTarget = target;
+        }
+
+        // 新增：获取当前状态信息
+        public string GetStatusString()
+        {
+            if (parent is not FlyOver flyOver)
+                return "Invalid parent";
+
+            string status = isWarmingUp ? $"Warming up ({warmupTicksRemaining} ticks)" :
+                         isAttacking ? $"Attacking ({attackTicksRemaining} ticks)" :
+                         $"Next attack in {ticksUntilNextAttack} ticks";
+
+            string targetInfo = currentTarget.IsValid ? $"Target: {currentTarget}" : "No target";
+            string volleyInfo = currentVolleyTargets.Count > 0 ? $", Volley: {currentVolleyIndex}/{currentVolleyTargets.Count}" : "";
+
+            return $"{status}, {targetInfo}{volleyInfo}";
         }
     }
 }

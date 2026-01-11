@@ -19,6 +19,13 @@ namespace SRA
         public EffecterDef explosionEffect;
         public int explosionEffectLifetimeTicks;
         public bool onlyAntiHostile = false;
+
+        public ThingDef postExplosionSpawnThingDef = null;
+        public float postExplosionSpawnChance = 0f;
+        public int postExplosionSpawnThingCount = 1;
+        public GasType ? postExplosionGasType = null;
+        public float ? postExplosionGasRadiusOverride = null;
+        public int postExplosionGasAmount = 255;
     }
 
     // 子弹头发射属性定义类
@@ -38,6 +45,7 @@ namespace SRA
 
     public class Projectile_MultiExplosive : Projectile
     {
+        protected virtual bool isNorthArcTrail => false;
         private TailBulletDef tailBulletDefInt;
         private int Fleck_MakeFleckTick;
         private Vector3 lastTickPosition;
@@ -62,7 +70,7 @@ namespace SRA
             base.Tick();
 
             // 处理拖尾特效
-            if (TailDef != null && TailDef.tailFleckDef != null)
+            if (TailDef != null && TailDef.tailFleckDef != null && !isNorthArcTrail)
             {
                 Fleck_MakeFleckTick++;
                 if (Fleck_MakeFleckTick >= TailDef.fleckDelayTicks)
@@ -165,6 +173,12 @@ namespace SRA
                 projectile: def,
                 intendedTarget: intendedTarget.Thing,
                 damageFalloff: properties.explosionDamageFalloff,
+                postExplosionSpawnThingDef: properties.postExplosionSpawnThingDef,
+                postExplosionSpawnChance: properties.postExplosionSpawnChance,
+                postExplosionSpawnThingCount: properties.postExplosionSpawnThingCount,
+                postExplosionGasType: properties.postExplosionGasType,
+                postExplosionGasRadiusOverride: properties.postExplosionGasRadiusOverride,
+                postExplosionGasAmount: properties.postExplosionGasAmount,
                 ignoredThings: thingsIgnoredByExplosion
             );
         }

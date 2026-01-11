@@ -72,7 +72,7 @@ namespace SRA
         public override void CompPostTick(ref float severityAdjustment)
         {
             if (!Pawn.Spawned || Pawn.Dead) return;
-            
+
             if (Pawn.IsHashIntervalTick(GenTicks.TicksPerRealSecond))
             {
 
@@ -110,6 +110,11 @@ namespace SRA
         public void AbsorbDamage(ref DamageInfo dinfo)
         {
             if (!CanAbsorb) return;
+            if (!dinfo.Def.harmsHealth)
+            {
+                dinfo.SetAmount(0);
+                return;
+            }
             if (Props.DamageTakenMax > 0)
             {
                 dinfo.SetAmount(Mathf.Min(dinfo.Amount, Props.DamageTakenMax));
@@ -123,6 +128,7 @@ namespace SRA
             float IncomingDamageFactor = Math.Min(Pawn.GetStatValue(StatDefOf.IncomingDamageFactor, true, -1), 1f);
             if (damageToAbsorb <= 0 || Props.DamageTakenMult <= 0 || IncomingDamageFactor <= 0)
             {
+                dinfo.SetAmount(0);
                 return;
             }
             else

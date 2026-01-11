@@ -17,4 +17,9 @@
 
 	
 	<SRA_IgnoreTerrainCostTipExtra>\n-近地悬浮：该单位的移动速度不受地形影响。\n</SRA_IgnoreTerrainCostTipExtra>
+
+
+	
+	<SRAWeaponSwitcherLabel>武器/模式切换</SRAWeaponSwitcherLabel>
+	<SRAWeaponSwitcherDesc>切换武器的类型或者模式。</SRAWeaponSwitcherDesc>
 </LanguageData>

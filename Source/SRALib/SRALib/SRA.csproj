@@ -111,6 +111,13 @@
     <Compile Include="EventVariableManager.cs" />
     <Compile Include="CompHolographic.cs" />
     <Compile Include="CompSustainedShoot.cs" />
+    <Compile Include="CompBuildingDrawExtraFourRot.cs" />
+    <Compile Include="CompPlaySoundOnSpawn.cs" />
+    <Compile Include="DamageWorker_AddInjury_NoDamageFactor.cs" />
+    <Compile Include="Building_VacDoor.cs" />
+    <Compile Include="HediffComp_SRANeedMin.cs" />
+    <Compile Include="HediffComp_WeaponSwitcher.cs" />
+    <Compile Include="Projectile_MultiExplosive_NorthArcTrail.cs" />
     <Compile Include="Flyover\SRA_AircraftHangar\CompAbilityEffect_AircraftStrike.cs" />
     <Compile Include="Flyover\SRA_AircraftHangar\CompAircraftHangar.cs" />
     <Compile Include="Flyover\SRA_AircraftHangar\WorldComponent_AircraftManager.cs" />

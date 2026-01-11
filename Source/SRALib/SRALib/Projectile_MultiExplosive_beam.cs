@@ -19,6 +19,13 @@ namespace SRA
         public EffecterDef explosionEffect;
         public int explosionEffectLifetimeTicks;
         public bool onlyAntiHostile = false;
+
+        public ThingDef postExplosionSpawnThingDef = null;
+        public float postExplosionSpawnChance = 0f;
+        public int postExplosionSpawnThingCount = 1;
+        public GasType? postExplosionGasType = null;
+        public float? postExplosionGasRadiusOverride = null;
+        public int postExplosionGasAmount = 255;
     }
 
     public class MultiExplosive_BeamExtension : DefModExtension
@@ -93,6 +100,13 @@ namespace SRA
                 explosionSound: properties.explosionSound,
                 weapon: equipmentDef,
                 damageFalloff: properties.explosionDamageFalloff,
+                intendedTarget: intendedTarget.Thing,
+                postExplosionSpawnThingDef: properties.postExplosionSpawnThingDef,
+                postExplosionSpawnChance: properties.postExplosionSpawnChance,
+                postExplosionSpawnThingCount: properties.postExplosionSpawnThingCount,
+                postExplosionGasType: properties.postExplosionGasType,
+                postExplosionGasRadiusOverride: properties.postExplosionGasRadiusOverride,
+                postExplosionGasAmount: properties.postExplosionGasAmount,
                 ignoredThings: thingsIgnoredByExplosion
             );
         }

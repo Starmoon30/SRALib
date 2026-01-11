@@ -107,7 +107,7 @@ namespace SRA
                     {
                         return false;
                     }
-                    if (pawn.IsColonyMechPlayerControlled && !this.fireAtWill)
+                    if (pawn.Faction == Faction.OfPlayer && !this.fireAtWill)
                     {
                         return false;
                     }
@@ -222,6 +222,22 @@ namespace SRA
             this.burstWarmupTicksLeft = 0;
         }
 
+        public override IEnumerable<Gizmo> CompGetGizmos()
+        {
+            if (Pawn.Faction == Faction.OfPlayer)
+            {
+                Command_Toggle command_Toggle = new Command_Toggle();
+                command_Toggle.defaultLabel = parent.LabelCap;
+                command_Toggle.defaultDesc = "CommandToggleTurretDesc".Translate();
+                command_Toggle.isActive = () => fireAtWill;
+                command_Toggle.icon = ToggleTurretIcon.Texture;
+                command_Toggle.toggleAction = delegate
+                {
+                    fireAtWill = !fireAtWill;
+                };
+                yield return command_Toggle;
+            }
+        }
         public override void CompExposeData()
         {
             base.CompExposeData();

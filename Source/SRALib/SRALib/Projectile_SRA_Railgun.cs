@@ -59,7 +59,7 @@ namespace SRA
                 ProjectileExt != null &&
                 penetrationsLeft > 0 &&
                 (Find.TickManager.TicksGame - lastPenetrationTick) >= ProjectileExt.penetrationDelayTicks;
-            if (hitThing != LasthitThing)
+            if (hitThing == null || hitThing != LasthitThing)
             {
                 LasthitThing = hitThing;
                 BattleLogEntry_RangedImpact battleLogEntry_RangedImpact = new BattleLogEntry_RangedImpact(launcher, hitThing, intendedTarget.Thing, equipmentDef, def, targetCoverDef);
