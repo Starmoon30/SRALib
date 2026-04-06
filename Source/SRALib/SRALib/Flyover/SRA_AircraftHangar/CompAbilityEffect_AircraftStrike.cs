@@ -1,4 +1,4 @@
-using RimWorld;
+﻿using RimWorld;
 using Verse;
 using RimWorld.Planet;
 using System.Collections.Generic;
@@ -31,7 +31,7 @@ namespace SRA
             
             if (aircraftManager == null)
             {
-                Log.Error("WULA_AircraftManagerNotFound".Translate());
+                SRALog.Debug("AircraftManagerNotFound".Translate());
                 return;
             }
 
@@ -39,13 +39,13 @@ namespace SRA
             if (aircraftManager.TryUseAircraft(Props.requiredAircraftType, Props.aircraftsPerUse, parent.pawn.Faction, Props.aircraftCooldownTicks))
             {
                 // 成功消耗战机，发送消息
-                Messages.Message("WULA_AircraftStrikeInitiated".Translate(Props.requiredAircraftType.LabelCap), MessageTypeDefOf.PositiveEvent);
-                Log.Message("WULA_AircraftStrikeSuccess".Translate(Props.aircraftsPerUse, Props.requiredAircraftType.LabelCap));
+                Messages.Message("AircraftStrikeInitiated".Translate(Props.requiredAircraftType.LabelCap), MessageTypeDefOf.PositiveEvent);
+                SRALog.Debug("AircraftStrikeSuccess".Translate(Props.aircraftsPerUse, Props.requiredAircraftType.LabelCap));
             }
             else
             {
-                Messages.Message("WULA_NoAvailableAircraft".Translate(Props.requiredAircraftType.LabelCap), MessageTypeDefOf.NegativeEvent);
-                Log.Warning("WULA_AircraftStrikeFailed".Translate(Props.requiredAircraftType.LabelCap, parent.pawn.Faction?.Name ?? "WULA_UnknownFaction".Translate()));
+                Messages.Message("NoAvailableAircraft".Translate(Props.requiredAircraftType.LabelCap), MessageTypeDefOf.NegativeEvent);
+                SRALog.Debug("AircraftStrikeFailed".Translate(Props.requiredAircraftType.LabelCap, parent.pawn.Faction?.Name ?? "UnknownFaction".Translate()));
             }
         }
 
@@ -57,44 +57,6 @@ namespace SRA
             return base.CanApplyOn(target, dest) && 
                    aircraftManager != null && 
                    aircraftManager.HasAvailableAircraft(Props.requiredAircraftType, Props.aircraftsPerUse, parent.pawn.Faction);
-        }
-
-        // 关键修改：重写 GizmoDisabled 方法，在不满足条件时禁用按钮
-        public override bool GizmoDisabled(out string reason)
-        {
-            // 先检查基础条件
-            if (base.GizmoDisabled(out reason))
-                return true;
-
-            // 检查战机可用性
-            WorldComponent_AircraftManager aircraftManager = Find.World.GetComponent<WorldComponent_AircraftManager>();
-            if (aircraftManager == null)
-            {
-                reason = "WULA_AircraftSystemNotReady".Translate();
-                return true;
-            }
-
-            if (!aircraftManager.HasAvailableAircraft(Props.requiredAircraftType, Props.aircraftsPerUse, parent.pawn.Faction))
-            {
-                int available = aircraftManager.GetAvailableAircraftCount(Props.requiredAircraftType, parent.pawn.Faction);
-                int total = aircraftManager.GetTotalAircraftCount(Props.requiredAircraftType, parent.pawn.Faction);
-                
-                if (available == 0 && total == 0)
-                {
-                    reason = "WULA_NoAvailableAircraftType".Translate(Props.requiredAircraftType.LabelCap);
-                }
-                else if (available < Props.aircraftsPerUse)
-                {
-                    reason = "WULA_AircraftInsufficient".Translate(Props.requiredAircraftType.LabelCap, available, Props.aircraftsPerUse);
-                }
-                else
-                {
-                    reason = "WULA_AircraftOnCooldown".Translate(Props.requiredAircraftType.LabelCap);
-                }
-                return true;
-            }
-
-            return false;
         }
 
         public override string ExtraLabelMouseAttachment(LocalTargetInfo target)
@@ -111,9 +73,9 @@ namespace SRA
                 string cooldownSymbols = GetAircraftSymbols(onCooldown, "◇");
                 
                 StringBuilder sb = new StringBuilder();
-                sb.AppendLine("WULA_AvailableAircraft".Translate(availableSymbols));
-                sb.AppendLine("WULA_CooldownAircraft".Translate(cooldownSymbols));
-                sb.Append("WULA_CostPerUse".Translate(Props.aircraftsPerUse));
+                sb.AppendLine("AvailableAircraft".Translate(Props.requiredAircraftType.LabelCap, availableSymbols));
+                sb.AppendLine("CooldownAircraft".Translate(cooldownSymbols));
+                sb.Append("CostPerUse".Translate(Props.aircraftsPerUse));
                 
                 return sb.ToString();
             }
@@ -124,16 +86,18 @@ namespace SRA
         // 生成飞机符号表示
         private string GetAircraftSymbols(int count, string symbol)
         {
-            if (count <= 0) return "—";
+            if (count <= 0) return "—"; // 无飞机时显示破折号
             
             StringBuilder sb = new StringBuilder();
             int displayCount = count;
             
+            // 如果数量过多，用数字+符号表示
             if (count > 10)
             {
                 return $"{count}{symbol}";
             }
             
+            // 直接显示符号
             for (int i = 0; i < displayCount; i++)
             {
                 sb.Append(symbol);
@@ -153,7 +117,7 @@ namespace SRA
             {
                 if (throwMessages)
                 {
-                    Messages.Message("WULA_NoAircraftForStrike".Translate(), MessageTypeDefOf.RejectInput);
+                    Messages.Message("NoAircraftForStrike".Translate(Props.requiredAircraftType.LabelCap), MessageTypeDefOf.RejectInput);
                 }
                 return false;
             }
@@ -176,12 +140,11 @@ namespace SRA
                 float cooldownHours = TicksToHours(Props.aircraftCooldownTicks);
                 
                 StringBuilder sb = new StringBuilder();
-                sb.AppendLine("WULA_AircraftStatus".Translate());
-                sb.AppendLine("WULA_TotalAircraft".Translate(total));
-                sb.AppendLine("WULA_ReadyAircraft".Translate(available));
-                sb.AppendLine("WULA_CooldownAircraftCount".Translate(onCooldown));
-                sb.AppendLine("WULA_AircraftRequirement".Translate(Props.requiredAircraftType.LabelCap, Props.aircraftsPerUse));
-                sb.AppendLine("WULA_CooldownTime".Translate(cooldownHours.ToString("F1")));
+                sb.AppendLine("AircraftStatusTooltip".Translate());
+                sb.AppendLine("• " + "TotalAircraft".Translate(total));
+                sb.AppendLine("• " + "ReadyAircraft".Translate(available));
+                sb.AppendLine("• " + "CooldownAircraft".Translate(onCooldown));
+                sb.AppendLine("AircraftAbilityDescription".Translate(Props.requiredAircraftType.LabelCap, Props.aircraftsPerUse, cooldownHours.ToString("F1")));
 
                 return sb.ToString();
             }
@@ -192,6 +155,7 @@ namespace SRA
         // 将 tick 转换为小时
         private float TicksToHours(int ticks)
         {
+            // RimWorld 中 1 小时 = 2500 tick
             return ticks / 2500f;
         }
     }

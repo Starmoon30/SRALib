@@ -1,4 +1,4 @@
-using RimWorld;
+﻿using RimWorld;
 using Verse;
 
 namespace SRA
@@ -43,7 +43,7 @@ namespace SRA
                 // 检查是否有有效的信件内容
                 if (Props.letterLabel.NullOrEmpty() && Props.letterText.NullOrEmpty())
                 {
-                    Log.Warning($"CompSendLetterAfterTicks: No letter content defined for {parent.def.defName}");
+                    SRALog.Debug($"CompSendLetterAfterTicks: No letter content defined for {parent.def.defName}");
                     return;
                 }
 
@@ -63,11 +63,11 @@ namespace SRA
 
                 letterSent = true;
 
-                Log.Message($"Letter sent from {parent.def.defName} after {ticksPassed} ticks");
+                SRALog.Debug($"Letter sent from {parent.def.defName} after {ticksPassed} ticks");
             }
             catch (System.Exception ex)
             {
-                Log.Error($"Error sending letter from {parent.def.defName}: {ex}");
+                SRALog.Debug($"Error sending letter from {parent.def.defName}: {ex}");
             }
         }
 

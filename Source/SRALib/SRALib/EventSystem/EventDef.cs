@@ -16,7 +16,8 @@ namespace SRA
     {
         public string portraitPath;
         public string characterName;
-        
+        public bool doCloseXButton = true;
+
         // New system: list of descriptions
         public List<string> descriptions;
         public DescriptionSelectionMode descriptionMode = DescriptionSelectionMode.Random;

@@ -1,4 +1,4 @@
-using RimWorld;
+﻿using RimWorld;
 using System.Collections.Generic;
 using UnityEngine;
 using Verse;
@@ -17,11 +17,6 @@ namespace SRA
         // 存储每个伴飞的缩放和遮罩数据
         private Dictionary<FlyOver, EscortVisualData> escortVisualData = new Dictionary<FlyOver, EscortVisualData>();
         
-        // 新增：伴飞ID映射，用于解决存档加载时的引用问题
-        private Dictionary<int, EscortVisualData> escortDataByID = new Dictionary<int, EscortVisualData>();
-        private List<int> escortIDs = new List<int>();
-        private List<EscortVisualData> escortDataList = new List<EscortVisualData>();
-        
         public override void Initialize(CompProperties props)
         {
             base.Initialize(props);
@@ -34,6 +29,9 @@ namespace SRA
             {
                 ticksUntilNextSpawn = Props.spawnIntervalTicks;
             }
+            
+            SRALog.Debug($"FlyOver Escort initialized: {Props.spawnIntervalTicks} ticks interval, max {Props.maxEscorts} escorts");
+            SRALog.Debug($"Safe distances - From Main: {Props.minSafeDistanceFromMain}, Between Escorts: {Props.minSafeDistanceBetweenEscorts}");
         }
 
         public override void CompTick()
@@ -47,6 +45,7 @@ namespace SRA
             if (!hasInitialized && mainFlyOver.hasStarted)
             {
                 hasInitialized = true;
+                SRALog.Debug($"FlyOver Escort: Main FlyOver started at {mainFlyOver.startPosition}");
             }
 
             // 清理已销毁的伴飞
@@ -77,18 +76,7 @@ namespace SRA
                 {
                     FlyOver removedEscort = activeEscorts[i];
                     activeEscorts.RemoveAt(i);
-                    
-                    // 从两个字典中都移除
-                    if (escortVisualData.ContainsKey(removedEscort))
-                    {
-                        escortVisualData.Remove(removedEscort);
-                    }
-                    
-                    int escortID = GetEscortID(removedEscort);
-                    if (escortDataByID.ContainsKey(escortID))
-                    {
-                        escortDataByID.Remove(escortID);
-                    }
+                    escortVisualData.Remove(removedEscort);
                 }
             }
         }
@@ -126,17 +114,15 @@ namespace SRA
                     {
                         activeEscorts.Add(escort);
                         escortVisualData[escort] = visualData;
-                        
-                        // 添加到ID映射
-                        int escortID = GetEscortID(escort);
-                        escortDataByID[escortID] = visualData;
-                        
                         successfulSpawns++;
+                        
+                        SRALog.Debug($"Spawned escort #{successfulSpawns} for FlyOver at {mainFlyOver.DrawPos}, scale: {visualData.scale:F2}, maskAlpha: {visualData.heightMaskAlpha:F2}");
                     }
                     else
                     {
                         // 不安全，销毁这个伴飞
                         escort.Destroy();
+                        SRALog.Debug($"Escort spawn attempt {attempt + 1}: Position too close to existing escort, trying again");
                     }
                 }
                 
@@ -147,7 +133,7 @@ namespace SRA
             
             if (successfulSpawns < escortsToSpawn)
             {
-                Log.Message($"Spawned {successfulSpawns}/{escortsToSpawn} escorts (some positions were too close to existing escorts)");
+                SRALog.Debug($"Spawned {successfulSpawns}/{escortsToSpawn} escorts (some positions were too close to existing escorts)");
             }
         }
 
@@ -162,6 +148,7 @@ namespace SRA
                 float distToMain = Vector3.Distance(newPos, mainFlyOver.DrawPos);
                 if (distToMain < Props.minSafeDistanceFromMain)
                 {
+                    SRALog.Debug($"Escort too close to main FlyOver: {distToMain:F1} < {Props.minSafeDistanceFromMain}");
                     return false;
                 }
             }
@@ -177,6 +164,7 @@ namespace SRA
                     float distToEscort = Vector3.Distance(newPos, existingEscort.DrawPos);
                     if (distToEscort < Props.minSafeDistanceBetweenEscorts)
                     {
+                        SRALog.Debug($"Escort too close to existing escort: {distToEscort:F1} < {Props.minSafeDistanceBetweenEscorts}");
                         return false;
                     }
                 }
@@ -210,7 +198,7 @@ namespace SRA
                 ThingDef escortDef = SelectEscortDef();
                 if (escortDef == null)
                 {
-                    Log.Error("FlyOver Escort: No valid escort def found");
+                    SRALog.Debug("FlyOver Escort: No valid escort def found");
                     return null;
                 }
 
@@ -220,7 +208,7 @@ namespace SRA
                 
                 if (!escortStart.InBounds(mainFlyOver.Map) || !escortEnd.InBounds(mainFlyOver.Map))
                 {
-                    Log.Warning("FlyOver Escort: Escort start or end position out of bounds");
+                    SRALog.Debug("FlyOver Escort: Escort start or end position out of bounds");
                     return null;
                 }
 
@@ -243,11 +231,13 @@ namespace SRA
                 // 设置伴飞属性 - 现在传入 visualData
                 SetupEscortProperties(escort, mainFlyOver, visualData);
 
+                SRALog.Debug($"Created escort: {escortStart} -> {escortEnd}, speed: {escortSpeed}, altitude: {escortAltitude}");
+
                 return escort;
             }
             catch (System.Exception ex)
             {
-                Log.Error($"Error creating FlyOver escort: {ex}");
+                SRALog.Debug($"Error creating FlyOver escort: {ex}");
                 return null;
             }
         }
@@ -360,6 +350,8 @@ namespace SRA
             {
                 escort.playFlyOverSound = false;
             }
+            
+            SRALog.Debug($"Set escort properties: scale={visualData.scale:F2}, isEscort={escort.isEscort}");
         }
 
         private void UpdateEscortPositions(FlyOver mainFlyOver)
@@ -460,98 +452,37 @@ namespace SRA
                 }
                 activeEscorts.Clear();
                 escortVisualData.Clear();
-                escortDataByID.Clear();
             }
         }
 
-        // 新增：获取伴飞的唯一ID
-        private int GetEscortID(FlyOver escort)
-        {
-            return escort?.thingIDNumber ?? 0;
-        }
-
-        // 修复的序列化方法
         public override void PostExposeData()
         {
             base.PostExposeData();
-            
             Scribe_Values.Look(ref ticksUntilNextSpawn, "ticksUntilNextSpawn", 0f);
             Scribe_Collections.Look(ref activeEscorts, "activeEscorts", LookMode.Reference);
             Scribe_Values.Look(ref hasInitialized, "hasInitialized", false);
             
-            // 修复：使用ID映射来保存和恢复视觉数据
+            // 保存视觉数据（如果需要）
             if (Scribe.mode == LoadSaveMode.Saving)
             {
-                // 保存时，将视觉数据转换为ID映射
-                escortIDs.Clear();
-                escortDataList.Clear();
-                escortDataByID.Clear();
-                
-                foreach (var kvp in escortVisualData)
-                {
-                    if (kvp.Key != null && !kvp.Key.Destroyed)
-                    {
-                        int escortID = GetEscortID(kvp.Key);
-                        escortIDs.Add(escortID);
-                        escortDataList.Add(kvp.Value);
-                        escortDataByID[escortID] = kvp.Value;
-                    }
-                }
-                
-                Scribe_Collections.Look(ref escortIDs, "escortIDs", LookMode.Value);
-                Scribe_Collections.Look(ref escortDataList, "escortDataList", LookMode.Deep);
+                List<FlyOver> keys = new List<FlyOver>(escortVisualData.Keys);
+                List<EscortVisualData> values = new List<EscortVisualData>(escortVisualData.Values);
+                Scribe_Collections.Look(ref keys, "escortKeys", LookMode.Reference);
+                Scribe_Collections.Look(ref values, "escortValues", LookMode.Deep);
             }
             else if (Scribe.mode == LoadSaveMode.LoadingVars)
             {
-                // 加载时，先清空现有数据
-                escortVisualData.Clear();
-                escortDataByID.Clear();
+                List<FlyOver> keys = new List<FlyOver>();
+                List<EscortVisualData> values = new List<EscortVisualData>();
+                Scribe_Collections.Look(ref keys, "escortKeys", LookMode.Reference);
+                Scribe_Collections.Look(ref values, "escortValues", LookMode.Deep);
                 
-                // 加载ID和视觉数据列表
-                Scribe_Collections.Look(ref escortIDs, "escortIDs", LookMode.Value);
-                Scribe_Collections.Look(ref escortDataList, "escortDataList", LookMode.Deep);
-                
-                // 重建ID映射
-                if (escortIDs != null && escortDataList != null && escortIDs.Count == escortDataList.Count)
+                if (keys != null && values != null && keys.Count == values.Count)
                 {
-                    for (int i = 0; i < escortIDs.Count; i++)
+                    escortVisualData.Clear();
+                    for (int i = 0; i < keys.Count; i++)
                     {
-                        escortDataByID[escortIDs[i]] = escortDataList[i];
-                    }
-                }
-            }
-            else if (Scribe.mode == LoadSaveMode.PostLoadInit)
-            {
-                // 在PostLoadInit阶段重建视觉数据字典
-                RebuildEscortVisualData();
-            }
-        }
-
-        // 新增：重建伴飞视觉数据字典
-        private void RebuildEscortVisualData()
-        {
-            escortVisualData.Clear();
-            
-            foreach (var escort in activeEscorts)
-            {
-                if (escort != null && !escort.Destroyed)
-                {
-                    int escortID = GetEscortID(escort);
-                    
-                    if (escortDataByID.TryGetValue(escortID, out var visualData))
-                    {
-                        // 恢复保存的视觉数据
-                        escortVisualData[escort] = visualData;
-                        
-                        // 重新设置伴飞的缩放
-                        escort.escortScale = visualData.scale;
-                    }
-                    else
-                    {
-                        // 如果没有保存的数据，重新生成
-                        var newVisualData = GenerateEscortVisualData();
-                        escortVisualData[escort] = newVisualData;
-                        escort.escortScale = newVisualData.scale;
+                        escortVisualData[keys[i]] = values[i];
                     }
                 }
             }

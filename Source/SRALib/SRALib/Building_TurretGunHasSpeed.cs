@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using RimWorld;
 using UnityEngine;
 using Verse;
 using Verse.AI;
-using Verse.AI.Group;
+using Verse.Sound;
 
 namespace SRA
 {
@@ -14,204 +15,510 @@ namespace SRA
         public float speed = 1f;
         public bool noautoattack = false;
     }
-    /// <summary>
-    /// 非瞬时瞄准的炮塔建筑类
-    /// 继承自原版炮塔，增加了平滑旋转瞄准功能
-    /// </summary>
-    public class Building_TurretGunHasSpeed : Building_TurretGun
+    public class Building_TurretGunHasSpeed : Building_Turret
     {
-        // 当前炮塔角度
+        protected int burstCooldownTicksLeft;
+
+        protected int burstWarmupTicksLeft;
+
+        protected LocalTargetInfo currentTargetInt = LocalTargetInfo.Invalid;
+
+        private bool holdFire;
+
+        private bool burstActivated;
+
+        public Thing gun;
+
+        protected TurretTop top;
+
+        protected CompPowerTrader powerComp;
+
+        protected CompCanBeDormant dormantComp;
+
+        protected CompInitiatable initiatableComp;
+
+        protected CompMannable mannableComp;
+
+        protected CompInteractable interactableComp;
+
+        public CompRefuelable refuelableComp;
+
+        protected Effecter progressBarEffecter;
+
+        protected CompMechPowerCell powerCellComp;
+
+        protected CompHackable hackableComp;
+
         public float curAngle;
 
-        /// <summary>
-        /// 旋转速度属性
-        /// 从Mod扩展配置中获取旋转速度，如果没有配置则使用默认值1f
-        /// </summary>
-        public float rotateSpeed
+        private const int TryStartShootSomethingIntervalTicks = 15;
+
+        //public static Material ForcedTargetLineMat = MaterialPool.MatFrom(GenDraw.LineTexPath, ShaderDatabase.Transparent, new Color(1f, 0.5f, 0.5f));
+
+        public bool Active
         {
             get
             {
-                ModExt_HasSpeedTurret ext = this.ext;
-                return ext.speed;
-            }
-        }
-        public bool noautoattack
-        {
-            get
-            {
-                ModExt_HasSpeedTurret ext = this.ext;
-                return ext.noautoattack;
-            }
-        }
-        /// <summary>
-        /// Mod扩展配置属性
-        /// 获取炮塔定义的Mod扩展配置
-        /// </summary>
-        public ModExt_HasSpeedTurret ext
-        {
-            get
-            {
-                return this.def.GetModExtension<ModExt_HasSpeedTurret>();
+                if ((powerComp == null || powerComp.PowerOn) && (dormantComp == null || dormantComp.Awake) && (initiatableComp == null || initiatableComp.Initiated) && (interactableComp == null || burstActivated) && (powerCellComp == null || !powerCellComp.depleted))
+                {
+                    if (hackableComp != null)
+                    {
+                        return !hackableComp.IsHacked;
+                    }
+
+                    return true;
+                }
+
+                return false;
             }
         }
 
-        /// <summary>
-        /// 炮塔方向向量
-        /// 根据当前角度计算炮塔的朝向向量
-        /// </summary>
-        public Vector3 turretOrientation
+        public CompEquippable GunCompEq => gun.TryGetComp<CompEquippable>();
+
+        public override LocalTargetInfo CurrentTarget => currentTargetInt;
+
+        private bool WarmingUp => burstWarmupTicksLeft > 0;
+
+        public override Verb AttackVerb => GunCompEq.PrimaryVerb;
+
+        public bool IsMannable => mannableComp != null;
+
+        private bool PlayerControlled
         {
             get
             {
-                return Vector3.forward.RotatedBy(this.curAngle);
+                if ((base.Faction == Faction.OfPlayer || MannedByColonist) && !MannedByNonColonist)
+                {
+                    return !IsActivable;
+                }
+
+                return false;
             }
         }
 
-        /// <summary>
-        /// 目标角度差
-        /// 计算当前炮塔方向与目标方向之间的角度差
-        /// </summary>
+        protected virtual bool CanSetForcedTarget
+        {
+            get
+            {
+                return true;
+            }
+        }
+
+        private bool CanToggleHoldFire => PlayerControlled;
+
+        private bool IsMortar => def.building.IsMortar;
+
+        private bool IsMortarOrProjectileFliesOverhead
+        {
+            get
+            {
+                if (!AttackVerb.ProjectileFliesOverhead())
+                {
+                    return IsMortar;
+                }
+
+                return true;
+            }
+        }
+
+        private bool IsActivable => interactableComp != null;
+
+        protected virtual bool HideForceTargetGizmo => false;
+
+        public TurretTop Top => top;
+
+        public ModExt_HasSpeedTurret speedTurretExt => def.GetModExtension<ModExt_HasSpeedTurret>();
+
+        public float rotateSpeed => speedTurretExt?.speed ?? 1f;
+
+        public bool noautoattack => speedTurretExt?.noautoattack ?? false;
+
+        public Vector3 turretOrientation => Vector3.forward.RotatedBy(curAngle);
+
         public float deltaAngle
         {
             get
             {
-                return (this.currentTargetInt == null) ? 0f : Vector3.SignedAngle(this.turretOrientation, (this.currentTargetInt.CenterVector3 - this.DrawPos).Yto0(), Vector3.up);
+                if (!currentTargetInt.IsValid)
+                {
+                    return 0f;
+                }
+
+                return Vector3.SignedAngle(turretOrientation, (currentTargetInt.CenterVector3 - DrawPos).Yto0(), Vector3.up);
             }
         }
 
-        /// <summary>
-        /// 数据保存和加载
-        /// 重写ExposeData以保存和加载当前角度数据
-        /// </summary>
+        private bool CanExtractShell
+        {
+            get
+            {
+                if (!PlayerControlled)
+                {
+                    return false;
+                }
+
+                return gun.TryGetComp<CompChangeableProjectile>()?.Loaded ?? false;
+            }
+        }
+
+        private bool MannedByColonist
+        {
+            get
+            {
+                if (mannableComp != null && mannableComp.ManningPawn != null)
+                {
+                    return mannableComp.ManningPawn.Faction == Faction.OfPlayer;
+                }
+
+                return false;
+            }
+        }
+
+        private bool MannedByNonColonist
+        {
+            get
+            {
+                if (mannableComp != null && mannableComp.ManningPawn != null)
+                {
+                    return mannableComp.ManningPawn.Faction != Faction.OfPlayer;
+                }
+
+                return false;
+            }
+        }
+
+        public Building_TurretGunHasSpeed()
+        {
+            top = new TurretTop(this);
+        }
+
+        public override void PostMake()
+        {
+            base.PostMake();
+            burstCooldownTicksLeft = def.building.turretInitialCooldownTime.SecondsToTicks();
+            MakeGun();
+        }
+
+        public override void SpawnSetup(Map map, bool respawningAfterLoad)
+        {
+            base.SpawnSetup(map, respawningAfterLoad);
+            dormantComp = GetComp<CompCanBeDormant>();
+            initiatableComp = GetComp<CompInitiatable>();
+            powerComp = GetComp<CompPowerTrader>();
+            mannableComp = GetComp<CompMannable>();
+            interactableComp = GetComp<CompInteractable>();
+            refuelableComp = GetComp<CompRefuelable>();
+            powerCellComp = GetComp<CompMechPowerCell>();
+            hackableComp = GetComp<CompHackable>();
+            if (!respawningAfterLoad)
+            {
+                top.SetRotationFromOrientation();
+                curAngle = top.CurRotation;
+            }
+        }
+
+        public override void DeSpawn(DestroyMode mode = DestroyMode.Vanish)
+        {
+            base.DeSpawn(mode);
+            ResetCurrentTarget();
+            progressBarEffecter?.Cleanup();
+        }
+
         public override void ExposeData()
         {
             base.ExposeData();
-            Scribe_Values.Look<float>(ref this.curAngle, "curAngle", 0f, false);
-        }
-
-        /// <summary>
-        /// 检查是否可以攻击目标（LocalTargetInfo重载）
-        /// </summary>
-        /// <param name="t">目标信息</param>
-        /// <returns>是否可以攻击</returns>
-        private bool CanAttackTarget(LocalTargetInfo t)
-        {
-            return this.CanAttackTarget(t.CenterVector3);
-        }
-
-        /// <summary>
-        /// 检查是否可以攻击目标（Thing重载）
-        /// </summary>
-        /// <param name="t">目标物体</param>
-        /// <returns>是否可以攻击</returns>
-        private bool CanAttackTarget(Thing t)
-        {
-            return this.CanAttackTarget(t.DrawPos);
-        }
-
-        /// <summary>
-        /// 检查是否可以攻击目标（Vector3重载）
-        /// 判断目标是否在当前炮塔的瞄准范围内
-        /// </summary>
-        /// <param name="t">目标位置</param>
-        /// <returns>是否可以攻击</returns>
-        private bool CanAttackTarget(Vector3 t)
-        {
-            return Vector3.Angle(this.turretOrientation, (t - this.DrawPos).Yto0()) <= this.rotateSpeed;
-        }
-
-        /// <summary>
-        /// 每帧更新
-        /// 处理炮塔的旋转逻辑
-        /// </summary>
-        protected override void Tick()
-        {
-            // 如果炮塔处于激活状态且有目标
-            if (base.Active && this.currentTargetInt != null)
+            Scribe_Values.Look(ref burstCooldownTicksLeft, "burstCooldownTicksLeft", 0);
+            Scribe_Values.Look(ref burstWarmupTicksLeft, "burstWarmupTicksLeft", 0);
+            Scribe_TargetInfo.Look(ref currentTargetInt, "currentTarget");
+            Scribe_Values.Look(ref holdFire, "holdFire", defaultValue: false);
+            Scribe_Values.Look(ref burstActivated, "burstActivated", defaultValue: false);
+            Scribe_Values.Look(ref curAngle, "curAngle", 0f);
+            Scribe_Deep.Look(ref gun, "gun");
+            BackCompatibility.PostExposeData(this);
+            if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
-                // 如果准备开火但角度差过大，延迟开火
-                if (this.burstWarmupTicksLeft == 1 && Mathf.Abs(this.deltaAngle) > this.rotateSpeed)
+                if (gun == null)
                 {
-                    this.burstWarmupTicksLeft++;
+                    Log.Error("Turret had null gun after loading. Recreating.");
+                    MakeGun();
+                }
+                else
+                {
+                    UpdateGunVerbs();
+                }
+            }
+        }
+
+        public override AcceptanceReport ClaimableBy(Faction by)
+        {
+            AcceptanceReport result = base.ClaimableBy(by);
+            if (!result.Accepted)
+            {
+                return result;
+            }
+
+            if (mannableComp != null && mannableComp.ManningPawn != null)
+            {
+                return false;
+            }
+
+            if (Active && mannableComp == null)
+            {
+                return false;
+            }
+
+            if (((dormantComp != null && !dormantComp.Awake) || (initiatableComp != null && !initiatableComp.Initiated)) && (powerComp == null || powerComp.PowerOn))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        public override void OrderAttack(LocalTargetInfo targ)
+        {
+            if (!targ.IsValid)
+            {
+                if (forcedTarget.IsValid)
+                {
+                    ResetForcedTarget();
                 }
 
-                // 根据角度差更新当前角度
-                this.curAngle += ((Mathf.Abs(this.deltaAngle) - this.rotateSpeed > 0f) ?
-                    (Mathf.Sign(this.deltaAngle) * this.rotateSpeed) : this.deltaAngle);
+                return;
+            }
+
+            if ((targ.Cell - base.Position).LengthHorizontal < AttackVerb.verbProps.EffectiveMinRange(targ, this))
+            {
+                Messages.Message("MessageTargetBelowMinimumRange".Translate(), this, MessageTypeDefOf.RejectInput, historical: false);
+                return;
+            }
+
+            if ((targ.Cell - base.Position).LengthHorizontal > AttackVerb.EffectiveRange)
+            {
+                Messages.Message("MessageTargetBeyondMaximumRange".Translate(), this, MessageTypeDefOf.RejectInput, historical: false);
+                return;
+            }
+
+            if (forcedTarget != targ)
+            {
+                forcedTarget = targ;
+                if (burstCooldownTicksLeft <= 0)
+                {
+                    TryStartShootSomething(canBeginBurstImmediately: false);
+                }
+            }
+
+            if (holdFire)
+            {
+                Messages.Message("MessageTurretWontFireBecauseHoldFire".Translate(def.label), this, MessageTypeDefOf.RejectInput, historical: false);
+            }
+        }
+
+        protected override void Tick()
+        {
+            if (Active && currentTargetInt.IsValid)
+            {
+                if (burstWarmupTicksLeft == 1 && Mathf.Abs(deltaAngle) > rotateSpeed)
+                {
+                    burstWarmupTicksLeft++;
+                }
+
+                RotateTowardsCurrentTarget();
             }
 
             base.Tick();
-            // 规范化角度值到0-360度范围
-            this.curAngle = this.Trim(this.curAngle);
-        }
-
-        /// <summary>
-        /// 角度规范化
-        /// 将角度值限制在0-360度范围内
-        /// </summary>
-        /// <param name="angle">输入角度</param>
-        /// <returns>规范化后的角度</returns>
-        protected float Trim(float angle)
-        {
-            if (angle > 360f)
+            curAngle = TrimAngle(curAngle);
+            if (CanExtractShell && MannedByColonist)
             {
-                angle -= 360f;
+                CompChangeableProjectile compChangeableProjectile = gun.TryGetComp<CompChangeableProjectile>();
+                if (!compChangeableProjectile.allowedShellsSettings.AllowedToAccept(compChangeableProjectile.LoadedShell))
+                {
+                    ExtractShell();
+                }
             }
-            if (angle < 0f)
+
+            if (forcedTarget.IsValid && !CanSetForcedTarget)
             {
-                angle += 360f;
+                ResetForcedTarget();
             }
-            return angle;
-        }
 
-        /// <summary>
-        /// 绘制炮塔
-        /// 设置炮塔顶部的旋转角度
-        /// </summary>
-        /// <param name="drawLoc">绘制位置</param>
-        /// <param name="flip">是否翻转</param>
-        protected override void DrawAt(Vector3 drawLoc, bool flip = false)
-        {
-            this.top.CurRotation = this.curAngle;
-            base.DrawAt(drawLoc, flip);
-        }
-
-        /// <summary>
-        /// 获取目标搜索器
-        /// 如果有人操作则返回操作者，否则返回炮塔自身
-        /// </summary>
-        /// <returns>目标搜索器</returns>
-        private IAttackTargetSearcher TargSearcher()
-        {
-            if (this.mannableComp != null && this.mannableComp.MannedNow)
+            if (!CanToggleHoldFire)
             {
-                return this.mannableComp.ManningPawn;
+                holdFire = false;
+            }
+
+            if (forcedTarget.ThingDestroyed)
+            {
+                ResetForcedTarget();
+            }
+
+            if (Active && (mannableComp == null || mannableComp.MannedNow) && !base.IsStunned && base.Spawned)
+            {
+                GunCompEq.verbTracker.VerbsTick();
+                if (AttackVerb.state == VerbState.Bursting)
+                {
+                    return;
+                }
+
+                burstActivated = false;
+                if (WarmingUp)
+                {
+                    burstWarmupTicksLeft--;
+                    if (burstWarmupTicksLeft <= 0)
+                    {
+                        BeginBurst();
+                    }
+                }
+                else
+                {
+                    if (burstCooldownTicksLeft > 0)
+                    {
+                        burstCooldownTicksLeft--;
+                        if (IsMortar)
+                        {
+                            if (progressBarEffecter == null)
+                            {
+                                progressBarEffecter = EffecterDefOf.ProgressBar.Spawn();
+                            }
+
+                            progressBarEffecter.EffectTick(this, TargetInfo.Invalid);
+                            MoteProgressBar mote = ((SubEffecter_ProgressBar)progressBarEffecter.children[0]).mote;
+                            mote.progress = 1f - (float)Math.Max(burstCooldownTicksLeft, 0) / (float)BurstCooldownTime().SecondsToTicks();
+                            mote.offsetZ = -0.8f;
+                        }
+                    }
+
+                    if (burstCooldownTicksLeft <= 0 && this.IsHashIntervalTick(15))
+                    {
+                        TryStartShootSomething(canBeginBurstImmediately: true);
+                    }
+                }
+
+                top.TurretTopTick();
             }
             else
             {
-                return this;
+                ResetCurrentTarget();
             }
         }
 
-        /// <summary>
-        /// 检查目标是否有效
-        /// 过滤不适合攻击的目标
-        /// </summary>
-        /// <param name="t">目标物体</param>
-        /// <returns>目标是否有效</returns>
+        public void TryActivateBurst()
+        {
+            burstActivated = true;
+            TryStartShootSomething(canBeginBurstImmediately: true);
+        }
+
+        public void TryStartShootSomething(bool canBeginBurstImmediately)
+        {
+            if (progressBarEffecter != null)
+            {
+                progressBarEffecter.Cleanup();
+                progressBarEffecter = null;
+            }
+
+            if (!base.Spawned || (holdFire && CanToggleHoldFire) || !AttackVerb.Available())
+            {
+                ResetCurrentTarget();
+                return;
+            }
+
+            bool isValid = currentTargetInt.IsValid;
+            if (forcedTarget.IsValid)
+            {
+                currentTargetInt = forcedTarget;
+            }
+            else
+            {
+                currentTargetInt = TryFindNewTarget();
+            }
+
+            if (!isValid && currentTargetInt.IsValid && def.building.playTargetAcquiredSound)
+            {
+                SoundDefOf.TurretAcquireTarget.PlayOneShot(new TargetInfo(base.Position, base.Map));
+            }
+
+            if (currentTargetInt.IsValid)
+            {
+                float randomInRange = def.building.turretBurstWarmupTime.RandomInRange;
+                if (randomInRange > 0f)
+                {
+                    burstWarmupTicksLeft = randomInRange.SecondsToTicks();
+                }
+                else if (canBeginBurstImmediately)
+                {
+                    BeginBurst();
+                }
+                else
+                {
+                    burstWarmupTicksLeft = 1;
+                }
+            }
+            else
+            {
+                ResetCurrentTarget();
+            }
+        }
+
+        public virtual LocalTargetInfo TryFindNewTarget()
+        {
+            IAttackTargetSearcher attackTargetSearcher = TargSearcher();
+            Faction faction = attackTargetSearcher.Thing.Faction;
+            float range = AttackVerb.verbProps.range;
+            if (noautoattack)
+            {
+                return LocalTargetInfo.Invalid;
+            }
+
+            if (Rand.Value < 0.5f && AttackVerb.ProjectileFliesOverhead() && faction.HostileTo(Faction.OfPlayer) && base.Map.listerBuildings.allBuildingsColonist.Where(delegate (Building x)
+            {
+                float num = AttackVerb.verbProps.EffectiveMinRange(x, this);
+                float num2 = x.Position.DistanceToSquared(base.Position);
+                return num2 > num * num && num2 < range * range;
+            }).TryRandomElement(out var result))
+            {
+                return result;
+            }
+
+            TargetScanFlags targetScanFlags = TargetScanFlags.NeedThreat | TargetScanFlags.NeedAutoTargetable;
+            if (!AttackVerb.ProjectileFliesOverhead())
+            {
+                targetScanFlags |= TargetScanFlags.NeedLOSToAll;
+                targetScanFlags |= TargetScanFlags.LOSBlockableByGas;
+            }
+
+            if (AttackVerb.IsIncendiary_Ranged())
+            {
+                targetScanFlags |= TargetScanFlags.NeedNonBurning;
+            }
+
+            if (IsMortar)
+            {
+                targetScanFlags |= TargetScanFlags.NeedNotUnderThickRoof;
+            }
+
+            return (Thing)AttackTargetFinderAngle.BestShootTargetFromCurrentPosition(attackTargetSearcher, targetScanFlags, turretOrientation, IsValidTarget);
+        }
+
+        private IAttackTargetSearcher TargSearcher()
+        {
+            if (mannableComp != null && mannableComp.MannedNow)
+            {
+                return mannableComp.ManningPawn;
+            }
+
+            return this;
+        }
+
         private bool IsValidTarget(Thing t)
         {
-            Pawn pawn = t as Pawn;
-            if (pawn != null)
+            if (t is Pawn pawn)
             {
-                // 玩家派系的炮塔不攻击囚犯
                 if (base.Faction == Faction.OfPlayer && pawn.IsPrisoner)
                 {
                     return false;
                 }
 
-                // 检查弹道是否会被厚屋顶阻挡
-                if (this.AttackVerb.ProjectileFliesOverhead())
+                if (AttackVerb.ProjectileFliesOverhead())
                 {
                     RoofDef roofDef = base.Map.roofGrid.RoofAt(t.Position);
                     if (roofDef != null && roofDef.isThickRoof)
@@ -220,73 +527,276 @@ namespace SRA
                     }
                 }
 
-                // 无人操作的机械炮塔不攻击友好机械单位
-                if (this.mannableComp == null)
+                if (mannableComp == null)
                 {
                     return !GenAI.MachinesLike(base.Faction, pawn);
                 }
 
-                // 有人操作的炮塔不攻击玩家动物
                 if (pawn.RaceProps.Animal && pawn.Faction == Faction.OfPlayer)
                 {
                     return false;
                 }
             }
+
             return true;
         }
 
-        /// <summary>
-        /// 尝试寻找新目标
-        /// 重写目标选择逻辑，支持角度限制
-        /// </summary>
-        /// <returns>新的目标信息</returns>
-        public override LocalTargetInfo TryFindNewTarget()
+        protected virtual void BeginBurst()
         {
-            IAttackTargetSearcher attackTargetSearcher = this.TargSearcher();
-            Faction faction = attackTargetSearcher.Thing.Faction;
-            float range = this.AttackVerb.verbProps.range;
-            if(noautoattack)
+            AttackVerb.TryStartCastOn(CurrentTarget);
+            OnAttackedTarget(CurrentTarget);
+        }
+
+        protected virtual void BurstComplete()
+        {
+            burstCooldownTicksLeft = BurstCooldownTime().SecondsToTicks();
+        }
+
+        protected virtual float BurstCooldownTime()
+        {
+            if (def.building.turretBurstCooldownTime >= 0f)
             {
-                return null;
+                return def.building.turretBurstCooldownTime;
             }
-            Building t;
-            // 50%概率优先攻击殖民者建筑（如果敌对且使用抛射武器）
-            if (Rand.Value < 0.5f && this.AttackVerb.ProjectileFliesOverhead() &&
-                faction.HostileTo(Faction.OfPlayer) &&
-                base.Map.listerBuildings.allBuildingsColonist.Where(delegate (Building x)
-                {
-                    float minRange = this.AttackVerb.verbProps.EffectiveMinRange(x, this);
-                    float distanceSquared = (float)x.Position.DistanceToSquared(this.Position);
-                    return distanceSquared > minRange * minRange && distanceSquared < range * range;
-                }).TryRandomElement(out t))
+
+            return AttackVerb.verbProps.defaultCooldownTime;
+        }
+
+        public override string GetInspectString()
+        {
+            StringBuilder stringBuilder = new StringBuilder();
+            string inspectString = base.GetInspectString();
+            if (!inspectString.NullOrEmpty())
             {
-                return t;
+                stringBuilder.AppendLine(inspectString);
             }
-            else
+
+            if (AttackVerb.verbProps.minRange > 0f)
             {
-                // 设置目标扫描标志
-                TargetScanFlags targetScanFlags = TargetScanFlags.NeedThreat | TargetScanFlags.NeedAutoTargetable;
+                stringBuilder.AppendLine("MinimumRange".Translate() + ": " + AttackVerb.verbProps.minRange.ToString("F0"));
+            }
+            else if (base.Spawned && burstCooldownTicksLeft > 0 && BurstCooldownTime() > 5f)
+            {
+                stringBuilder.AppendLine("CanFireIn".Translate() + ": " + burstCooldownTicksLeft.ToStringSecondsFromTicks());
+            }
 
-                if (!this.AttackVerb.ProjectileFliesOverhead())
+            CompChangeableProjectile compChangeableProjectile = gun.TryGetComp<CompChangeableProjectile>();
+            if (compChangeableProjectile != null)
+            {
+                if (compChangeableProjectile.Loaded)
                 {
-                    targetScanFlags |= TargetScanFlags.NeedLOSToAll;
-                    targetScanFlags |= TargetScanFlags.LOSBlockableByGas;
+                    stringBuilder.AppendLine("ShellLoaded".Translate(compChangeableProjectile.LoadedShell.LabelCap, compChangeableProjectile.LoadedShell));
+                }
+                else
+                {
+                    stringBuilder.AppendLine("ShellNotLoaded".Translate());
+                }
+            }
+
+            return stringBuilder.ToString().TrimEndNewlines();
+        }
+
+        protected override void DrawAt(Vector3 drawLoc, bool flip = false)
+        {
+            top.CurRotation = curAngle;
+            Vector3 drawOffset = Vector3.zero;
+            float angleOffset = 0f;
+            if (IsMortar)
+            {
+                EquipmentUtility.Recoil(def.building.turretGunDef, (Verb_LaunchProjectile)AttackVerb, out drawOffset, out angleOffset, top.CurRotation);
+            }
+
+            top.DrawTurret(drawLoc, drawOffset, angleOffset);
+            base.DrawAt(drawLoc, flip);
+        }
+
+        public override void DrawExtraSelectionOverlays()
+        {
+            base.DrawExtraSelectionOverlays();
+            float effectiveRange = AttackVerb.EffectiveRange;
+            float num = AttackVerb.verbProps.EffectiveMinRange(allowAdjacentShot: true);
+            if (num < effectiveRange)
+            {
+                if (effectiveRange < 90f)
+                {
+                    GenDraw.DrawRadiusRing(base.Position, effectiveRange);
                 }
 
-                if (this.AttackVerb.IsIncendiary_Ranged())
+                if (num < 90f && num > 0.1f)
                 {
-                    targetScanFlags |= TargetScanFlags.NeedNonBurning;
+                    GenDraw.DrawRadiusRing(base.Position, num);
+                }
+            }
+
+            if (WarmingUp)
+            {
+                int degreesWide = (int)((float)burstWarmupTicksLeft * 0.5f);
+                GenDraw.DrawAimPie(this, CurrentTarget, degreesWide, (float)def.size.x * 0.5f);
+            }
+
+            if (forcedTarget.IsValid && (!forcedTarget.HasThing || forcedTarget.Thing.Spawned))
+            {
+                Vector3 b = ((!forcedTarget.HasThing) ? forcedTarget.Cell.ToVector3Shifted() : forcedTarget.Thing.TrueCenter());
+                Vector3 a = this.TrueCenter();
+                b.y = AltitudeLayer.MetaOverlays.AltitudeFor();
+                a.y = b.y;
+                GenDraw.DrawLineBetween(a, b, Building_TurretGun.ForcedTargetLineMat, 0.2f);
+            }
+        }
+
+        public override IEnumerable<Gizmo> GetGizmos()
+        {
+            foreach (Gizmo gizmo in base.GetGizmos())
+            {
+                yield return gizmo;
+            }
+
+            if (CanExtractShell)
+            {
+                CompChangeableProjectile compChangeableProjectile = gun.TryGetComp<CompChangeableProjectile>();
+                Command_Action command_Action = new Command_Action();
+                command_Action.defaultLabel = "CommandExtractShell".Translate();
+                command_Action.defaultDesc = "CommandExtractShellDesc".Translate();
+                command_Action.icon = compChangeableProjectile.LoadedShell.uiIcon;
+                command_Action.iconAngle = compChangeableProjectile.LoadedShell.uiIconAngle;
+                command_Action.iconOffset = compChangeableProjectile.LoadedShell.uiIconOffset;
+                command_Action.iconDrawScale = GenUI.IconDrawScale(compChangeableProjectile.LoadedShell);
+                command_Action.action = delegate
+                {
+                    ExtractShell();
+                };
+                yield return command_Action;
+            }
+
+            CompChangeableProjectile compChangeableProjectile2 = gun.TryGetComp<CompChangeableProjectile>();
+            if (compChangeableProjectile2 != null)
+            {
+                StorageSettings storeSettings = compChangeableProjectile2.GetStoreSettings();
+                foreach (Gizmo item in StorageSettingsClipboard.CopyPasteGizmosFor(storeSettings))
+                {
+                    yield return item;
+                }
+            }
+
+            if (!HideForceTargetGizmo)
+            {
+                if (CanSetForcedTarget)
+                {
+                    Command_VerbTarget command_VerbTarget = new Command_VerbTarget();
+                    command_VerbTarget.defaultLabel = "CommandSetForceAttackTarget".Translate();
+                    command_VerbTarget.defaultDesc = "CommandSetForceAttackTargetDesc".Translate();
+                    command_VerbTarget.icon = ContentFinder<Texture2D>.Get("UI/Commands/Attack");
+                    command_VerbTarget.verb = AttackVerb;
+                    command_VerbTarget.hotKey = KeyBindingDefOf.Misc4;
+                    command_VerbTarget.drawRadius = false;
+                    command_VerbTarget.requiresAvailableVerb = false;
+                    if (base.Spawned)
+                    {
+                        float curWeatherMaxRangeCap = base.Map.weatherManager.CurWeatherMaxRangeCap;
+                        if (curWeatherMaxRangeCap > 0f && curWeatherMaxRangeCap < AttackVerb.verbProps.minRange)
+                        {
+                            command_VerbTarget.Disable("CannotFire".Translate() + ": " + base.Map.weatherManager.curWeather.LabelCap);
+                        }
+                    }
+
+                    yield return command_VerbTarget;
                 }
 
-                if (this.def.building.IsMortar)
+                if (forcedTarget.IsValid)
                 {
-                    targetScanFlags |= TargetScanFlags.NeedNotUnderThickRoof;
-                }
+                    Command_Action command_Action2 = new Command_Action();
+                    command_Action2.defaultLabel = "CommandStopForceAttack".Translate();
+                    command_Action2.defaultDesc = "CommandStopForceAttackDesc".Translate();
+                    command_Action2.icon = ContentFinder<Texture2D>.Get("UI/Commands/Halt");
+                    command_Action2.action = delegate
+                    {
+                        ResetForcedTarget();
+                        SoundDefOf.Tick_Low.PlayOneShotOnCamera();
+                    };
+                    if (!forcedTarget.IsValid)
+                    {
+                        command_Action2.Disable("CommandStopAttackFailNotForceAttacking".Translate());
+                    }
 
-                // 使用角度感知的目标查找器
-                return (Thing)AttackTargetFinderAngle.BestShootTargetFromCurrentPosition(
-                    attackTargetSearcher, targetScanFlags, this.turretOrientation,
-                    new Predicate<Thing>(this.IsValidTarget), 0f, 9999f);
+                    command_Action2.hotKey = KeyBindingDefOf.Misc5;
+                    yield return command_Action2;
+                }
+            }
+
+            if (!CanToggleHoldFire)
+            {
+                yield break;
+            }
+
+            Command_Toggle command_Toggle = new Command_Toggle();
+            command_Toggle.defaultLabel = "CommandHoldFire".Translate();
+            command_Toggle.defaultDesc = "CommandHoldFireDesc".Translate();
+            command_Toggle.icon = ContentFinder<Texture2D>.Get("UI/Commands/HoldFire");
+            command_Toggle.hotKey = KeyBindingDefOf.Misc6;
+            command_Toggle.toggleAction = delegate
+            {
+                holdFire = !holdFire;
+                if (holdFire)
+                {
+                    ResetForcedTarget();
+                }
+            };
+            command_Toggle.isActive = () => holdFire;
+            yield return command_Toggle;
+        }
+
+        protected float TrimAngle(float angle)
+        {
+            return Mathf.Repeat(angle, 360f);
+        }
+
+        private void RotateTowardsCurrentTarget()
+        {
+            float num = deltaAngle;
+            if (Mathf.Approximately(num, 0f))
+            {
+                return;
+            }
+
+            float num2 = rotateSpeed;
+            curAngle += ((Mathf.Abs(num) > num2) ? (Mathf.Sign(num) * num2) : num);
+        }
+
+        private void ExtractShell()
+        {
+            GenPlace.TryPlaceThing(gun.TryGetComp<CompChangeableProjectile>().RemoveShell(), base.Position, base.Map, ThingPlaceMode.Near);
+        }
+
+        private void ResetForcedTarget()
+        {
+            forcedTarget = LocalTargetInfo.Invalid;
+            burstWarmupTicksLeft = 0;
+            if (burstCooldownTicksLeft <= 0)
+            {
+                TryStartShootSomething(canBeginBurstImmediately: false);
+            }
+        }
+
+        private void ResetCurrentTarget()
+        {
+            currentTargetInt = LocalTargetInfo.Invalid;
+            burstWarmupTicksLeft = 0;
+        }
+
+        public void MakeGun()
+        {
+            gun = ThingMaker.MakeThing(def.building.turretGunDef);
+            UpdateGunVerbs();
+        }
+
+        private void UpdateGunVerbs()
+        {
+            List<Verb> allVerbs = gun.TryGetComp<CompEquippable>().AllVerbs;
+            for (int i = 0; i < allVerbs.Count; i++)
+            {
+                Verb verb = allVerbs[i];
+                verb.caster = this;
+                verb.castCompleteCallback = BurstComplete;
             }
         }
     }

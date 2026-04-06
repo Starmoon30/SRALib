@@ -156,7 +156,7 @@ namespace SRA
                 // 调试日志
                 if (Prefs.DevMode)
                 {
-                    Log.Message($"Played spawn sound: {Props.sound.defName} for {parent.Label} at {parent.Position}");
+                    SRALog.Debug($"Played spawn sound: {Props.sound.defName} for {parent.Label} at {parent.Position}");
                 }
             }
             catch (System.Exception ex)

@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<LanguageData>
+  
+  <SRA_Stats_MeleeAttackDamage_AOE_angle.label>范围攻击扇面</SRA_Stats_MeleeAttackDamage_AOE_angle.label>
+  <SRA_Stats_MeleeAttackDamage_AOE_angle.description>这把武器的范围攻击扇面角度。</SRA_Stats_MeleeAttackDamage_AOE_angle.description>
+  <SRA_Stats_MeleeAttackDamage_AOE_angle.formatString>{0} 度</SRA_Stats_MeleeAttackDamage_AOE_angle.formatString>
+  
+  <SRA_Stats_MeleeAttackDamage_AOE_radius.label>范围攻击半径</SRA_Stats_MeleeAttackDamage_AOE_radius.label>
+  <SRA_Stats_MeleeAttackDamage_AOE_radius.description>这把武器的范围攻击半径。</SRA_Stats_MeleeAttackDamage_AOE_radius.description>
+  <SRA_Stats_MeleeAttackDamage_AOE_radius.formatString>{0} 格</SRA_Stats_MeleeAttackDamage_AOE_radius.formatString>
+  
+  <SRA_Stats_MeleeAttackDamage_AOE_maxHitTarget.label>范围攻击最大命中目标数</SRA_Stats_MeleeAttackDamage_AOE_maxHitTarget.label>
+  <SRA_Stats_MeleeAttackDamage_AOE_maxHitTarget.description>这把武器的范围攻击最多能命中多少个目标。</SRA_Stats_MeleeAttackDamage_AOE_maxHitTarget.description>
+  <SRA_Stats_MeleeAttackDamage_AOE_maxHitTarget.formatString>{0} 个</SRA_Stats_MeleeAttackDamage_AOE_maxHitTarget.formatString>
+  
+  <SRA_Stats_MeleeAttackDamage_AOE_extraAccuracy.label>命中加值</SRA_Stats_MeleeAttackDamage_AOE_extraAccuracy.label>
+  <SRA_Stats_MeleeAttackDamage_AOE_extraAccuracy.description>这把武器在攻击时，攻击者的失手率会降低的数额。</SRA_Stats_MeleeAttackDamage_AOE_extraAccuracy.description>
+
+
+  <SRA_Stats_MeleeAttackDamage_AOE_extraTracking.label>追踪加值</SRA_Stats_MeleeAttackDamage_AOE_extraTracking.label>
+  <SRA_Stats_MeleeAttackDamage_AOE_extraTracking.description>这把武器在攻击时，目标的闪避率会降低的数额。</SRA_Stats_MeleeAttackDamage_AOE_extraTracking.description>
+
+
+</LanguageData>

@@ -14,11 +14,11 @@ namespace SRA
         public override AcceptanceReport AllowsPlacing(BuildableDef checkingDef, IntVec3 loc, Rot4 rot, Map map, Thing thingToIgnore = null, Thing thing = null)
         {
             VerbProperties verbProperties = ((ThingDef)checkingDef).building.turretGunDef.Verbs.Find((VerbProperties v) => v.verbClass == typeof(Verb_ShootWithOffset));
-            if (verbProperties.range > 0f)
+            if (verbProperties.range > 0f && verbProperties.range < 80f)
             {
                 GenDraw.DrawRadiusRing(loc, verbProperties.range);
             }
-            if (verbProperties.minRange > 0f)
+            if (verbProperties.minRange > 0f && verbProperties.minRange < 80f)
             {
                 GenDraw.DrawRadiusRing(loc, verbProperties.minRange);
             }

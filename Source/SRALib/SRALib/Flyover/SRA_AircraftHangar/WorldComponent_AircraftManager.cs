@@ -1,4 +1,4 @@
-using RimWorld;
+﻿using RimWorld;
 using Verse;
 using System.Collections.Generic;
 using RimWorld.Planet;
@@ -65,11 +65,11 @@ namespace SRA
             // 调试日志
             if (Scribe.mode == LoadSaveMode.Saving)
             {
-                Log.Message($"Saving aircraft data: {allFactionAircraftData.Count} faction entries, {cooldownEvents.Count} cooldown events");
+                SRALog.Debug($"Saving aircraft data: {allFactionAircraftData.Count} faction entries, {cooldownEvents.Count} cooldown events");
             }
             else if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
-                Log.Message($"Loaded aircraft data: {allFactionAircraftData.Count} faction entries, {cooldownEvents.Count} cooldown events");
+                SRALog.Debug($"Loaded aircraft data: {allFactionAircraftData.Count} faction entries, {cooldownEvents.Count} cooldown events");
             }
         }
 
@@ -120,7 +120,7 @@ namespace SRA
         {
             if (faction == null)
             {
-                Log.Error("AddAircraftNullFaction".Translate());
+                SRALog.Debug("AddAircraftNullFaction".Translate());
                 return;
             }
 
@@ -128,7 +128,7 @@ namespace SRA
             data.totalCount += count;
             data.availableCount += count;
             
-            Log.Message($"Added {count} {aircraftDef.LabelCap} to {faction.Name}. Total: {data.totalCount}, Available: {data.availableCount}");
+            SRALog.Debug($"Added {count} {aircraftDef.LabelCap} to {faction.Name}. Total: {data.totalCount}, Available: {data.availableCount}");
         }
 
         // 尝试使用战机
@@ -150,7 +150,7 @@ namespace SRA
             
             cooldownEvents.Add(cooldownEvent);
             
-            Log.Message($"Used {count} {aircraftDef.LabelCap} from {faction.Name}. Available now: {data.availableCount}, Cooldown until: {cooldownEvent.endTick}");
+            SRALog.Debug($"Used {count} {aircraftDef.LabelCap} from {faction.Name}. Available now: {data.availableCount}, Cooldown until: {cooldownEvent.endTick}");
             
             return true;
         }
@@ -187,7 +187,7 @@ namespace SRA
                 if (cooldownEvent.aircraftDef != null)
                 {
                     Messages.Message("AircraftCooldownEnded".Translate(cooldownEvent.aircraftDef.LabelCap), MessageTypeDefOf.PositiveEvent);
-                    Log.Message($"Cooldown ended for {cooldownEvent.aircraftCount} {cooldownEvent.aircraftDef.LabelCap}. Available now: {data.availableCount}");
+                    SRALog.Debug($"Cooldown ended for {cooldownEvent.aircraftCount} {cooldownEvent.aircraftDef.LabelCap}. Available now: {data.availableCount}");
                 }
             }
         }
@@ -203,22 +203,22 @@ namespace SRA
         // 调试方法：显示当前状态
         public void DebugLogStatus()
         {
-            Log.Message("=== Aircraft Manager Status ===");
-            Log.Message($"Total faction entries: {allFactionAircraftData.Count}");
+            SRALog.Debug("=== Aircraft Manager Status ===");
+            SRALog.Debug($"Total faction entries: {allFactionAircraftData.Count}");
             
             var factions = allFactionAircraftData.Select(x => x.faction).Distinct();
             foreach (var faction in factions)
             {
-                Log.Message($"Faction: {faction?.Name ?? "Unknown"}");
+                SRALog.Debug($"Faction: {faction?.Name ?? "Unknown"}");
                 var factionData = allFactionAircraftData.Where(x => x.faction == faction);
                 foreach (var data in factionData)
                 {
-                    Log.Message($"  {data.aircraftDef.LabelCap}: {data.availableCount}/{data.totalCount} available");
+                    SRALog.Debug($"  {data.aircraftDef.LabelCap}: {data.availableCount}/{data.totalCount} available");
                 }
             }
             
-            Log.Message($"Active cooldown events: {cooldownEvents.Count}");
-            Log.Message("===============================");
+            SRALog.Debug($"Active cooldown events: {cooldownEvents.Count}");
+            SRALog.Debug("===============================");
         }
     }
 }

@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using RimWorld;
 using Verse;
 using Verse.AI;
@@ -127,14 +127,14 @@ namespace SRA
             if (Props.useCyclicDrops)
             {
                 ticksUntilNextDrop = (int)(Props.cyclicDropIntervalHours * 2500f); // 1小时 = 2500 ticks
-                Log.Message($"Cyclic drops initialized: {Props.cyclicDropIntervalHours} hours interval");
+                SRALog.Debug($"Cyclic drops initialized: {Props.cyclicDropIntervalHours} hours interval");
             }
 
             // 初始化信号等待状态
             if (Props.waitForExternalSignal)
             {
                 waitingForSignal = true;
-                Log.Message($"Waiting for external signal: {Props.externalSignalTag}");
+                SRALog.Debug($"Waiting for external signal: {Props.externalSignalTag}");
             }
         }
 
@@ -151,7 +151,7 @@ namespace SRA
                     if (pawn != null)
                     {
                         pawns.Add(pawn);
-                        Log.Message($"Generated pawn: {pawn.Label} ({pawnKindCount.pawnKindDef.defName})");
+                        SRALog.Debug($"Generated pawn: {pawn.Label} ({pawnKindCount.pawnKindDef.defName})");
                     }
                 }
             }
@@ -162,7 +162,7 @@ namespace SRA
         {
             if (pawnKindDef == null)
             {
-                Log.Error("Attempted to generate pawn with null PawnKindDef");
+                SRALog.Debug("Attempted to generate pawn with null PawnKindDef");
                 return null;
             }
 
@@ -213,12 +213,12 @@ namespace SRA
                     pawn.mindState.SetupLastHumanMeatTick();
                 }
 
-                Log.Message($"Successfully generated pawn: {pawn.LabelCap} from {pawnKindDef.defName}");
+                SRALog.Debug($"Successfully generated pawn: {pawn.LabelCap} from {pawnKindDef.defName}");
                 return pawn;
             }
             catch (System.Exception ex)
             {
-                Log.Error($"Failed to generate pawn from {pawnKindDef.defName}: {ex}");
+                SRALog.Debug($"Failed to generate pawn from {pawnKindDef.defName}: {ex}");
                 return null;
             }
         }
@@ -231,12 +231,14 @@ namespace SRA
             {
                 Faction faction = Find.FactionManager.FirstFactionOfDef(Props.pawnFactionDef);
                 if (faction != null) return faction;
+                SRALog.Debug($"[WARN] FactionDef '{Props.pawnFactionDef.defName}' not found in current world, trying fallback");
             }
 
             // 使用 Comp 的派系
             if (Props.faction != null) return Props.faction;
 
-            // 使用默认中立派系
+            // 使用默认中立派系（记录警告以便排查配置问题）
+            SRALog.Debug("[WARN] No valid faction resolved for pawn generation, falling back to Faction.OfAncients");
             return Faction.OfAncients;
         }
 
@@ -282,7 +284,7 @@ namespace SRA
 
                 // 重置计时器
                 ticksUntilNextDrop = (int)(Props.cyclicDropIntervalHours * 2500f);
-                Log.Message($"Cyclic drop completed, next drop in {Props.cyclicDropIntervalHours} hours");
+                SRALog.Debug($"Cyclic drop completed, next drop in {Props.cyclicDropIntervalHours} hours");
             }
         }
 
@@ -291,7 +293,7 @@ namespace SRA
         {
             if (parent is FlyOver flyOver && waitingForSignal)
             {
-                Log.Message($"External signal received, triggering drop pods");
+                SRALog.Debug($"External signal received, triggering drop pods");
                 DropPods(flyOver);
                 waitingForSignal = false;
             }
@@ -313,12 +315,12 @@ namespace SRA
             Map map = flyOver.Map;
             if (map == null)
             {
-                Log.Error("FlyOver DropPods: Map is null");
+                SRALog.Debug("FlyOver DropPods: Map is null");
                 return;
             }
 
             IntVec3 dropCenter = GetDropCenter(flyOver);
-            Log.Message($"DropPods triggered at progress {flyOver.currentProgress}, center: {dropCenter}");
+            SRALog.Debug($"DropPods triggered at progress {flyOver.currentProgress}, center: {dropCenter}");
 
             // 如果在投掷时生成 Pawn，现在生成
             if (Props.generatePawnsOnDrop && Props.pawnKinds != null)
@@ -351,7 +353,7 @@ namespace SRA
 
             if (!thingsToDrop.Any())
             {
-                Log.Warning("No items to drop from FlyOver drop pods");
+                SRALog.Debug("No items to drop from FlyOver drop pods");
                 return;
             }
 
@@ -377,7 +379,7 @@ namespace SRA
                 SendDropLetter(thingsToDrop, dropCenter, map);
             }
 
-            Log.Message($"Drop pods completed: {thingsToDrop.Count} items dropped, including {pawns.Count} pawns");
+            SRALog.Debug($"Drop pods completed: {thingsToDrop.Count} items dropped, including {pawns.Count} pawns");
             
             // 清空已投掷的物品列表，避免重复投掷
             items.Clear();
@@ -464,7 +466,7 @@ namespace SRA
                 // 创建 Lord
                 Lord lord = LordMaker.MakeNewLord(faction, lordJob, Find.CurrentMap, factionPawns);
                 
-                Log.Message($"Assigned assault lord job to {factionPawns.Count} pawns of faction {faction.Name}");
+                SRALog.Debug($"Assigned assault lord job to {factionPawns.Count} pawns of faction {faction.Name}");
             }
         }
 
@@ -521,8 +523,11 @@ namespace SRA
 
             if (Props.dropAllInSamePod)
             {
-                // 所有物品在一个空投仓中，但生成多个相同的空投仓
-                for (int i = 0; i < Props.dropCount; i++)
+                // 第一个空投仓使用原始物品（包含 Pawn）
+                podGroups.Add(new List<Thing>(thingsToDrop));
+
+                // 后续空投仓仅复制非 Pawn 物品，避免 Pawn 重复生成
+                for (int i = 1; i < Props.dropCount; i++)
                 {
                     List<Thing> podItems = CreatePodItemsCopy(thingsToDrop);
                     podGroups.Add(podItems);
@@ -570,36 +575,30 @@ namespace SRA
             }
         }
 
-        // 创建物品的深拷贝
+        // 创建非 Pawn 物品的深拷贝（Pawn 是唯一实体，不可复制）
         private List<Thing> CreatePodItemsCopy(List<Thing> originalItems)
         {
             List<Thing> copies = new List<Thing>();
             
             foreach (Thing original in originalItems)
             {
-                if (original is Pawn originalPawn)
+                // Pawn 是唯一实体，不能复制；Pawn 只在第一个空投仓中投掷
+                if (original is Pawn)
                 {
-                    // 对于 Pawn，重新生成
-                    Pawn newPawn = GeneratePawn(originalPawn.kindDef);
-                    if (newPawn != null)
-                    {
-                        copies.Add(newPawn);
-                    }
+                    continue;
                 }
-                else
+
+                // 对于物品，创建副本
+                Thing copy = ThingMaker.MakeThing(original.def, original.Stuff);
+                copy.stackCount = original.stackCount;
+                
+                // 复制其他重要属性
+                if (original.def.useHitPoints)
                 {
-                    // 对于物品，创建副本
-                    Thing copy = ThingMaker.MakeThing(original.def, original.Stuff);
-                    copy.stackCount = original.stackCount;
-                    
-                    // 复制其他重要属性
-                    if (original.def.useHitPoints)
-                    {
-                        copy.HitPoints = original.HitPoints;
-                    }
-                    
-                    copies.Add(copy);
+                    copy.HitPoints = original.HitPoints;
                 }
+                
+                copies.Add(copy);
             }
             
             return copies;
@@ -607,6 +606,12 @@ namespace SRA
 
         private IntVec3 GetDropCenter(FlyOver flyOver)
         {
+            // 如果使用贸易空投点，直接使用原版方法（已包含位置验证）
+            if (Props.useTradeDropSpot)
+            {
+                return DropCellFinder.TradeDropSpot(flyOver.Map);
+            }
+
             // 计算投掷中心位置（基于当前飞行位置 + 偏移）
             Vector3 currentPos = Vector3.Lerp(
                 flyOver.startPosition.ToVector3(),
@@ -615,11 +620,17 @@ namespace SRA
             );
 
             IntVec3 dropCenter = currentPos.ToIntVec3() + Props.dropOffset;
+            Map map = flyOver.Map;
 
-            // 如果使用贸易空投点，找到贸易空投点
-            if (Props.useTradeDropSpot)
+            // 边界验证：确保投掷中心在地图范围内
+            if (!dropCenter.InBounds(map))
             {
-                dropCenter = DropCellFinder.TradeDropSpot(flyOver.Map);
+                dropCenter = new IntVec3(
+                    Mathf.Clamp(dropCenter.x, 0, map.Size.x - 1),
+                    0,
+                    Mathf.Clamp(dropCenter.z, 0, map.Size.z - 1)
+                );
+                SRALog.Debug($"Drop center out of bounds, clamped to {dropCenter}");
             }
 
             return dropCenter;

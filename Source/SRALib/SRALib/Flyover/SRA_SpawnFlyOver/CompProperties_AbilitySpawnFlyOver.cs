@@ -62,7 +62,7 @@ namespace SRA
         BombingRun,         // 轰炸飞越
         Reconnaissance,     // 侦察飞越
         GroundStrafing,     // 地面扫射
-        SectorSurveillance, // 扇形区域监视
+        SectorSurveillance  // 扇形区域监视
     }
 
     // 进场类型枚举

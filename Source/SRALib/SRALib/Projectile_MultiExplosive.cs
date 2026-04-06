@@ -65,10 +65,18 @@ namespace SRA
                 return tailBulletDefInt;
             }
         }
+        private int ticksToDetonation = 1;
+        private bool projIsLanded = false;
+        public override void ExposeData()
+        {
+            base.ExposeData();
+            Scribe_Values.Look<int>(ref this.ticksToDetonation, "ticksToDetonation", 1, false);
+            Scribe_Values.Look<bool>(ref this.projIsLanded, "projIsLanded", false, false);
+        }
+
         protected override void Tick()
         {
             base.Tick();
-
             // 处理拖尾特效
             if (TailDef != null && TailDef.tailFleckDef != null && !isNorthArcTrail)
             {
@@ -101,10 +109,23 @@ namespace SRA
                     }
                 }
             }
+            if (projIsLanded)
+            {
+                --ticksToDetonation;
+            }
             lastTickPosition = base.ExactPosition;
         }
         protected override void Impact(Thing hitThing, bool blockedByShield = false)
         {
+            if (this.def.projectile.explosionDelay > 0 && ticksToDetonation > 0)
+            {
+                if (!projIsLanded)
+                {
+                    projIsLanded = true;
+                    ticksToDetonation = this.def.projectile.explosionDelay;
+                }
+                return;
+            }
             var extension = this.def.GetModExtension<MultiExplosiveExtension>();
             if (extension != null)
             {

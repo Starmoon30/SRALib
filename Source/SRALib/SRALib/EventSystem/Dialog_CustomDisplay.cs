@@ -34,7 +34,13 @@ namespace SRA
             this.def = def;
             this.forcePause = true;
             this.absorbInputAroundWindow = true;
-            this.doCloseX = true;
+            if (def.doCloseXButton)
+            {
+                this.doCloseX = true;
+            }
+            else {
+                this.doCloseX = false;
+            }
             if (def.eventUIConfig != null)
             {
                 Config = def.eventUIConfig;
@@ -77,6 +83,7 @@ namespace SRA
             {
                 portrait = ContentFinder<Texture2D>.Get(def.portraitPath);
             }
+
 
             string bgPath = !def.backgroundImagePath.NullOrEmpty() ? def.backgroundImagePath : Config.defaultBackgroundImagePath;
             if (!bgPath.NullOrEmpty())

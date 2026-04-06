@@ -30,7 +30,11 @@ namespace SRA
                     return pawn.equipment.Primary;
                 }
                 // 如果是炮塔或其他建筑，直接返回自身
-                else if (this.caster is Building_TurretGun turret)
+                else if (this.caster is Building_TurretGun turretGun)
+                {
+                    return turretGun;
+                }
+                else if (this.caster is Building_Turret turret)
                 {
                     return turret;
                 }
@@ -107,7 +111,7 @@ namespace SRA
             List<IntVec3> allAffectedCells = this.AffectedCells(this.currentTarget);
 
             // 获取炮塔或Pawn的位置
-            IntVec3 casterPos = (this.caster is Building_TurretGun turret) ? turret.Position : this.caster.Position;
+            IntVec3 casterPos = (this.caster is Building_TurretGun turretGun) ? turretGun.Position : (this.caster is Building_Turret turret) ? turret.Position : this.caster.Position;
 
             // 创建光束
             KT_Tachyon_LancesBeam beam = (KT_Tachyon_LancesBeam)GenSpawn.Spawn(

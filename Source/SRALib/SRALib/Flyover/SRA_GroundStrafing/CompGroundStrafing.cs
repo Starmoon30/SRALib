@@ -1,7 +1,8 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using RimWorld;
 using UnityEngine;
 using Verse;
+using Verse.Noise;
 
 namespace SRA
 {
@@ -33,7 +34,7 @@ namespace SRA
                 currentLongitudinalOffset = Props.longitudinalInitialOffset;
             }
             
-            Log.Message($"GroundStrafing: Initialized with {confirmedTargetCells.Count} targets, " +
+            SRALog.Debug($"GroundStrafing: Initialized with {confirmedTargetCells.Count} targets, " +
                        $"Lateral Offset: {currentLateralOffsetAngle:F1}°, " +
                        $"Longitudinal Offset: {currentLongitudinalOffset:F1}");
         }
@@ -52,7 +53,7 @@ namespace SRA
             // 定期状态输出
             if (Find.TickManager.TicksGame % 120 == 0 && confirmedTargetCells.Count > 0)
             {
-                Log.Message($"GroundStrafing: {firedCells.Count}/{confirmedTargetCells.Count + firedCells.Count} targets fired, " +
+                SRALog.Debug($"GroundStrafing: {firedCells.Count}/{confirmedTargetCells.Count + firedCells.Count} targets fired, " +
                            $"Lateral: {currentLateralOffsetAngle:F1}°, Longitudinal: {currentLongitudinalOffset:F1}");
             }
         }
@@ -60,7 +61,7 @@ namespace SRA
         private void CheckAndFireAtTargets()
         {
             Vector3 currentPos = parent.DrawPos;
-            
+
             for (int i = confirmedTargetCells.Count - 1; i >= 0; i--)
             {
                 IntVec3 targetCell = confirmedTargetCells[i];
@@ -84,7 +85,7 @@ namespace SRA
                         
                         if (firedCells.Count == 1)
                         {
-                            Log.Message($"First strafing shot at {targetCell}, " +
+                            SRALog.Debug($"First strafing shot at {targetCell}, " +
                                        $"Lateral offset: {currentLateralOffsetAngle:F1}°, " +
                                        $"Longitudinal offset: {currentLongitudinalOffset:F1}");
                         }
@@ -235,7 +236,7 @@ namespace SRA
         {
             if (Props.projectileDef == null)
             {
-                Log.Error("No projectile defined for ground strafing");
+                SRALog.Debug("No projectile defined for ground strafing");
                 return false;
             }
             
@@ -247,9 +248,8 @@ namespace SRA
                 
                 // 计算偏移后的发射位置
                 Vector3 offsetSpawnPos = CalculateOffsetPosition(spawnPos, directionToTarget);
-                
+                offsetSpawnPos = new Vector3(Mathf.Clamp(offsetSpawnPos.x, 0.5f, parent.Map.Size.x - 0.5f), offsetSpawnPos.y, Mathf.Clamp(offsetSpawnPos.z, 0.5f, parent.Map.Size.z - 0.5f));
                 IntVec3 spawnCell = offsetSpawnPos.ToIntVec3();
-                
                 // 创建抛射体
                 Projectile projectile = (Projectile)GenSpawn.Spawn(Props.projectileDef, spawnCell, parent.Map);
                 
@@ -279,7 +279,7 @@ namespace SRA
             }
             catch (System.Exception ex)
             {
-                Log.Error($"Error launching ground strafing projectile: {ex}");
+                SRALog.Debug($"Error launching ground strafing projectile: {ex}");
             }
             
             return false;
@@ -302,10 +302,10 @@ namespace SRA
         private Thing GetLauncher()
         {
             FlyOver flyOver = parent as FlyOver;
-            //if (flyOver != null && flyOver.caster != null)
-            //{
-            //    return flyOver.caster;
-            //}
+            if (flyOver != null && flyOver.caster != null)
+            {
+                return flyOver.caster;
+            }
             return parent;
         }
         
@@ -320,13 +320,13 @@ namespace SRA
             
             confirmedTargetCells.AddRange(targets);
             
-            Log.Message($"GroundStrafing: Set {confirmedTargetCells.Count} targets, " +
+            SRALog.Debug($"GroundStrafing: Set {confirmedTargetCells.Count} targets, " +
                        $"Lateral Mode: {Props.lateralOffsetMode}, " +
                        $"Longitudinal Mode: {Props.longitudinalOffsetMode}");
             
             if (confirmedTargetCells.Count > 0)
             {
-                Log.Message($"First target: {confirmedTargetCells[0]}, Last target: {confirmedTargetCells[confirmedTargetCells.Count - 1]}");
+                SRALog.Debug($"First target: {confirmedTargetCells[0]}, Last target: {confirmedTargetCells[confirmedTargetCells.Count - 1]}");
             }
         }
         
@@ -345,10 +345,10 @@ namespace SRA
         // 修改：调试方法
         public void DebugOffsetStatus()
         {
-            Log.Message($"GroundStrafing Offset Status:");
-            Log.Message($"  Lateral - Angle: {currentLateralOffsetAngle:F1}°, Mode: {Props.lateralOffsetMode}");
-            Log.Message($"  Longitudinal - Offset: {currentLongitudinalOffset:F1}, Mode: {Props.longitudinalOffsetMode}");
-            Log.Message($"  Shots Fired: {shotsFired}, Forward Phase: {isForwardPhase}");
+            SRALog.Debug($"GroundStrafing Offset Status:");
+            SRALog.Debug($"  Lateral - Angle: {currentLateralOffsetAngle:F1}°, Mode: {Props.lateralOffsetMode}");
+            SRALog.Debug($"  Longitudinal - Offset: {currentLongitudinalOffset:F1}, Mode: {Props.longitudinalOffsetMode}");
+            SRALog.Debug($"  Shots Fired: {shotsFired}, Forward Phase: {isForwardPhase}");
         }
     }
     
