@@ -1,57 +1,83 @@
-﻿using System;
 using RimWorld;
-using Verse;
-using HarmonyLib;
 using UnityEngine;
-using static HarmonyLib.Code;
+using Verse;
 
 namespace SRA
 {
-
+    [StaticConstructorOnStartup]
     public class SRABarrierGizmo : Gizmo
     {
         private readonly HediffComp_SRABarrier barrier;
+        private int groupedCount = 1;
+
+        private const float FullBarrierTolerance = 0.1f;
+        private static readonly Texture2D FullBarrierBarTex = SolidColorMaterials.NewSolidColorTexture(Color.gray);
 
         public SRABarrierGizmo(HediffComp_SRABarrier barrier)
         {
             this.barrier = barrier;
-            base.Order = -100f; // 使用base.order
         }
+
+        public override float Order => -100f;
+
         public override float GetWidth(float maxWidth) => 180f;
+
+        public override bool GroupsWith(Gizmo other)
+        {
+            if (other is not SRABarrierGizmo otherBarrierGizmo)
+            {
+                return false;
+            }
+
+            return barrier.parent.def == otherBarrierGizmo.barrier.parent.def &&
+                   IsBarrierFull(barrier) &&
+                   IsBarrierFull(otherBarrierGizmo.barrier);
+        }
+
+        public override void MergeWith(Gizmo other)
+        {
+            base.MergeWith(other);
+
+            if (other is SRABarrierGizmo otherBarrierGizmo)
+            {
+                groupedCount += otherBarrierGizmo.groupedCount;
+            }
+        }
 
         public override GizmoResult GizmoOnGUI(Vector2 topLeft, float maxWidth, GizmoRenderParms parms)
         {
             Rect rect = new Rect(topLeft.x, topLeft.y, GetWidth(maxWidth), 75f);
             Widgets.DrawWindowBackground(rect);
 
-            // 标题
             Rect titleRect = new Rect(rect.x, rect.y + 5f, rect.width, 24f);
             Text.Anchor = TextAnchor.UpperCenter;
             string hediffName = barrier.parent.LabelCap;
+            if (groupedCount > 1)
+            {
+                hediffName += $" (x{groupedCount})";
+            }
             Widgets.Label(titleRect, hediffName + "SRABarrierTitle".Translate());
             Text.Anchor = TextAnchor.UpperLeft;
 
-            // 屏障条
             Rect barRect = new Rect(rect.x + 10f, rect.y + 30f, rect.width - 20f, 20f);
-            float fillPercent = barrier.CurrentBarrier / barrier.Props.maxBarrier;
-            if (fillPercent > 1){
-                fillPercent = 1;
+            float fillPercent = barrier.Props.maxBarrier > 0f ? barrier.CurrentBarrier / barrier.Props.maxBarrier : 0f;
+            if (fillPercent > 1f)
+            {
+                fillPercent = 1f;
             }
 
             Widgets.FillableBar(
                 barRect,
                 fillPercent,
-                SolidColorMaterials.NewSolidColorTexture(Color.gray),
+                FullBarrierBarTex,
                 BaseContent.BlackTex,
                 false
             );
 
-            // 数值显示
             Text.Anchor = TextAnchor.MiddleCenter;
             Widgets.Label(barRect, $"{barrier.CurrentBarrier:F0}/{barrier.Props.maxBarrier:F0}");
             Text.Anchor = TextAnchor.UpperLeft;
 
-            // 状态信息
             Rect statusRect = new Rect(rect.x + 5f, rect.y + 55f, rect.width, 20f);
             if (barrier.InCooldown)
             {
@@ -67,16 +93,23 @@ namespace SRA
                 );
                 Widgets.Label(statusRect, regenText);
             }
-            string TooltipText = "SRABarrierTooltip".Translate(
-                    barrier.Props.regenDelay.ToString(),
-                    barrier.Props.rechargeCooldown.ToString(),
-                    barrier.Props.DamageTakenMult.ToString(),
-                    barrier.Props.DamageTakenMax.ToString(),
-                    barrier.Props.DamageTakenReduce.ToString()
-                );
-            TooltipHandler.TipRegion(rect, TooltipText);
+
+            string tooltipText = "SRABarrierTooltip".Translate(
+                barrier.Props.regenDelay.ToString(),
+                barrier.Props.rechargeCooldown.ToString(),
+                barrier.Props.DamageTakenMult.ToString(),
+                barrier.Props.DamageTakenMax.ToString(),
+                barrier.Props.DamageTakenReduce.ToString()
+            );
+            TooltipHandler.TipRegion(rect, tooltipText);
+
             return new GizmoResult(GizmoState.Clear);
         }
-    }
 
+        private static bool IsBarrierFull(HediffComp_SRABarrier barrier)
+        {
+            return barrier.Props.maxBarrier > 0f &&
+                   barrier.CurrentBarrier >= barrier.Props.maxBarrier - FullBarrierTolerance;
+        }
+    }
 }

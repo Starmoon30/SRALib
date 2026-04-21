@@ -41,7 +41,7 @@ namespace SRA
         private float currentBarrier;
         private int lastDamageTick = -1;
         private int brokenTick = -1;
-        private bool isActive = true;
+        public bool isActive = true;
 
         public HediffCompProperties_SRABarrier Props => 
             (HediffCompProperties_SRABarrier)props;
@@ -61,13 +61,34 @@ namespace SRA
 
         public override void CompPostMake() => 
             CurrentBarrier = Props.maxBarrier;
+        public override void CompPostPostAdd(DamageInfo? dinfo)
+        {
+            base.CompPostPostAdd(dinfo);
+            SRABarrierCache.MarkDirty(Pawn);
+        }
+
+        public override void CompPostPostRemoved()
+        {
+            SRABarrierCache.MarkDirty(Pawn);
+            base.CompPostPostRemoved();
+        }
+
+        public override void CompPostMerged(Hediff other)
+        {
+            base.CompPostMerged(other);
+            SRABarrierCache.MarkDirty(Pawn);
+        }
 
         public override void CompExposeData()
         {
+            base.CompExposeData();
             Scribe_Values.Look(ref currentBarrier, "currentBarrier");
             Scribe_Values.Look(ref lastDamageTick, "lastDamageTick", -1);
             Scribe_Values.Look(ref brokenTick, "brokenTick", -1);
             Scribe_Values.Look(ref isActive, "isActive", true);
+
+            if (Scribe.mode == LoadSaveMode.PostLoadInit)
+                SRABarrierCache.MarkDirty(Pawn);
         }
 
         public float GetCooldownSeconds()
@@ -205,6 +226,72 @@ namespace SRA
         public override IEnumerable<Gizmo> CompGetGizmos()
         {
             yield return new SRABarrierGizmo(this);
+        }
+    }
+    /// <summary>
+    /// 运行时缓存：Pawn -> 该 Pawn 上所有 HediffComp_SRABarrier
+    /// 不存档，随时可重建（读档安全）
+    /// </summary>
+    public static class SRABarrierCache
+    {
+        private sealed class Entry
+        {
+            public bool dirty = true;
+            public readonly List<HediffComp_SRABarrier> sorted = new(4);
+        }
+
+        private static readonly Dictionary<int, Entry> map = new(256);
+
+        public static List<HediffComp_SRABarrier> GetSorted(Pawn pawn)
+        {
+            if (pawn == null) return null;
+            int key = pawn.thingIDNumber;
+
+            if (!map.TryGetValue(key, out var e))
+            {
+                e = new Entry();
+                map[key] = e;
+            }
+
+            if (e.dirty) Rebuild(pawn, e);
+            return e.sorted;
+        }
+
+        public static void MarkDirty(Pawn pawn)
+        {
+            if (pawn == null) return;
+            int key = pawn.thingIDNumber;
+
+            if (!map.TryGetValue(key, out var e))
+            {
+                e = new Entry();
+                map[key] = e;
+            }
+            e.dirty = true;
+        }
+
+        public static void RemovePawn(Pawn pawn)
+        {
+            if (pawn == null) return;
+            map.Remove(pawn.thingIDNumber);
+        }
+
+        private static void Rebuild(Pawn pawn, Entry e)
+        {
+            e.dirty = false;
+            e.sorted.Clear();
+
+            var hediffs = pawn?.health?.hediffSet?.hediffs;
+            if (hediffs == null) return;
+
+            for (int i = 0; i < hediffs.Count; i++)
+            {
+                var b = hediffs[i].TryGetComp<HediffComp_SRABarrier>();
+                if (b != null) e.sorted.Add(b);
+            }
+
+            // priority 越大越先
+            e.sorted.Sort((a, b) => b.Props.priority.CompareTo(a.Props.priority));
         }
     }
 }

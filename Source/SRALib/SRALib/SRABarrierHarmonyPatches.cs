@@ -2,9 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection.Emit;
+using System.Threading;
 using HarmonyLib;
 using RimWorld;
 using Verse;
+using Verse.AI;
 
 namespace SRA
 {
@@ -26,36 +28,87 @@ namespace SRA
                 Log.Error($"[SRA Barrier] Failed to apply Harmony patches: {ex}");
             }
         }
-
+        public static bool BlockStunAndMentalState(Pawn p)
+        {
+            if (p == null) return false;
+            var barriers = SRABarrierCache.GetSorted(p); // 已按 priority 降序
+            if (barriers == null || barriers.Count == 0) return false;
+            for (int i = 0; i < barriers.Count; i++)
+            {
+                var barrier = barriers[i];
+                if (barrier == null || barrier.parent == null) continue;
+                if (barrier.isActive && barrier.Props.BlockStunAndMentalState) return true;
+            }
+            return false;
+        }
         public static void PreApplyDamage_Prefix(Pawn __instance, ref DamageInfo dinfo)
         {
-            try
-            {
-                if (__instance == null || __instance.Dead || __instance.health == null) return;
+            if (__instance == null || __instance.Dead || __instance.health == null) return;
+            if (dinfo.Amount <= 0.001f) return;
 
-                var barriers = new List<HediffComp_SRABarrier>();
-                foreach (Hediff hediff in __instance.health.hediffSet.hediffs)
-                {
-                    if (hediff.TryGetComp<HediffComp_SRABarrier>() is HediffComp_SRABarrier barrier &&
-                        barrier.CanAbsorb)
-                    {
-                        barriers.Add(barrier);
-                    }
-                }
-                barriers.Sort((a, b) => b.Props.priority.CompareTo(a.Props.priority));
-                foreach (var barrier in barriers)
-                {
-                    barrier.AbsorbDamage(ref dinfo);
-                    if (dinfo.Amount <= 0.001f) return;
-                }
-            }
-            catch (Exception ex)
+            var barriers = SRABarrierCache.GetSorted(__instance); // 已按 priority 降序
+            if (barriers == null || barriers.Count == 0) return;
+
+            for (int i = 0; i < barriers.Count; i++)
             {
-                Log.Error($"[SRA Barrier] Error in damage absorption: {ex}");
+                var barrier = barriers[i];
+                if (barrier == null || barrier.parent == null) continue;
+                if (!barrier.CanAbsorb) continue;
+
+                barrier.AbsorbDamage(ref dinfo);
+                if (dinfo.Amount <= 0.001f)
+                {
+                    dinfo.SetAmount(0f);
+                    return;
+                }
             }
         }
     }
 
+    [HarmonyPatch(typeof(StunHandler), nameof(StunHandler.StunFor))]
+    public static class Patch_StunHandler_StunFor
+    {
+        static bool Prefix(StunHandler __instance)
+        {
+            Pawn pawn = __instance.parent as Pawn;
+            if (pawn != null && SRABarrierHarmonyPatches.BlockStunAndMentalState(pawn))
+            {
+                return false; // 阻断 StunFor
+            }
+            return true;
+        }
+    }
+    [HarmonyPatch(typeof(MentalStateHandler), nameof(MentalStateHandler.TryStartMentalState))]
+    public static class Patch_MentalStateHandler_TryStartMentalState
+    {
+        static readonly AccessTools.FieldRef<MentalStateHandler, Pawn> PawnRef =
+            AccessTools.FieldRefAccess<MentalStateHandler, Pawn>("pawn");
+
+        static bool Prefix(MentalStateHandler __instance, MentalStateDef stateDef, ref bool __result, bool causedByMood)
+        {
+            Pawn pawn = PawnRef(__instance);
+            if (pawn != null && SRABarrierHarmonyPatches.BlockStunAndMentalState(pawn))
+            {
+                __result = false;
+                return false;
+            }
+            return true;
+        }
+    }
+    [HarmonyPatch(typeof(Pawn_HealthTracker), nameof(Pawn_HealthTracker.AddHediff),
+    new Type[] { typeof(HediffDef), typeof(BodyPartRecord), typeof(DamageInfo?), typeof(DamageWorker.DamageResult) })]
+    public static class Patch_PawnHealthTracker_AddHediff_Def
+    {
+        static bool Prefix(Pawn ___pawn, HediffDef def, ref Hediff __result)
+        {
+            if (def == HediffDefOf.CatatonicBreakdown && SRABarrierHarmonyPatches.BlockStunAndMentalState(___pawn))
+            {
+                __result = null;
+                return false;
+            }
+            return true;
+        }
+    }
     [HarmonyPatch(typeof(Pawn), "GetGizmos")]
     public static class Pawn_GetGizmos_Patch
     {
