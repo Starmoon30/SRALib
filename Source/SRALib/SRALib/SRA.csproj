@@ -118,6 +118,10 @@
     <Compile Include="EventSystem\QuestNode\QuestNode_EventLetter.cs" />
     <Compile Include="EventSystem\QuestNode\QuestNode_Root_EventLetter.cs" />
     <Compile Include="EventSystem\QuestNode\QuestNode_WriteToEventVariablesWithAdd.cs" />
+    <Compile Include="KTLaserADS\KTPulseElectrode_Comp.cs" />
+    <Compile Include="KTLaserADS\KTPulseElectrode_Core.cs" />
+    <Compile Include="KTLaserADS\KTPulseElectrode_Interaction.cs" />
+    <Compile Include="Patch_SkillRecord_Interval.cs" />
     <Compile Include="Flyover\GameComponent_DropPodInterceptor.cs" />
     <Compile Include="Flyover\SRA_AircraftHangar\CompAbilityEffect_AircraftStrike.cs" />
     <Compile Include="Flyover\SRA_AircraftHangar\CompAircraftHangar.cs" />
