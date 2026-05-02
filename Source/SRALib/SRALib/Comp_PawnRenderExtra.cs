@@ -1,6 +1,4 @@
-﻿using System;
-using System.Reflection.Emit;
-using System.Runtime.Remoting.Messaging;
+﻿using HarmonyLib;
 using RimWorld;
 using UnityEngine;
 using Verse;
@@ -21,14 +19,17 @@ namespace SRA
         public Color colorAlly;
 
         public Color colorEnemy;
-        
+
         public ShaderTypeDef shader;
 
         public DrawData drawData;
     }
+
     [StaticConstructorOnStartup]
     public class Comp_PawnRenderExtra : ThingComp
     {
+        private const float LayerStep = 0.03846154f;
+
         public CompProperties_PawnRenderExtra Props
         {
             get
@@ -37,92 +38,162 @@ namespace SRA
             }
         }
 
-        private Pawn ParentPawn
+        public bool ShouldDrawFor(Pawn pawn)
         {
-            get
+            if (pawn == null || pawn.Dead || pawn.Downed)
             {
-                return this.parent as Pawn;
+                return false;
             }
+
+            JobDef curJobDef = pawn.CurJobDef;
+            return curJobDef != JobDefOf.MechCharge && curJobDef != JobDefOf.SelfShutdown;
         }
 
-        public override void PostDraw()
+        public void DrawFor(Pawn pawn, Vector3 drawPos, Rot4 facing)
         {
-            base.PostDraw();
-            if (!this.ParentPawn.Dead && !this.ParentPawn.Downed && this.ParentPawn.CurJobDef != JobDefOf.MechCharge && this.ParentPawn.CurJobDef != JobDefOf.SelfShutdown)
+            if (!this.ShouldDrawFor(pawn))
             {
-                this.DrawPawnRenderExtra();
+                return;
             }
-        }
 
-        public void DrawPawnRenderExtra()
-        {
-            Vector3 pos = this.ParentPawn.DrawPos;
-            if (this.ParentPawn.Faction == Faction.OfPlayer || !this.ParentPawn.Faction.HostileTo(Faction.OfPlayer))
+            if (!this.TryResolveGraphic(facing, out string graphicPath, out Mesh mesh))
             {
-                this.color = this.Props.colorAlly;
+                return;
             }
-            else
-            {
-                this.color = this.Props.colorEnemy;
-            }
-            string graphic = this.GetPawnRenderExtra();
-            Vector3 offset = GetOffsetByRot();
-            float layer = GetLayerByRot();
-            pos.y = AltitudeLayer.Pawn.AltitudeFor(layer);
+
+            Vector3 pos = drawPos + this.GetOffsetByRot(facing);
+            pos.y += LayerStep * this.GetLayerByRot(facing);
 
             Matrix4x4 matrix = default(Matrix4x4);
-            matrix.SetTRS(pos + offset, Quaternion.AngleAxis(0f, Vector3.up), this.Props.size);
-            Material material = MaterialPool.MatFrom(graphic, this.Props.shader.Shader, this.color);
-            Graphics.DrawMesh(MeshPool.plane10, matrix, material, (int)layer);
+            matrix.SetTRS(pos, Quaternion.identity, this.GetScale());
+            Material material = MaterialPool.MatFrom(graphicPath, this.GetShader(), this.GetColorFor(pawn));
+            Graphics.DrawMesh(mesh, matrix, material, 0);
         }
 
-        public Vector3 GetOffsetByRot()
+        private Color GetColorFor(Pawn pawn)
         {
-            Vector3 result;
-            if (this.Props.drawData != null)
+            Faction faction = pawn.Faction;
+            if (faction == null || faction == Faction.OfPlayer || !faction.HostileTo(Faction.OfPlayer))
             {
-                result = this.Props.drawData.OffsetForRot(this.ParentPawn.Rotation);
+                return this.Props.colorAlly;
             }
-            else
-            {
-                result = Vector3.zero;
-            }
-            return result;
-        }
-        public float GetLayerByRot()
-        {
-            float result;
-            if (this.Props.drawData != null)
-            {
-                result = this.Props.drawData.LayerForRot(this.ParentPawn.Rotation, 0);
-            }
-            else
-            {
-                result = 0;
-            }
-            return result;
+
+            return this.Props.colorEnemy;
         }
 
-        public string GetPawnRenderExtra()
+        private Shader GetShader()
         {
-            if (this.ParentPawn.Rotation.AsInt == 0)
-            {
-                return this.Props.path + "_north";
-            }
-            if (this.ParentPawn.Rotation.AsInt == 1)
-            {
-                return this.Props.path + "_east";
-            }
-            if (this.ParentPawn.Rotation.AsInt == 2)
-            {
-                return this.Props.path + "_south";
-            }
-            if (this.ParentPawn.Rotation.AsInt == 3)
-            {
-                return this.Props.path + "_west";
-            }
-            return null;
+            return this.Props.shader != null ? this.Props.shader.Shader : ShaderDatabase.Cutout;
         }
-        public Color color;
+
+        private Vector3 GetScale()
+        {
+            float x = this.Props.size.x != 0f ? this.Props.size.x : 1f;
+            float z = this.Props.size.z != 0f ? this.Props.size.z : (this.Props.size.y != 0f ? this.Props.size.y : x);
+            return new Vector3(x, 1f, z);
+        }
+
+        public Vector3 GetOffsetByRot(Rot4 facing)
+        {
+            if (this.Props.drawData != null)
+            {
+                return this.Props.drawData.OffsetForRot(facing);
+            }
+
+            return Vector3.zero;
+        }
+
+        public float GetLayerByRot(Rot4 facing)
+        {
+            if (this.Props.drawData != null)
+            {
+                return this.Props.drawData.LayerForRot(facing, 0f);
+            }
+
+            return 0f;
+        }
+
+        private bool TryResolveGraphic(Rot4 facing, out string graphicPath, out Mesh mesh)
+        {
+            mesh = MeshPool.plane10;
+            foreach ((string candidatePath, bool candidateFlip) in this.GetGraphicCandidates(facing))
+            {
+                if (string.IsNullOrEmpty(candidatePath) || ContentFinder<Texture2D>.Get(candidatePath, false) == null)
+                {
+                    continue;
+                }
+
+                graphicPath = candidatePath;
+                mesh = candidateFlip ? MeshPool.plane10Flip : MeshPool.plane10;
+                return true;
+            }
+
+            graphicPath = null;
+            return false;
+        }
+
+        private (string path, bool flip)[] GetGraphicCandidates(Rot4 facing)
+        {
+            switch (facing.AsInt)
+            {
+                case 0:
+                    return new (string, bool)[]
+                    {
+                        (this.Props.path + "_north", false),
+                        (this.Props.path, false)
+                    };
+                case 1:
+                    return new (string, bool)[]
+                    {
+                        (this.Props.path + "_east", false),
+                        (this.Props.path, false)
+                    };
+                case 2:
+                    return new (string, bool)[]
+                    {
+                        (this.Props.path + "_south", false),
+                        (this.Props.path, false)
+                    };
+                case 3:
+                    return new (string, bool)[]
+                    {
+                        (this.Props.path + "_west", false),
+                        (this.Props.path + "_east", true),
+                        (this.Props.path, false)
+                    };
+                default:
+                    return new (string, bool)[]
+                    {
+                        (this.Props.path, false)
+                    };
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(PawnRenderUtility), "DrawEquipmentAndApparelExtras")]
+    internal static class Patch_DrawPawnRenderExtra
+    {
+        [HarmonyPriority(Priority.Low)]
+        public static void Postfix(Pawn pawn, Vector3 drawPos, Rot4 facing, PawnRenderFlags flags)
+        {
+            if (pawn == null || flags.FlagSet(PawnRenderFlags.Invisible))
+            {
+                return;
+            }
+
+            Comp_PawnRenderExtra pawnComp = pawn.GetComp<Comp_PawnRenderExtra>();
+            pawnComp?.DrawFor(pawn, drawPos, facing);
+
+            if (pawn.apparel == null || !flags.FlagSet(PawnRenderFlags.Clothes))
+            {
+                return;
+            }
+
+            for (int i = 0; i < pawn.apparel.WornApparelCount; i++)
+            {
+                Comp_PawnRenderExtra apparelComp = pawn.apparel.WornApparel[i].GetComp<Comp_PawnRenderExtra>();
+                apparelComp?.DrawFor(pawn, drawPos, facing);
+            }
+        }
     }
 }

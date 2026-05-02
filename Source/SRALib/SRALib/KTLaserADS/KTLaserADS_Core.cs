@@ -222,9 +222,18 @@ namespace SRA
         public void DrawLaserOffscreen()
         {
             if (!this.parent.Spawned || !IsPoweredAndFunctional) return;
+            bool isWorldRendered = Find.World != null && Find.World.renderer != null && Find.World.renderer.wantedMode != RimWorld.Planet.WorldRenderMode.None;
+            if (this.parent.Map != Find.CurrentMap || isWorldRendered) return;
+
             Vector3 absoluteCenter = GetAbsolutePosition();
-            if (Find.TickManager.TicksGame - lastIrradiationTick <= 1 && currentTarget != null && !currentTarget.Destroyed) DrawLaserBeam(absoluteCenter, currentTarget.DrawPos, 1f);
-            else if (Find.TickManager.TicksGame - lastInterceptTick >= 0 && Find.TickManager.TicksGame - lastInterceptTick < 10) DrawLaserBeam(absoluteCenter, lastInterceptPos, 1f - ((float)(Find.TickManager.TicksGame - lastInterceptTick) / 10f));
+            if (Find.TickManager.TicksGame - lastIrradiationTick <= 1 && currentTarget != null && !currentTarget.Destroyed)
+            {
+                DrawLaserBeam(absoluteCenter, currentTarget.DrawPos, 1f);
+            }
+            else if (Find.TickManager.TicksGame - lastInterceptTick >= 0 && Find.TickManager.TicksGame - lastInterceptTick < 10)
+            {
+                DrawLaserBeam(absoluteCenter, lastInterceptPos, 1f - ((float)(Find.TickManager.TicksGame - lastInterceptTick) / 10f));
+            }
         }
         public override void PostDraw()
         {

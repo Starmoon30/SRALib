@@ -29,6 +29,7 @@ namespace SRA
         private int lastIdleArcTick = -999;
         private CompPowerTrader powerComp;
         private CompBreakdownable breakdownComp;
+        private static List<KeyValuePair<Thing, float>> targetDistanceCache = new List<KeyValuePair<Thing, float>>();
         public override void PostSpawnSetup(bool respawningAfterLoad)
         {
             base.PostSpawnSetup(respawningAfterLoad);
@@ -66,10 +67,7 @@ namespace SRA
             }
             foreach (var arc in activeArcs)
             {
-                if (arc.mesh != null)
-                {
-                    Object.Destroy(arc.mesh);
-                }
+                if (arc.mesh != null) Object.Destroy(arc.mesh);
             }
             activeArcs.Clear();
         }
@@ -83,7 +81,6 @@ namespace SRA
             Scribe_Values.Look(ref lastValidTargetTick, "lastValidTargetTick", 0);
             Scribe_Values.Look(ref currentPostKillDelay, "currentPostKillDelay", 0);
             Scribe_TargetInfo.Look(ref forcedTarget, "forcedTarget", LocalTargetInfo.Invalid);
-            Scribe_References.Look(ref currentTarget, "currentTarget");
         }
         private bool IsPoweredAndFunctional => (powerComp == null || powerComp.PowerOn) && (breakdownComp == null || !breakdownComp.BrokenDown);
         public float BaseAngle => parent.Rotation.AsAngle + Props.baseRestAngle;
@@ -112,10 +109,7 @@ namespace SRA
         public override void CompTick()
         {
             base.CompTick();
-            if (!parent.Spawned || Props == null)
-            {
-                return;
-            }
+            if (!parent.Spawned || Props == null) return;
             UpdateVisualArcs();
             if (!isArmed || !IsPoweredAndFunctional)
             {
@@ -153,24 +147,39 @@ namespace SRA
         {
             if (forcedTarget.IsValid)
             {
-                bool invalid = forcedTarget.HasThing ? (forcedTarget.Thing.Destroyed || (forcedTarget.Thing is Pawn p && p.Dead)) : !IsTargetValid(forcedTarget.Cell);
-                if (invalid)
+                bool invalid = false;
+                if (forcedTarget.HasThing)
                 {
-                    if (currentTarget != null)
+                    Thing t = forcedTarget.Thing;
+                    invalid = t.Destroyed || !t.Spawned || (t is Pawn p && p.Dead) || !IsTargetValid(t.Position);
+                    if (!invalid && Props.requireLineOfSight && !GenSight.LineOfSight(parent.Position, t.Position, parent.Map, true))
                     {
-                        currentPostKillDelay = Props.postKillDelayTicks;
+                        invalid = true;
                     }
-                    ResetTarget();
                 }
                 else
                 {
-                    currentTarget = forcedTarget.Thing;
+                    invalid = !IsTargetValid(forcedTarget.Cell);
+                    if (!invalid && Props.requireLineOfSight && !GenSight.LineOfSight(parent.Position, forcedTarget.Cell, parent.Map, true))
+                    {
+                        invalid = true;
+                    }
                 }
+                if (invalid)
+                {
+                    if (currentTarget != null) currentPostKillDelay = Props.postKillDelayTicks;
+                    ResetTarget();
+                }
+                else currentTarget = forcedTarget.Thing;
                 return;
             }
             if (currentTarget != null)
             {
                 bool invalid = currentTarget.Destroyed || !currentTarget.Spawned || !IsTargetValid(currentTarget.Position) || (currentTarget is Pawn p && (p.Dead || p.Downed));
+                if (!invalid && Props.requireLineOfSight && !GenSight.LineOfSight(parent.Position, currentTarget.Position, parent.Map, true))
+                {
+                    invalid = true;
+                }
                 if (invalid)
                 {
                     currentPostKillDelay = Props.postKillDelayTicks;
@@ -198,36 +207,31 @@ namespace SRA
         }
         private Thing FindBestTarget()
         {
-            if (parent.Faction == null)
-            {
-                return null;
-            }
-            Thing bestTarget = null;
-            float minDistSq = float.MaxValue;
+            if (parent.Faction == null) return null;
             float rangeSq = Props.range * Props.range;
             float minRangeSq = Props.minRange * Props.minRange;
+            targetDistanceCache.Clear();
             foreach (IAttackTarget target in parent.Map.attackTargetsCache.TargetsHostileToFaction(parent.Faction))
             {
                 Thing t = target.Thing;
-                if (t is Pawn p && (p.Dead || p.Downed))
-                {
-                    continue;
-                }
-                if (t.Position.Fogged(parent.Map) || t.Position.Roofed(parent.Map))
-                {
-                    continue;
-                }
+                if (t is Pawn p && (p.Dead || p.Downed)) continue;
+                if (t.Position.Fogged(parent.Map) || t.Position.Roofed(parent.Map)) continue;
                 float distSq = t.Position.DistanceToSquared(parent.Position);
-                if (distSq <= rangeSq && distSq >= minRangeSq && distSq < minDistSq)
+                if (distSq <= rangeSq && distSq >= minRangeSq)
                 {
-                    if (!Props.requireLineOfSight || GenSight.LineOfSight(parent.Position, t.Position, parent.Map, true))
-                    {
-                        minDistSq = distSq;
-                        bestTarget = t;
-                    }
+                    targetDistanceCache.Add(new KeyValuePair<Thing, float>(t, distSq));
                 }
             }
-            return bestTarget;
+            if (targetDistanceCache.Count == 0) return null;
+            targetDistanceCache.Sort((a, b) => a.Value.CompareTo(b.Value));
+            foreach (var kvp in targetDistanceCache)
+            {
+                if (!Props.requireLineOfSight || GenSight.LineOfSight(parent.Position, kvp.Key.Position, parent.Map, true))
+                {
+                    return kvp.Key;
+                }
+            }
+            return null;
         }
         private void RotateTowards(float angle)
         {
@@ -237,10 +241,7 @@ namespace SRA
         private void FireAt(LocalTargetInfo target)
         {
             Map map = parent.Map;
-            if (map == null)
-            {
-                return;
-            }
+            if (map == null) return;
             Vector3 originPos = GetArcOriginPosition();
             Vector3 endPos = target.HasThing ? target.Thing.DrawPos : target.Cell.ToVector3Shifted();
             IntVec3 centerCell = target.HasThing ? target.Thing.Position : target.Cell;
@@ -252,10 +253,7 @@ namespace SRA
                 Thing t = target.Thing;
                 Pawn victim = t as Pawn;
                 ignored.Add(t);
-                if (Props.empDamageAmount > 0)
-                {
-                    t.TakeDamage(new DamageInfo(DamageDefOf.EMP, Props.empDamageAmount, -1, -1, parent));
-                }
+                if (Props.empDamageAmount > 0) t.TakeDamage(new DamageInfo(DamageDefOf.EMP, Props.empDamageAmount, -1, -1, parent));
                 if (t.Spawned)
                 {
                     DamageWorker.DamageResult res = t.TakeDamage(new DamageInfo(damDef, Props.damageAmount, armorPen, -1, parent));
@@ -275,15 +273,9 @@ namespace SRA
                     if (Props.dessicateCorpse)
                     {
                         CompRottable rotComp = victim.Corpse.GetComp<CompRottable>();
-                        if (rotComp != null)
-                        {
-                            rotComp.RotProgress = 1000000f;
-                        }
+                        if (rotComp != null) rotComp.RotProgress = 1000000f;
                     }
-                    if (Props.igniteCorpseSize > 0f)
-                    {
-                        victim.Corpse.TryAttachFire(Props.igniteCorpseSize, parent);
-                    }
+                    if (Props.igniteCorpseSize > 0f) victim.Corpse.TryAttachFire(Props.igniteCorpseSize, parent);
                     ignored.Add(victim.Corpse);
                 }
             }
@@ -296,10 +288,7 @@ namespace SRA
             IEnumerable<IntVec3> cells = GenRadial.RadialCellsAround(centerCell, effectRadius, true);
             foreach (IntVec3 c in cells)
             {
-                if (!c.InBounds(map))
-                {
-                    continue;
-                }
+                if (!c.InBounds(map)) continue;
                 List<Thing> list = c.GetThingList(map);
                 for (int i = list.Count - 1; i >= 0; i--)
                 {
@@ -310,10 +299,7 @@ namespace SRA
                         {
                             foreach (var rule in Props.organDamages)
                             {
-                                if (rule.tag == null || rule.damageAmount <= 0)
-                                {
-                                    continue;
-                                }
+                                if (rule.tag == null || rule.damageAmount <= 0) continue;
                                 foreach (var part in p.RaceProps.body.GetPartsWithTag(rule.tag))
                                 {
                                     ApplyDirectOrganDamage(p, part, rule.damageDef ?? DamageDefOf.Burn, rule.damageAmount);
@@ -325,21 +311,14 @@ namespace SRA
                     {
                         if (Props.igniteCorpseSize > 0f)
                         {
-                            if (corpse.Position.InBounds(map))
-                            {
-                                FireUtility.TryStartFireIn(corpse.Position, map, Props.igniteCorpseSize, parent);
-                            }
+                            if (corpse.Position.InBounds(map)) FireUtility.TryStartFireIn(corpse.Position, map, Props.igniteCorpseSize, parent);
                             corpse.TryAttachFire(Props.igniteCorpseSize, parent);
                         }
                     }
                 }
             }
             Mesh dummy = null;
-            try
-            {
-                WeatherEvent_LightningStrike.DoStrike(centerCell, map, ref dummy);
-            }
-            catch { }
+            try { WeatherEvent_LightningStrike.DoStrike(centerCell, map, ref dummy); } catch { }
             Vector3 railDir = Quaternion.AngleAxis(curTurretAngle, Vector3.up) * Vector3.forward;
             Vector3 railPerp = new Vector3(-railDir.z, 0, railDir.x);
             float spacing = Props.arcSpacing / 2f;
@@ -351,16 +330,10 @@ namespace SRA
         }
         private void ApplyDirectOrganDamage(Pawn pawn, BodyPartRecord part, DamageDef def, float amount)
         {
-            if (pawn.health.hediffSet.PartIsMissing(part))
-            {
-                return;
-            }
+            if (pawn.health.hediffSet.PartIsMissing(part)) return;
             bool isSolid = part.def.IsSolid(part, pawn.health.hediffSet.hediffs);
             HediffDef hDef = (isSolid ? def.hediffSolid : def.hediff) ?? DamageDefOf.Burn.hediff;
-            if (hDef == null)
-            {
-                return;
-            }
+            if (hDef == null) return;
             Hediff_Injury injury = (Hediff_Injury)HediffMaker.MakeHediff(hDef, pawn, part);
             injury.Severity = amount;
             pawn.health.AddHediff(injury, part, null);
@@ -376,43 +349,34 @@ namespace SRA
         }
         private void UpdateVisualArcs()
         {
-            if (activeArcs == null)
-            {
-                activeArcs = new List<ActiveArcMesh>();
-            }
+            if (activeArcs == null) activeArcs = new List<ActiveArcMesh>();
             for (int i = activeArcs.Count - 1; i >= 0; i--)
             {
                 activeArcs[i].ageTicks++;
                 if (activeArcs[i].ageTicks > Props.arcDurationTicks)
                 {
-                    if (activeArcs[i].mesh != null)
-                    {
-                        Object.Destroy(activeArcs[i].mesh);
-                    }
+                    if (activeArcs[i].mesh != null) Object.Destroy(activeArcs[i].mesh);
                     activeArcs.RemoveAt(i);
                 }
             }
             if (isArmed && IsPoweredAndFunctional && Props.drawIdleArc && Find.TickManager.TicksGame - lastIdleArcTick > 3)
             {
-                if (idleArcMesh != null)
-                {
-                    Object.Destroy(idleArcMesh);
-                }
                 Vector3 origin = GetArcOriginPosition();
                 Vector3 railDir = Quaternion.AngleAxis(curTurretAngle, Vector3.up) * Vector3.forward;
                 Vector3 railPerp = new Vector3(-railDir.z, 0, railDir.x);
-                idleArcMesh = PulseArcMeshMaker.GenerateArcMesh(origin + railPerp * (Props.arcSpacing / 2f), origin - railPerp * (Props.arcSpacing / 2f), Props.idleArcAmp, Props.idleArcFreq, Props.idleArcThickness);
-                idleArcStartPos = origin + railPerp * (Props.arcSpacing / 2f);
+                float slideOffset = Mathf.Sin(Find.TickManager.TicksGame * 0.05f) * (Props.arcRailLength / 2f);
+                Vector3 slideVec = railDir * slideOffset;
+                Vector3 startPos = origin + railPerp * (Props.arcSpacing / 2f) + slideVec;
+                Vector3 endPos = origin - railPerp * (Props.arcSpacing / 2f) + slideVec;
+                PulseArcMeshMaker.UpdateArcMesh(ref idleArcMesh, startPos, endPos, Props.idleArcAmp, Props.idleArcFreq, Props.idleArcThickness);
+                idleArcStartPos = startPos;
                 lastIdleArcTick = Find.TickManager.TicksGame;
             }
         }
         public override void PostDraw()
         {
             base.PostDraw();
-            if (!parent.Spawned || Props == null)
-            {
-                return;
-            }
+            if (!parent.Spawned || Props == null) return;
             Vector3 basePos = GetAbsolutePosition();
             if (turretMat != null)
             {
@@ -440,14 +404,8 @@ namespace SRA
         }
         public override IEnumerable<Gizmo> CompGetGizmosExtra()
         {
-            foreach (Gizmo g in base.CompGetGizmosExtra())
-            {
-                yield return g;
-            }
-            if (parent.Faction == Faction.OfPlayer)
-            {
-                yield return new Gizmo_PulseElectrodeController(this);
-            }
+            foreach (Gizmo g in base.CompGetGizmosExtra()) yield return g;
+            if (parent.Faction == Faction.OfPlayer) yield return new Gizmo_PulseElectrodeController(this);
         }
     }
 }

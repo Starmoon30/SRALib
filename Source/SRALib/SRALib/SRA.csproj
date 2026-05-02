@@ -118,6 +118,7 @@
     <Compile Include="EventSystem\QuestNode\QuestNode_EventLetter.cs" />
     <Compile Include="EventSystem\QuestNode\QuestNode_Root_EventLetter.cs" />
     <Compile Include="EventSystem\QuestNode\QuestNode_WriteToEventVariablesWithAdd.cs" />
+    <Compile Include="CompAbilityEffect_Skip.cs" />
     <Compile Include="KTLaserADS\KTPulseElectrode_Comp.cs" />
     <Compile Include="KTLaserADS\KTPulseElectrode_Core.cs" />
     <Compile Include="KTLaserADS\KTPulseElectrode_Interaction.cs" />
@@ -138,6 +139,11 @@
     <Compile Include="Flyover\SRA_SpawnFlyOver\CompAbilityEffect_SpawnFlyOver.cs" />
     <Compile Include="Flyover\SRA_SpawnFlyOver\CompProperties_AbilitySpawnFlyOver.cs" />
     <Compile Include="Flyover\ThingclassFlyOver.cs" />
+    <Compile Include="RemoteMonitoring\CompProperties_RemoteMapMonitor.cs" />
+    <Compile Include="RemoteMonitoring\CompRemoteMapMonitor.cs" />
+    <Compile Include="RemoteMonitoring\Patch_MapPawns_AnyPawnBlockingMapRemoval_RemoteMonitoring.cs" />
+    <Compile Include="RemoteMonitoring\RemoteMonitoringMapCache.cs" />
+    <Compile Include="RemoteMonitoring\RemoteMonitoringUtility.cs" />
     <Compile Include="SRALog.cs" />
     <Compile Include="HediffComp_SRANeedMin.cs" />
     <Compile Include="HediffComp_WeaponSwitcher.cs" />

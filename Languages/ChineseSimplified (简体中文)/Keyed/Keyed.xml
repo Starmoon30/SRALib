@@ -22,4 +22,20 @@
 	
 	<SRAWeaponSwitcherLabel>武器/模式切换</SRAWeaponSwitcherLabel>
 	<SRAWeaponSwitcherDesc>切换武器的类型或者模式。</SRAWeaponSwitcherDesc>
+
+	<SRA_RemoteMonitoring_SelectTargetLabel>选择远程目标</SRA_RemoteMonitoring_SelectTargetLabel>
+	<SRA_RemoteMonitoring_SelectTargetDesc>选择一个世界物体并建立远程地图监控链接。</SRA_RemoteMonitoring_SelectTargetDesc>
+	<SRA_RemoteMonitoring_OpenTargetLabel>打开远程地图</SRA_RemoteMonitoring_OpenTargetLabel>
+	<SRA_RemoteMonitoring_OpenTargetDesc>远程打开已链接地图，被链接的地图不会自动移除。</SRA_RemoteMonitoring_OpenTargetDesc>
+	<SRA_RemoteMonitoring_DisconnectTargetLabel>断开远程地图监控</SRA_RemoteMonitoring_DisconnectTargetLabel>
+	<SRA_RemoteMonitoring_DisconnectTargetDesc>停止维持当前远程地图目标。</SRA_RemoteMonitoring_DisconnectTargetDesc>
+	<SRA_RemoteMonitoring_TargetSelectionPrompt>选择一个世界地图目标</SRA_RemoteMonitoring_TargetSelectionPrompt>
+	<SRA_RemoteMonitoring_NoTargetMessage>当前尚未链接远程地图目标。</SRA_RemoteMonitoring_NoTargetMessage>
+	<SRA_RemoteMonitoring_InvalidTargetMessage>已链接的远程目标已失效。</SRA_RemoteMonitoring_InvalidTargetMessage>
+	<SRA_RemoteMonitoring_InvalidSelectionMessage>你必须选择一个能够承载地图的世界物体。</SRA_RemoteMonitoring_InvalidSelectionMessage>
+	<SRA_RemoteMonitoring_LinkEstablishedMessage>远程地图监控链接已建立：{0}</SRA_RemoteMonitoring_LinkEstablishedMessage>
+	<SRA_RemoteMonitoring_LinkDisconnectedMessage>远程地图监控链接已断开。</SRA_RemoteMonitoring_LinkDisconnectedMessage>
+	<SRA_RemoteMonitoring_OpenFailedMessage>打开远程地图失败。</SRA_RemoteMonitoring_OpenFailedMessage>
+	<SRA_RemoteMonitoring_InspectString>远程地图监控目标：{0}</SRA_RemoteMonitoring_InspectString>
+	<SRA_RemoteMonitoring_ResearchRequiredMessage>需要完成科技：{0}</SRA_RemoteMonitoring_ResearchRequiredMessage>
 </LanguageData>

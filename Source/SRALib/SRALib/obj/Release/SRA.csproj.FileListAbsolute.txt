@@ -10,3 +10,20 @@ D:\steam\steamapps\common\RimWorld\Mods\StellarRegulator Array\Source\StellarReg
 D:\steam\steamapps\common\RimWorld\Mods\StellarRegulator Array\Source\StellarRegulator_Array\StellarRegulator_Array\obj\Release\SRA.csproj.Up2Date
 D:\steam\steamapps\common\RimWorld\Mods\StellarRegulator Array\Source\StellarRegulator_Array\StellarRegulator_Array\obj\Release\StellarRegulator_Array.dll
 D:\steam\steamapps\common\RimWorld\Mods\StellarRegulator Array\Source\StellarRegulator_Array\StellarRegulator_Array\obj\Release\StellarRegulator_Array.pdb
+D:\steam\steamapps\common\RimWorld\Mods\SRALib\Source\SRALib\SRALib\bin\Release\SRALib.dll
+D:\steam\steamapps\common\RimWorld\Mods\SRALib\Source\SRALib\SRALib\bin\Release\SRALib.pdb
+D:\steam\steamapps\common\RimWorld\Mods\SRALib\Source\SRALib\SRALib\bin\Release\0Harmony.dll
+D:\steam\steamapps\common\RimWorld\Mods\SRALib\Source\SRALib\SRALib\bin\Release\HarmonyMod.dll
+D:\steam\steamapps\common\RimWorld\Mods\SRALib\Source\SRALib\SRALib\bin\Release\UnityEngine.IMGUIModule.dll
+D:\steam\steamapps\common\RimWorld\Mods\SRALib\Source\SRALib\SRALib\bin\Release\UnityEngine.TextRenderingModule.dll
+D:\steam\steamapps\common\RimWorld\Mods\SRALib\Source\SRALib\SRALib\bin\Release\UnityEngine.UIModule.dll
+D:\steam\steamapps\common\RimWorld\Mods\SRALib\Source\SRALib\SRALib\bin\Release\UnityEngine.InputLegacyModule.dll
+D:\steam\steamapps\common\RimWorld\Mods\SRALib\Source\SRALib\SRALib\bin\Release\netstandard.dll
+D:\steam\steamapps\common\RimWorld\Mods\SRALib\Source\SRALib\SRALib\bin\Release\UnityEngine.SharedInternalsModule.dll
+D:\steam\steamapps\common\RimWorld\Mods\SRALib\Source\SRALib\SRALib\bin\Release\UnityEngine.TextCoreFontEngineModule.dll
+D:\steam\steamapps\common\RimWorld\Mods\SRALib\Source\SRALib\SRALib\bin\Release\UnityEngine.TextCoreTextEngineModule.dll
+D:\steam\steamapps\common\RimWorld\Mods\SRALib\Source\SRALib\SRALib\obj\Release\SRA.csproj.AssemblyReference.cache
+D:\steam\steamapps\common\RimWorld\Mods\SRALib\Source\SRALib\SRALib\obj\Release\SRA.csproj.CoreCompileInputs.cache
+D:\steam\steamapps\common\RimWorld\Mods\SRALib\Source\SRALib\SRALib\obj\Release\SRA.csproj.Up2Date
+D:\steam\steamapps\common\RimWorld\Mods\SRALib\Source\SRALib\SRALib\obj\Release\SRALib.dll
+D:\steam\steamapps\common\RimWorld\Mods\SRALib\Source\SRALib\SRALib\obj\Release\SRALib.pdb

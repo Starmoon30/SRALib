@@ -71,75 +71,80 @@ namespace SRA
     }
     public static class PulseArcMeshMaker
     {
-        public static Mesh GenerateArcMesh(Vector3 start, Vector3 end, float perturbAmp, float perturbFreq, float thickness)
+        private static List<Vector3> vertBuffer = new List<Vector3>();
+        private static List<Vector2> uvBuffer = new List<Vector2>();
+        private static List<int> triBuffer = new List<int>();
+        private static List<Vector2> centerBuffer = new List<Vector2>();
+        private static Perlin noiseGen = new Perlin(1.0, 2.0, 0.5, 6, 42, QualityMode.High);
+        public static void UpdateArcMesh(ref Mesh mesh, Vector3 start, Vector3 end, float perturbAmp, float perturbFreq, float thickness)
         {
+            if (mesh == null)
+            {
+                mesh = new Mesh();
+                mesh.name = "PulseArcMesh";
+                mesh.MarkDynamic();
+            }
+            vertBuffer.Clear();
+            uvBuffer.Clear();
+            triBuffer.Clear();
+            centerBuffer.Clear();
             Vector3 localEnd = (end - start).Yto0();
             float dist = localEnd.magnitude;
             if (dist < 0.1f)
             {
-                return new Mesh();
+                mesh.Clear();
+                return;
             }
             Vector3 dir = localEnd.normalized;
             Vector3 perp = new Vector3(-dir.z, 0, dir.x);
             int segments = Mathf.CeilToInt(dist / 0.25f);
-            if (segments < 2)
-            {
-                segments = 2;
-            }
-            Perlin noise = new Perlin(perturbFreq, 2.0, 0.5, 6, Rand.Range(0, int.MaxValue), QualityMode.High);
-            List<Vector2> centerPoints = new List<Vector2>();
+            if (segments < 2) segments = 2;
+            float zOffset = Rand.Range(0f, 10000f);
             for (int i = 0; i <= segments; i++)
             {
                 float t = (float)i / segments;
                 Vector3 basePos = dir * (t * dist);
                 float fade = Mathf.Sin(t * Mathf.PI);
-                float offset = (float)noise.GetValue(i, 0.0, 0.0) * perturbAmp * fade;
+                float offset = (float)noiseGen.GetValue(i * perturbFreq, 0.0, zOffset) * perturbAmp * fade;
                 Vector3 finalPos = basePos + perp * offset;
-                centerPoints.Add(new Vector2(finalPos.x, finalPos.z));
+                centerBuffer.Add(new Vector2(finalPos.x, finalPos.z));
             }
-            List<Vector2> verts2D = new List<Vector2>();
             float halfWidth = thickness / 2f;
             Vector2 perp2D = new Vector2(perp.x, perp.z);
-            for (int i = 0; i < centerPoints.Count; i++)
+            for (int i = 0; i < centerBuffer.Count; i++)
             {
-                verts2D.Add(centerPoints[i] - perp2D * halfWidth);
-                verts2D.Add(centerPoints[i] + perp2D * halfWidth);
-            }
-            Vector3[] vertices = new Vector3[verts2D.Count];
-            Vector2[] uvs = new Vector2[verts2D.Count];
-            for (int i = 0; i < verts2D.Count; i++)
-            {
-                vertices[i] = new Vector3(verts2D[i].x, 0, verts2D[i].y);
+                vertBuffer.Add(new Vector3(centerBuffer[i].x - perp2D.x * halfWidth, 0, centerBuffer[i].y - perp2D.y * halfWidth));
+                vertBuffer.Add(new Vector3(centerBuffer[i].x + perp2D.x * halfWidth, 0, centerBuffer[i].y + perp2D.y * halfWidth));
             }
             float v = 0f;
-            for (int i = 0; i < verts2D.Count; i += 2)
+            for (int i = 0; i < centerBuffer.Count; i++)
             {
-                uvs[i] = new Vector2(0f, v);
-                uvs[i + 1] = new Vector2(1f, v);
+                uvBuffer.Add(new Vector2(0f, v));
+                uvBuffer.Add(new Vector2(1f, v));
                 v += 0.04f;
             }
-            int[] triangles = new int[(centerPoints.Count - 1) * 6];
-            int ti = 0;
-            for (int i = 0; i < centerPoints.Count - 1; i++)
+            for (int i = 0; i < centerBuffer.Count - 1; i++)
             {
                 int vi = i * 2;
-                triangles[ti++] = vi;
-                triangles[ti++] = vi + 1;
-                triangles[ti++] = vi + 2;
-                triangles[ti++] = vi + 2;
-                triangles[ti++] = vi + 1;
-                triangles[ti++] = vi + 3;
+                triBuffer.Add(vi);
+                triBuffer.Add(vi + 1);
+                triBuffer.Add(vi + 2);
+                triBuffer.Add(vi + 2);
+                triBuffer.Add(vi + 1);
+                triBuffer.Add(vi + 3);
             }
-            Mesh mesh = new Mesh
-            {
-                vertices = vertices,
-                uv = uvs,
-                triangles = triangles,
-                name = "PulseArcMesh"
-            };
+            mesh.Clear();
+            mesh.SetVertices(vertBuffer);
+            mesh.SetUVs(0, uvBuffer);
+            mesh.SetTriangles(triBuffer, 0);
             mesh.RecalculateBounds();
             mesh.bounds = new Bounds(mesh.bounds.center, new Vector3(1000f, 10f, 1000f));
-            return mesh;
+        }
+        public static Mesh GenerateArcMesh(Vector3 start, Vector3 end, float perturbAmp, float perturbFreq, float thickness)
+        {
+            Mesh m = null;
+            UpdateArcMesh(ref m, start, end, perturbAmp, perturbFreq, thickness);
+            return m;
         }
     }
 }

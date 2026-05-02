@@ -561,7 +561,6 @@ namespace SRA
 
             return AttackVerb.verbProps.defaultCooldownTime;
         }
-
         public override string GetInspectString()
         {
             StringBuilder stringBuilder = new StringBuilder();
@@ -575,7 +574,7 @@ namespace SRA
             {
                 stringBuilder.AppendLine("MinimumRange".Translate() + ": " + AttackVerb.verbProps.minRange.ToString("F0"));
             }
-            else if (base.Spawned && burstCooldownTicksLeft > 0 && BurstCooldownTime() > 5f)
+            if (base.Spawned && burstCooldownTicksLeft > 0 && BurstCooldownTime() > 5f)
             {
                 stringBuilder.AppendLine("CanFireIn".Translate() + ": " + burstCooldownTicksLeft.ToStringSecondsFromTicks());
             }
@@ -678,7 +677,7 @@ namespace SRA
                 }
             }
 
-            if (!HideForceTargetGizmo)
+            if (PlayerControlled)
             {
                 if (CanSetForcedTarget)
                 {

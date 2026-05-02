@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LanguageData>
+  
+  <SRA_Stats_MeleeAttackDamage_AOE_angle.label>Area attack arc</SRA_Stats_MeleeAttackDamage_AOE_angle.label>
+  <SRA_Stats_MeleeAttackDamage_AOE_angle.description>The arc angle of this weapon's area attack.</SRA_Stats_MeleeAttackDamage_AOE_angle.description>
+  <SRA_Stats_MeleeAttackDamage_AOE_angle.formatString>{0} deg</SRA_Stats_MeleeAttackDamage_AOE_angle.formatString>
+  
+  <SRA_Stats_MeleeAttackDamage_AOE_radius.label>Area attack radius</SRA_Stats_MeleeAttackDamage_AOE_radius.label>
+  <SRA_Stats_MeleeAttackDamage_AOE_radius.description>The radius of this weapon's area attack.</SRA_Stats_MeleeAttackDamage_AOE_radius.description>
+  <SRA_Stats_MeleeAttackDamage_AOE_radius.formatString>{0} cells</SRA_Stats_MeleeAttackDamage_AOE_radius.formatString>
+  
+  <SRA_Stats_MeleeAttackDamage_AOE_maxHitTarget.label>Max area attack targets</SRA_Stats_MeleeAttackDamage_AOE_maxHitTarget.label>
+  <SRA_Stats_MeleeAttackDamage_AOE_maxHitTarget.description>The maximum number of targets this weapon's area attack can hit.</SRA_Stats_MeleeAttackDamage_AOE_maxHitTarget.description>
+  <SRA_Stats_MeleeAttackDamage_AOE_maxHitTarget.formatString>{0}</SRA_Stats_MeleeAttackDamage_AOE_maxHitTarget.formatString>
+  
+  <SRA_Stats_MeleeAttackDamage_AOE_extraAccuracy.label>Accuracy bonus</SRA_Stats_MeleeAttackDamage_AOE_extraAccuracy.label>
+  <SRA_Stats_MeleeAttackDamage_AOE_extraAccuracy.description>How much this weapon reduces the attacker's miss chance when attacking.</SRA_Stats_MeleeAttackDamage_AOE_extraAccuracy.description>
+
+
+  <SRA_Stats_MeleeAttackDamage_AOE_extraTracking.label>Tracking bonus</SRA_Stats_MeleeAttackDamage_AOE_extraTracking.label>
+  <SRA_Stats_MeleeAttackDamage_AOE_extraTracking.description>How much this weapon reduces the target's dodge chance when attacking.</SRA_Stats_MeleeAttackDamage_AOE_extraTracking.description>
+
+
+</LanguageData>

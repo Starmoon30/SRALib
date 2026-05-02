@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LanguageData>
+
+	<SRA_BarrierTipExtra>-Barrier capacity: {0}\n-Recharge rate: {1}\n-Recharge delay: {2}\n-Recharge cooldown: {3}\n-Barrier efficiency: {4}\n-Damage cap: {5}\n-Damage reduction: {6}</SRA_BarrierTipExtra>
+
+	<SRABarrierTitle>-Barrier</SRABarrierTitle>
+  	<SRA_BarrierStatus>Barrier status</SRA_BarrierStatus>
+  	<SRA_BarrierValue>{0}/{1}</SRA_BarrierValue>
+  	<SRA_BarrierRecharging>Recharging: {0}s</SRA_BarrierRecharging>
+  	<SRA_BarrierRegen>Regen: {0}/s</SRA_BarrierRegen>
+	<SRABarrierTooltip>The barrier can block incoming damage.\n\n-Barriers have barrier efficiency. Incoming damage is multiplied by this value before it is used to calculate barrier loss.\n-The barrier also takes the unit's incoming damage multiplier into account and multiplies it with barrier efficiency. If the incoming damage multiplier is above 100%, it will not be applied.\n-Some barriers have a recharge cooldown. If the barrier is completely destroyed, it enters recharge cooldown. If this cooldown is greater than 0, the barrier will be fully restored immediately when the cooldown ends.\n-Some barriers have a damage cap, preventing any single hit from exceeding that value. This only takes effect when the value is greater than 0.\n-Some barriers have damage reduction, reducing incoming damage by the specified amount. This only takes effect when the value is greater than 0.\n\n-Recharge delay: {0}\n-Recharge cooldown: {1}\n-Barrier efficiency: {2}\n-Damage cap: {3}\n-Damage reduction: {4}</SRABarrierTooltip>
+	<SRA_RegenTipExtra>-Regenerates {0} health per second.</SRA_RegenTipExtra>
+
+	<SRAExecuteDeathLabel>Self-destruct</SRAExecuteDeathLabel>
+	<SRAExecuteDeathDesc>Destroy immediately.</SRAExecuteDeathDesc>
+	<SRAExecuteDeathTip>Time remaining:</SRAExecuteDeathTip>
+
+	
+	<SRA_IgnoreTerrainCostTipExtra>\n-Low-altitude hover: This unit's movement speed is not affected by terrain.\n</SRA_IgnoreTerrainCostTipExtra>
+
+
+	
+	<SRAWeaponSwitcherLabel>Weapon/Mode Switch</SRAWeaponSwitcherLabel>
+	<SRAWeaponSwitcherDesc>Switch the weapon type or mode.</SRAWeaponSwitcherDesc>
+
+	<SRA_RemoteMonitoring_SelectTargetLabel>Select remote target</SRA_RemoteMonitoring_SelectTargetLabel>
+	<SRA_RemoteMonitoring_SelectTargetDesc>Select a world object and establish a remote map monitoring link.</SRA_RemoteMonitoring_SelectTargetDesc>
+	<SRA_RemoteMonitoring_OpenTargetLabel>Open remote map</SRA_RemoteMonitoring_OpenTargetLabel>
+	<SRA_RemoteMonitoring_OpenTargetDesc>Open the linked map remotely. Linked maps will not be removed automatically.</SRA_RemoteMonitoring_OpenTargetDesc>
+	<SRA_RemoteMonitoring_DisconnectTargetLabel>Disconnect remote map monitoring</SRA_RemoteMonitoring_DisconnectTargetLabel>
+	<SRA_RemoteMonitoring_DisconnectTargetDesc>Stop maintaining the current remote map target.</SRA_RemoteMonitoring_DisconnectTargetDesc>
+	<SRA_RemoteMonitoring_TargetSelectionPrompt>Select a world map target</SRA_RemoteMonitoring_TargetSelectionPrompt>
+	<SRA_RemoteMonitoring_NoTargetMessage>No remote map target is currently linked.</SRA_RemoteMonitoring_NoTargetMessage>
+	<SRA_RemoteMonitoring_InvalidTargetMessage>The linked remote target is no longer valid.</SRA_RemoteMonitoring_InvalidTargetMessage>
+	<SRA_RemoteMonitoring_InvalidSelectionMessage>You must select a world object that can host a map.</SRA_RemoteMonitoring_InvalidSelectionMessage>
+	<SRA_RemoteMonitoring_LinkEstablishedMessage>Remote map monitoring link established: {0}</SRA_RemoteMonitoring_LinkEstablishedMessage>
+	<SRA_RemoteMonitoring_LinkDisconnectedMessage>Remote map monitoring link disconnected.</SRA_RemoteMonitoring_LinkDisconnectedMessage>
+	<SRA_RemoteMonitoring_OpenFailedMessage>Failed to open the remote map.</SRA_RemoteMonitoring_OpenFailedMessage>
+	<SRA_RemoteMonitoring_InspectString>Remote map monitoring target: {0}</SRA_RemoteMonitoring_InspectString>
+	<SRA_RemoteMonitoring_ResearchRequiredMessage>Required research not completed: {0}</SRA_RemoteMonitoring_ResearchRequiredMessage>
+</LanguageData>
