@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection.Emit;
@@ -28,10 +28,11 @@ namespace SRA
                 Log.Error($"[SRA Barrier] Failed to apply Harmony patches: {ex}");
             }
         }
+
         public static bool BlockStunAndMentalState(Pawn p)
         {
             if (p == null) return false;
-            var barriers = SRABarrierCache.GetSorted(p); // 已按 priority 降序
+            var barriers = SRABarrierCache.GetSorted(p);
             if (barriers == null || barriers.Count == 0) return false;
             for (int i = 0; i < barriers.Count; i++)
             {
@@ -41,12 +42,13 @@ namespace SRA
             }
             return false;
         }
+
         public static void PreApplyDamage_Prefix(Pawn __instance, ref DamageInfo dinfo)
         {
             if (__instance == null || __instance.Dead || __instance.health == null) return;
             if (dinfo.Amount <= 0.001f) return;
 
-            var barriers = SRABarrierCache.GetSorted(__instance); // 已按 priority 降序
+            var barriers = SRABarrierCache.GetSorted(__instance);
             if (barriers == null || barriers.Count == 0) return;
 
             for (int i = 0; i < barriers.Count; i++)
@@ -73,11 +75,12 @@ namespace SRA
             Pawn pawn = __instance.parent as Pawn;
             if (pawn != null && SRABarrierHarmonyPatches.BlockStunAndMentalState(pawn))
             {
-                return false; // 阻断 StunFor
+                return false;
             }
             return true;
         }
     }
+
     [HarmonyPatch(typeof(MentalStateHandler), nameof(MentalStateHandler.TryStartMentalState))]
     public static class Patch_MentalStateHandler_TryStartMentalState
     {
@@ -95,8 +98,9 @@ namespace SRA
             return true;
         }
     }
+
     [HarmonyPatch(typeof(Pawn_HealthTracker), nameof(Pawn_HealthTracker.AddHediff),
-    new Type[] { typeof(HediffDef), typeof(BodyPartRecord), typeof(DamageInfo?), typeof(DamageWorker.DamageResult) })]
+        new Type[] { typeof(HediffDef), typeof(BodyPartRecord), typeof(DamageInfo?), typeof(DamageWorker.DamageResult) })]
     public static class Patch_PawnHealthTracker_AddHediff_Def
     {
         static bool Prefix(Pawn ___pawn, HediffDef def, ref Hediff __result)
@@ -109,25 +113,22 @@ namespace SRA
             return true;
         }
     }
+
     [HarmonyPatch(typeof(Pawn), "GetGizmos")]
     public static class Pawn_GetGizmos_Patch
     {
         static void Postfix(Pawn __instance, ref IEnumerable<Gizmo> __result)
         {
-            // 如果当前选中的不是这个pawn，则不做任何事
             if (Find.Selector.SingleSelectedThing != __instance)
                 return;
 
-            // 获取需要总是显示的gizmo
             var alwaysShowGizmos = GetAlwaysShowGizmos(__instance);
             if (alwaysShowGizmos != null)
             {
-                // 将原来的gizmo和新的gizmo合并
                 __result = __result.Concat(alwaysShowGizmos);
             }
         }
 
-        // 获取所有应该总是显示的 Gizmo
         public static IEnumerable<Gizmo> GetAlwaysShowGizmos(Pawn pawn)
         {
             if (Find.Selector.SingleSelectedThing != pawn || pawn.IsColonistPlayerControlled || pawn.IsColonyMech || pawn.IsPrisonerOfColony || (pawn.Dead && pawn.HasShowGizmosOnCorpseHediff))
@@ -136,7 +137,6 @@ namespace SRA
             {
                 foreach (Hediff hediff in pawn.health.hediffSet.hediffs)
                 {
-                    // 检查 Hediff 本身
                     if (hediff is IAlwaysShowGizmo alwaysShowHediff && alwaysShowHediff.AlwaysShowGizmo)
                     {
                         foreach (Gizmo gizmo in hediff.GetGizmos())
@@ -144,7 +144,6 @@ namespace SRA
                             yield return gizmo;
                         }
                     }
-                    // 检查 HediffComps
                     if (hediff is HediffWithComps hediffWithComps)
                     {
                         foreach (HediffComp comp in hediffWithComps.comps)

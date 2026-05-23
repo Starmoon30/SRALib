@@ -2,6 +2,8 @@
 <LanguageData>
 
 	<SRA_BarrierTipExtra>-屏障上限：{0}\n-回复速度：{1}\n-回复延迟：{2}\n-充能冷却：{3}\n-屏障效率：{4}\n-损伤上限：{5}\n-损伤降低：{6}</SRA_BarrierTipExtra>
+	<SRA_BarrierHardenedExtra>\n-硬化屏障：此屏障具有等同于单位自身最终护甲的护甲。</SRA_BarrierHardenedExtra>
+	<SRA_BarrierDeflectiveExtra>\n-偏斜屏障：此屏障具有等同于单位自身最终近战闪避率的通用闪避率。</SRA_BarrierDeflectiveExtra>
 
 	<SRABarrierTitle>-屏障</SRABarrierTitle>
   	<SRA_BarrierStatus>屏障状态</SRA_BarrierStatus>
@@ -10,6 +12,7 @@
   	<SRA_BarrierRegen>回复: {0}/秒</SRA_BarrierRegen>
 	<SRABarrierTooltip>屏障可以阻挡受到的伤害。\n\n-屏障具有屏障效率，所受到的伤害会在与屏障效率相乘后再用于计算损失的屏障值。\n-屏障会计算单位的承伤乘数，并与屏障效率乘算。当承伤乘数高于100%时，则不会参与计算。\n-某些屏障具有充能冷却。如果屏障被完全摧毁，就会进入充能冷却。冷却时间大于0时，冷却完成会立即充满护盾。\n-某些屏障具有损伤上限，受到的伤害不会高于这个上限。仅当此值大于0时才生效。\n-某些屏障具有损伤降低，受到的伤害会降低对应的值。仅当此值大于0时才生效。\n\n-回复延迟：{0}\n-充能冷却：{1}\n-屏障效率：{2}\n-损伤上限：{3}\n-损伤降低：{4}</SRABarrierTooltip>
 	<SRA_RegenTipExtra>-每秒再生 {0} 点生命值。</SRA_RegenTipExtra>
+	<SRA_NeedMinTipExtra>\n-活力源流：该单位的需求仅仅只是一种爱好而非必要。\n</SRA_NeedMinTipExtra>
 
 	<SRAExecuteDeathLabel>自毁</SRAExecuteDeathLabel>
 	<SRAExecuteDeathDesc>立即自毁。</SRAExecuteDeathDesc>
@@ -38,4 +41,16 @@
 	<SRA_RemoteMonitoring_OpenFailedMessage>打开远程地图失败。</SRA_RemoteMonitoring_OpenFailedMessage>
 	<SRA_RemoteMonitoring_InspectString>远程地图监控目标：{0}</SRA_RemoteMonitoring_InspectString>
 	<SRA_RemoteMonitoring_ResearchRequiredMessage>需要完成科技：{0}</SRA_RemoteMonitoring_ResearchRequiredMessage>
+	<SRA_RemoteMonitoring_NonHostileSettlementMessage>不能选择或打开未敌对势力的据点。当前势力：{0}</SRA_RemoteMonitoring_NonHostileSettlementMessage>
+
+	<SRA_ClearTimedGameConditions_Label>解除限时天气</SRA_ClearTimedGameConditions_Label>
+	<SRA_ClearTimedGameConditions_Desc>解除当前地图上所有不在白名单中的限时天气状况或环境效果。</SRA_ClearTimedGameConditions_Desc>
+	<SRA_ClearTimedGameConditions_NoTargetMessage>当前地图上没有可解除的限时天气状况。</SRA_ClearTimedGameConditions_NoTargetMessage>
+	<SRA_ClearTimedGameConditions_ClearedMessage>已解除 {0} 个限时天气状况：{1}</SRA_ClearTimedGameConditions_ClearedMessage>
+	<SRA_ClearTimedGameConditions_PowerRequiredMessage>需要供电才能解除限时天气状况。</SRA_ClearTimedGameConditions_PowerRequiredMessage>
+	<SRA_BuildingDamageAdjusterLabel>损伤抵抗</SRA_BuildingDamageAdjusterLabel>
+	<SRA_BuildingDamageAdjusterDesc>这个建筑能抵抗受到的伤害。\n-损伤效率：所受到的伤害会在与损伤效率相乘后再用于计算损失的耐久度。\n-损伤上限：受到的伤害不会高于这个上限。仅当此值大于0时才生效。\n-损伤降低：受到的伤害会降低对应的值。仅当此值大于0时才生效。</SRA_BuildingDamageAdjusterDesc>
+	<SRA_BuildingDamageAdjusterValueMult>损伤效率：{0}</SRA_BuildingDamageAdjusterValueMult>
+	<SRA_BuildingDamageAdjusterValueMax>损伤上限：{0}</SRA_BuildingDamageAdjusterValueMax>
+	<SRA_BuildingDamageAdjusterValueReduce>损伤降低：{0}</SRA_BuildingDamageAdjusterValueReduce>
 </LanguageData>

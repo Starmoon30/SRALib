@@ -74,7 +74,6 @@ public class NorthArcModExtension : DefModExtension
         private int totalTicks;
         private bool initialized = false;
 
-        private int Fleck_MakeFleckTick;
         private Vector3 lastTickPosition;
 
         // 新增：绘制相关变量
@@ -147,7 +146,6 @@ public class NorthArcModExtension : DefModExtension
             Scribe_Values.Look(ref currentArcHeight, "currentArcHeight", 0f);
             Scribe_Values.Look(ref horizontalPosition, "horizontalPosition", Vector3.zero);
 
-            Scribe_Values.Look(ref Fleck_MakeFleckTick, "Fleck_MakeFleckTick", 0);
             Scribe_Values.Look(ref lastTickPosition, "lastTickPosition", Vector3.zero);
 
             // 追踪系统字段
@@ -354,44 +352,7 @@ public class NorthArcModExtension : DefModExtension
 
             exactPositionInt = nextPos;
 
-            // 2. 处理拖尾特效
-            if (TailDef != null && TailDef.tailFleckDef != null)
-            {
-                Fleck_MakeFleckTick++;
-                if (Fleck_MakeFleckTick >= TailDef.fleckDelayTicks)
-                {
-                    if (Fleck_MakeFleckTick >= (TailDef.fleckDelayTicks + TailDef.fleckMakeFleckTickMax))
-                    {
-                        Fleck_MakeFleckTick = TailDef.fleckDelayTicks;
-                    }
-
-                    Map map = base.Map;
-                    if (map != null)
-                    {
-                        int count = TailDef.fleckMakeFleckNum.RandomInRange;
-                        // 使用带高度的位置生成尾迹
-                        Vector3 currentPosition = PositionWithHeight;
-                        Vector3 previousPosition = lastTickPosition;
-
-                        if ((currentPosition - previousPosition).MagnitudeHorizontalSquared() > 0.0001f)
-                        {
-                            float moveAngle = (currentPosition - previousPosition).AngleFlat();
-
-                            for (int i = 0; i < count; i++)
-                            {
-                                float velocityAngle = TailDef.fleckAngle.RandomInRange + moveAngle;
-
-                                FleckCreationData dataStatic = FleckMaker.GetDataStatic(currentPosition, map, TailDef.tailFleckDef, TailDef.fleckScale.RandomInRange);
-                                dataStatic.rotation = moveAngle;
-                                dataStatic.rotationRate = TailDef.fleckRotation.RandomInRange;
-                                dataStatic.velocityAngle = velocityAngle;
-                                dataStatic.velocitySpeed = TailDef.fleckSpeed.RandomInRange;
-                                map.flecks.CreateFleck(dataStatic);
-                            }
-                        }
-                    }
-                }
-            }
+            TickTailFlecks(PositionWithHeight, lastTickPosition);
             lastTickPosition = PositionWithHeight;
             if (ticksFlying > totalTicks)
             {

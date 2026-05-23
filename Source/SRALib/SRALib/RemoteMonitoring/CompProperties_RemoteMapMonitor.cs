@@ -20,6 +20,7 @@ namespace SRA
         public string openFailedMessageKey = "SRA_RemoteMonitoring_OpenFailedMessage";
         public string inspectStringKey = "SRA_RemoteMonitoring_InspectString";
         public string researchRequiredMessageKey = "SRA_RemoteMonitoring_ResearchRequiredMessage";
+        public string nonHostileSettlementMessageKey = "SRA_RemoteMonitoring_NonHostileSettlementMessage";
         public string selectIconPath = "SRA/UI/Commands/UI_SRA_RemoteMonitoring";
         public string openIconPath = "SRA/UI/Commands/UI_SRA_RemoteMonitoring";
         public string disconnectIconPath = "SRA/UI/Commands/UI_SRA_RemoteMonitoringClose";

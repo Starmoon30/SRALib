@@ -1,48 +1,36 @@
-﻿using RimWorld;
-using RimWorld.BaseGen;
-using System;
-using System.Collections.Generic;
-using System.Threading;
-using UnityEngine;
 using Verse;
-using Verse.Sound;
 
 namespace SRA
 {
     public class HediffCompProperties_SRANeedMin : HediffCompProperties
     {
-        // Token: 0x060000DC RID: 220 RVA: 0x00005D44 File Offset: 0x00003F44
         public HediffCompProperties_SRANeedMin()
         {
-            this.compClass = typeof(HediffComp_SRANeedMin);
+            compClass = typeof(HediffComp_SRANeedMin);
         }
-
     }
+
     public class HediffComp_SRANeedMin : HediffComp
     {
+        private const float MinimumNeedLevel = 0.05f;
+
         public override void CompPostTick(ref float severityAdjustment)
         {
-            if (!Pawn.Spawned || Pawn.Dead) return;
-            if (Pawn.needs.food.CurLevel < 0.05f) {
-                Pawn.needs.food.CurLevel = 0.05f;
-            }
-            if (Pawn.needs.joy.CurLevel < 0.05f)
+            if (Pawn == null || Pawn.Dead || Pawn.needs?.AllNeeds == null)
             {
-                Pawn.needs.joy.CurLevel = 0.05f;
+                return;
             }
-            if (Pawn.needs.rest.CurLevel < 0.05f)
+
+            for (int i = 0; i < Pawn.needs.AllNeeds.Count; i++)
             {
-                Pawn.needs.rest.CurLevel = 0.05f;
+                var need = Pawn.needs.AllNeeds[i];
+                if (need != null && need.CurLevel < MinimumNeedLevel)
+                {
+                    need.CurLevel = MinimumNeedLevel;
+                }
             }
         }
 
-        public override string CompTipStringExtra
-        {
-            get
-            {
-                return "SRA_RegenTipExtra".Translate();
-            }
-        }
-
+        public override string CompTipStringExtra => "SRA_NeedMinTipExtra".Translate();
     }
 }

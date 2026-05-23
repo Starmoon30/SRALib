@@ -96,6 +96,10 @@ namespace SRA
             {
                 openObservedCommand.Disable(GetResearchDisabledReason());
             }
+            else if (IsForbiddenSettlementTarget(observedMap))
+            {
+                openObservedCommand.Disable(GetNonHostileSettlementReason(observedMap));
+            }
 
             yield return openObservedCommand;
 
@@ -138,6 +142,16 @@ namespace SRA
                 if (notify)
                 {
                     Messages.Message(Props.invalidTargetMessageKey.Translate(), MessageTypeDefOf.RejectInput, false);
+                }
+
+                return false;
+            }
+
+            if (IsForbiddenSettlementTarget(target))
+            {
+                if (notify)
+                {
+                    Messages.Message(GetNonHostileSettlementReason(target), MessageTypeDefOf.RejectInput, false);
                 }
 
                 return false;
@@ -259,6 +273,12 @@ namespace SRA
                 return;
             }
 
+            if (IsForbiddenSettlementTarget(observedMap))
+            {
+                Messages.Message(GetNonHostileSettlementReason(observedMap), MessageTypeDefOf.RejectInput, false);
+                return;
+            }
+
             if (!TryEnsureObservedTargetIsValid() || observedMap == null)
             {
                 return;
@@ -346,6 +366,24 @@ namespace SRA
             }
 
             return Props.researchRequiredMessageKey.Translate(Props.requiredResearch.LabelCap);
+        }
+
+        private bool IsForbiddenSettlementTarget(MapParent target)
+        {
+            return target is Settlement settlement &&
+                   settlement.Faction != null &&
+                   !settlement.Faction.IsPlayer &&
+                   !settlement.Faction.HostileTo(Faction.OfPlayer);
+        }
+
+        private string GetNonHostileSettlementReason(MapParent target)
+        {
+            if (target is Settlement settlement && settlement.Faction != null)
+            {
+                return Props.nonHostileSettlementMessageKey.Translate(settlement.Faction.Name);
+            }
+
+            return Props.nonHostileSettlementMessageKey.Translate(target.LabelCap);
         }
     }
 }

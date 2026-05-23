@@ -2,6 +2,8 @@
 <LanguageData>
 
 	<SRA_BarrierTipExtra>-Barrier capacity: {0}\n-Recharge rate: {1}\n-Recharge delay: {2}\n-Recharge cooldown: {3}\n-Barrier efficiency: {4}\n-Damage cap: {5}\n-Damage reduction: {6}</SRA_BarrierTipExtra>
+	<SRA_BarrierHardenedExtra>\n-Hardened barrier: This barrier uses armor equivalent to the unit's final armor.</SRA_BarrierHardenedExtra>
+	<SRA_BarrierDeflectiveExtra>\n-Deflective barrier: This barrier uses a general dodge chance equivalent to the unit's final melee dodge chance.</SRA_BarrierDeflectiveExtra>
 
 	<SRABarrierTitle>-Barrier</SRABarrierTitle>
   	<SRA_BarrierStatus>Barrier status</SRA_BarrierStatus>
@@ -10,6 +12,7 @@
   	<SRA_BarrierRegen>Regen: {0}/s</SRA_BarrierRegen>
 	<SRABarrierTooltip>The barrier can block incoming damage.\n\n-Barriers have barrier efficiency. Incoming damage is multiplied by this value before it is used to calculate barrier loss.\n-The barrier also takes the unit's incoming damage multiplier into account and multiplies it with barrier efficiency. If the incoming damage multiplier is above 100%, it will not be applied.\n-Some barriers have a recharge cooldown. If the barrier is completely destroyed, it enters recharge cooldown. If this cooldown is greater than 0, the barrier will be fully restored immediately when the cooldown ends.\n-Some barriers have a damage cap, preventing any single hit from exceeding that value. This only takes effect when the value is greater than 0.\n-Some barriers have damage reduction, reducing incoming damage by the specified amount. This only takes effect when the value is greater than 0.\n\n-Recharge delay: {0}\n-Recharge cooldown: {1}\n-Barrier efficiency: {2}\n-Damage cap: {3}\n-Damage reduction: {4}</SRABarrierTooltip>
 	<SRA_RegenTipExtra>-Regenerates {0} health per second.</SRA_RegenTipExtra>
+	<SRA_NeedMinTipExtra>\n-Vitality Flux: This unit's needs are merely hobbies rather than necessities.\n</SRA_NeedMinTipExtra>
 
 	<SRAExecuteDeathLabel>Self-destruct</SRAExecuteDeathLabel>
 	<SRAExecuteDeathDesc>Destroy immediately.</SRAExecuteDeathDesc>
@@ -38,4 +41,16 @@
 	<SRA_RemoteMonitoring_OpenFailedMessage>Failed to open the remote map.</SRA_RemoteMonitoring_OpenFailedMessage>
 	<SRA_RemoteMonitoring_InspectString>Remote map monitoring target: {0}</SRA_RemoteMonitoring_InspectString>
 	<SRA_RemoteMonitoring_ResearchRequiredMessage>Required research not completed: {0}</SRA_RemoteMonitoring_ResearchRequiredMessage>
+	<SRA_RemoteMonitoring_NonHostileSettlementMessage>You cannot select or open a settlement from a faction that is not hostile. Current faction: {0}</SRA_RemoteMonitoring_NonHostileSettlementMessage>
+
+	<SRA_ClearTimedGameConditions_Label>Clear timed weather</SRA_ClearTimedGameConditions_Label>
+	<SRA_ClearTimedGameConditions_Desc>Remove all timed weather conditions or environmental effects on the current map that are not in the whitelist.</SRA_ClearTimedGameConditions_Desc>
+	<SRA_ClearTimedGameConditions_NoTargetMessage>There are no removable timed weather conditions on the current map.</SRA_ClearTimedGameConditions_NoTargetMessage>
+	<SRA_ClearTimedGameConditions_ClearedMessage>Cleared {0} timed weather condition(s): {1}</SRA_ClearTimedGameConditions_ClearedMessage>
+	<SRA_ClearTimedGameConditions_PowerRequiredMessage>Power is required to clear timed weather conditions.</SRA_ClearTimedGameConditions_PowerRequiredMessage>
+	<SRA_BuildingDamageAdjusterLabel>Damage Resistance</SRA_BuildingDamageAdjusterLabel>
+	<SRA_BuildingDamageAdjusterDesc>This building can resist incoming damage.\n-Damage efficiency: Incoming damage is multiplied by damage efficiency before it is used to calculate durability loss.\n-Damage cap: Incoming damage cannot exceed this limit. This only takes effect when the value is greater than 0.\n-Damage reduction: Incoming damage is reduced by this amount. This only takes effect when the value is greater than 0.</SRA_BuildingDamageAdjusterDesc>
+	<SRA_BuildingDamageAdjusterValueMult>Damage efficiency: {0}</SRA_BuildingDamageAdjusterValueMult>
+	<SRA_BuildingDamageAdjusterValueMax>Damage cap: {0}</SRA_BuildingDamageAdjusterValueMax>
+	<SRA_BuildingDamageAdjusterValueReduce>Damage reduction: {0}</SRA_BuildingDamageAdjusterValueReduce>
 </LanguageData>

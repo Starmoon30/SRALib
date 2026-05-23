@@ -47,7 +47,7 @@ namespace SRA
     {
         protected virtual bool isNorthArcTrail => false;
         private TailBulletDef tailBulletDefInt;
-        private int Fleck_MakeFleckTick;
+        protected List<int> tailFleckTicks = new List<int>();
         private Vector3 lastTickPosition;
 
         public TailBulletDef TailDef
@@ -72,48 +72,111 @@ namespace SRA
             base.ExposeData();
             Scribe_Values.Look<int>(ref this.ticksToDetonation, "ticksToDetonation", 1, false);
             Scribe_Values.Look<bool>(ref this.projIsLanded, "projIsLanded", false, false);
+            Scribe_Collections.Look(ref this.tailFleckTicks, "tailFleckTicks", LookMode.Value);
+            if (this.tailFleckTicks == null)
+            {
+                this.tailFleckTicks = new List<int>();
+            }
         }
 
         protected override void Tick()
         {
             base.Tick();
-            // 处理拖尾特效
-            if (TailDef != null && TailDef.tailFleckDef != null && !isNorthArcTrail)
+            if (!isNorthArcTrail)
             {
-                Fleck_MakeFleckTick++;
-                if (Fleck_MakeFleckTick >= TailDef.fleckDelayTicks)
-                {
-                    if (Fleck_MakeFleckTick >= (TailDef.fleckDelayTicks + TailDef.fleckMakeFleckTickMax))
-                    {
-                        Fleck_MakeFleckTick = TailDef.fleckDelayTicks;
-                    }
-
-                    Map map = base.Map;
-                    int randomInRange = TailDef.fleckMakeFleckNum.RandomInRange;
-                    Vector3 currentPosition = base.ExactPosition;
-                    Vector3 previousPosition = lastTickPosition;
-
-                    for (int i = 0; i < randomInRange; i++)
-                    {
-                        float num = (currentPosition - previousPosition).AngleFlat();
-                        float velocityAngle = TailDef.fleckAngle.RandomInRange + num;
-                        float randomInRange2 = TailDef.fleckScale.RandomInRange;
-                        float randomInRange3 = TailDef.fleckSpeed.RandomInRange;
-
-                        FleckCreationData dataStatic = FleckMaker.GetDataStatic(currentPosition, map, TailDef.tailFleckDef, randomInRange2);
-                        dataStatic.rotation = (currentPosition - previousPosition).AngleFlat();
-                        dataStatic.rotationRate = TailDef.fleckRotation.RandomInRange;
-                        dataStatic.velocityAngle = velocityAngle;
-                        dataStatic.velocitySpeed = randomInRange3;
-                        map.flecks.CreateFleck(dataStatic);
-                    }
-                }
+                TickTailFlecks(base.ExactPosition, lastTickPosition);
             }
             if (projIsLanded)
             {
                 --ticksToDetonation;
             }
             lastTickPosition = base.ExactPosition;
+        }
+
+        protected void TickTailFlecks(Vector3 currentPosition, Vector3 previousPosition)
+        {
+            TailBulletDef tailDef = TailDef;
+            if (tailDef == null || tailDef.tailFlecks == null || tailDef.tailFlecks.Count == 0)
+            {
+                return;
+            }
+
+            EnsureTailFleckTickState(tailDef.tailFlecks.Count);
+
+            for (int i = 0; i < tailDef.tailFlecks.Count; i++)
+            {
+                tailFleckTicks[i]++;
+            }
+
+            Map map = base.Map;
+            Vector3 movement = currentPosition - previousPosition;
+            if (map == null || movement.MagnitudeHorizontalSquared() <= 0.0001f)
+            {
+                return;
+            }
+
+            float moveAngle = movement.AngleFlat();
+            for (int i = 0; i < tailDef.tailFlecks.Count; i++)
+            {
+                TailFleckEntry tailFleck = tailDef.tailFlecks[i];
+                if (tailFleck == null || tailFleck.tailFleckDef == null)
+                {
+                    continue;
+                }
+
+                if (!ShouldSpawnTailFleck(tailFleck, tailFleckTicks[i]))
+                {
+                    continue;
+                }
+
+                SpawnTailFleck(map, currentPosition, moveAngle, tailFleck);
+            }
+        }
+
+        private void EnsureTailFleckTickState(int count)
+        {
+            while (tailFleckTicks.Count < count)
+            {
+                tailFleckTicks.Add(0);
+            }
+
+            if (tailFleckTicks.Count > count)
+            {
+                tailFleckTicks.RemoveRange(count, tailFleckTicks.Count - count);
+            }
+        }
+
+        private bool ShouldSpawnTailFleck(TailFleckEntry tailFleck, int tick)
+        {
+            int delay = Mathf.Max(0, tailFleck.fleckDelayTicks);
+            int interval = Mathf.Max(1, tailFleck.fleckMakeFleckTickMax);
+            int firstSpawnTick = delay == 0 ? 1 : delay;
+
+            if (tick < firstSpawnTick)
+            {
+                return false;
+            }
+
+            if (tick == firstSpawnTick)
+            {
+                return true;
+            }
+
+            return (tick - firstSpawnTick) % interval == 0;
+        }
+
+        private void SpawnTailFleck(Map map, Vector3 currentPosition, float moveAngle, TailFleckEntry tailFleck)
+        {
+            int count = tailFleck.fleckMakeFleckNum.RandomInRange;
+            for (int i = 0; i < count; i++)
+            {
+                FleckCreationData dataStatic = FleckMaker.GetDataStatic(currentPosition, map, tailFleck.tailFleckDef, tailFleck.fleckScale.RandomInRange);
+                dataStatic.rotation = moveAngle;
+                dataStatic.rotationRate = tailFleck.fleckRotation.RandomInRange;
+                dataStatic.velocityAngle = tailFleck.fleckAngle.RandomInRange + moveAngle;
+                dataStatic.velocitySpeed = tailFleck.fleckSpeed.RandomInRange;
+                map.flecks.CreateFleck(dataStatic);
+            }
         }
         protected override void Impact(Thing hitThing, bool blockedByShield = false)
         {

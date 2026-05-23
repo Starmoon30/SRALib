@@ -15,7 +15,14 @@ namespace SRA
         public float speed = 1f;
         public bool noautoattack = false;
     }
-    public class Building_TurretGunHasSpeed : Building_Turret
+
+    public class TauntAttackTargetExtension : DefModExtension
+    {
+        public float targetPriorityFactor = 1f;
+        public bool disabled;
+    }
+
+    public class Building_TurretGunHasSpeed : Building_Turret, IAttackTarget
     {
         protected int burstCooldownTicksLeft;
 
@@ -54,6 +61,23 @@ namespace SRA
         private const int TryStartShootSomethingIntervalTicks = 15;
 
         //public static Material ForcedTargetLineMat = MaterialPool.MatFrom(GenDraw.LineTexPath, ShaderDatabase.Transparent, new Color(1f, 0.5f, 0.5f));
+        private TauntAttackTargetExtension AttackTargetProps => def.GetModExtension<TauntAttackTargetExtension>();
+
+        Thing IAttackTarget.Thing => this;
+
+        LocalTargetInfo IAttackTarget.TargetCurrentlyAimingAt => CurrentTarget;
+
+        float IAttackTarget.TargetPriorityFactor => Mathf.Max(0f, AttackTargetProps?.targetPriorityFactor ?? 1f);
+
+        bool IAttackTarget.ThreatDisabled(IAttackTargetSearcher disabledFor)
+        {
+            if (!Spawned || (AttackTargetProps?.disabled ?? false))
+            {
+                return true;
+            }
+
+            return base.ThreatDisabled(disabledFor);
+        }
 
         public bool Active
         {

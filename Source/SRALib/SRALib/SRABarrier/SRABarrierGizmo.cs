@@ -1,4 +1,5 @@
 using RimWorld;
+using System.Text;
 using UnityEngine;
 using Verse;
 
@@ -94,14 +95,22 @@ namespace SRA
                 Widgets.Label(statusRect, regenText);
             }
 
-            string tooltipText = "SRABarrierTooltip".Translate(
+            StringBuilder tooltipText = new StringBuilder("SRABarrierTooltip".Translate(
                 barrier.Props.regenDelay.ToString(),
                 barrier.Props.rechargeCooldown.ToString(),
                 barrier.Props.DamageTakenMult.ToString(),
                 barrier.Props.DamageTakenMax.ToString(),
                 barrier.Props.DamageTakenReduce.ToString()
-            );
-            TooltipHandler.TipRegion(rect, tooltipText);
+            ));
+            if (barrier.Props.HardenedBarrier)
+            {
+                tooltipText.Append("SRA_BarrierHardenedExtra".Translate());
+            }
+            if (barrier.Props.DeflectiveBarrier)
+            {
+                tooltipText.Append("SRA_BarrierDeflectiveExtra".Translate());
+            }
+            TooltipHandler.TipRegion(rect, tooltipText.ToString());
 
             return new GizmoResult(GizmoState.Clear);
         }
