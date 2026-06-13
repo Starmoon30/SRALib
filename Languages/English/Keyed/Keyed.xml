@@ -2,6 +2,7 @@
 <LanguageData>
 
 	<SRA_BarrierTipExtra>-Barrier capacity: {0}\n-Recharge rate: {1}\n-Recharge delay: {2}\n-Recharge cooldown: {3}\n-Barrier efficiency: {4}\n-Damage cap: {5}\n-Damage reduction: {6}</SRA_BarrierTipExtra>
+	<SRA_BarrierPsychicBulwarkExtra>\n-Psychic bulwark: This barrier resists stun and mental breaks.</SRA_BarrierPsychicBulwarkExtra>
 	<SRA_BarrierHardenedExtra>\n-Hardened barrier: This barrier uses armor equivalent to the unit's final armor.</SRA_BarrierHardenedExtra>
 	<SRA_BarrierDeflectiveExtra>\n-Deflective barrier: This barrier uses a general dodge chance equivalent to the unit's final melee dodge chance.</SRA_BarrierDeflectiveExtra>
 

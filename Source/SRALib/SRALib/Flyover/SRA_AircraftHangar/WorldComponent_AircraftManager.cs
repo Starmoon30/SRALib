@@ -78,7 +78,7 @@ namespace SRA
             base.WorldComponentTick();
             
             // 处理冷却事件
-            int currentTick = Find.TickManager.TicksAbs;
+            int currentTick = GenTicks.TicksAbs;
             for (int i = cooldownEvents.Count - 1; i >= 0; i--)
             {
                 AircraftCooldownEvent cooldownEvent = cooldownEvents[i];
@@ -144,7 +144,7 @@ namespace SRA
             {
                 faction = faction,
                 aircraftDef = aircraftDef,
-                endTick = Find.TickManager.TicksAbs + cooldownTicks,
+                endTick = GenTicks.TicksAbs + cooldownTicks,
                 aircraftCount = count
             };
             

@@ -2,6 +2,7 @@
 <LanguageData>
 
 	<SRA_BarrierTipExtra>-屏障上限：{0}\n-回复速度：{1}\n-回复延迟：{2}\n-充能冷却：{3}\n-屏障效率：{4}\n-损伤上限：{5}\n-损伤降低：{6}</SRA_BarrierTipExtra>
+	<SRA_BarrierPsychicBulwarkExtra>\n-心灵壁垒：此屏障抵抗眩晕和精神崩溃。</SRA_BarrierPsychicBulwarkExtra>
 	<SRA_BarrierHardenedExtra>\n-硬化屏障：此屏障具有等同于单位自身最终护甲的护甲。</SRA_BarrierHardenedExtra>
 	<SRA_BarrierDeflectiveExtra>\n-偏斜屏障：此屏障具有等同于单位自身最终近战闪避率的通用闪避率。</SRA_BarrierDeflectiveExtra>
 

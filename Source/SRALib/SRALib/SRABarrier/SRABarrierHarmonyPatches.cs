@@ -31,16 +31,7 @@ namespace SRA
 
         public static bool BlockStunAndMentalState(Pawn p)
         {
-            if (p == null) return false;
-            var barriers = SRABarrierCache.GetSorted(p);
-            if (barriers == null || barriers.Count == 0) return false;
-            for (int i = 0; i < barriers.Count; i++)
-            {
-                var barrier = barriers[i];
-                if (barrier == null || barrier.parent == null) continue;
-                if (barrier.isActive && barrier.Props.BlockStunAndMentalState) return true;
-            }
-            return false;
+            return HediffComp_SRABarrier.PawnHasActiveMentalBarrier(p);
         }
 
         public static void PreApplyDamage_Prefix(Pawn __instance, ref DamageInfo dinfo)
@@ -105,9 +96,23 @@ namespace SRA
     {
         static bool Prefix(Pawn ___pawn, HediffDef def, ref Hediff __result)
         {
-            if (def == HediffDefOf.CatatonicBreakdown && SRABarrierHarmonyPatches.BlockStunAndMentalState(___pawn))
+            if (HediffComp_SRABarrier.IsBlockedMentalBarrierHediff(def) && SRABarrierHarmonyPatches.BlockStunAndMentalState(___pawn))
             {
                 __result = null;
+                return false;
+            }
+            return true;
+        }
+    }
+
+    [HarmonyPatch(typeof(Pawn_HealthTracker), nameof(Pawn_HealthTracker.AddHediff),
+        new Type[] { typeof(Hediff), typeof(BodyPartRecord), typeof(DamageInfo?), typeof(DamageWorker.DamageResult) })]
+    public static class Patch_PawnHealthTracker_AddHediff_Instance
+    {
+        static bool Prefix(Pawn ___pawn, Hediff hediff)
+        {
+            if (HediffComp_SRABarrier.IsBlockedMentalBarrierHediff(hediff?.def) && SRABarrierHarmonyPatches.BlockStunAndMentalState(___pawn))
+            {
                 return false;
             }
             return true;

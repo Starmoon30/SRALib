@@ -24,6 +24,7 @@ D:\steam\steamapps\common\RimWorld\Mods\SRALib\Source\SRALib\SRALib\bin\Release\
 D:\steam\steamapps\common\RimWorld\Mods\SRALib\Source\SRALib\SRALib\bin\Release\UnityEngine.TextCoreTextEngineModule.dll
 D:\steam\steamapps\common\RimWorld\Mods\SRALib\Source\SRALib\SRALib\obj\Release\SRA.csproj.AssemblyReference.cache
 D:\steam\steamapps\common\RimWorld\Mods\SRALib\Source\SRALib\SRALib\obj\Release\SRA.csproj.CoreCompileInputs.cache
-D:\steam\steamapps\common\RimWorld\Mods\SRALib\Source\SRALib\SRALib\obj\Release\SRA.csproj.Up2Date
 D:\steam\steamapps\common\RimWorld\Mods\SRALib\Source\SRALib\SRALib\obj\Release\SRALib.dll
 D:\steam\steamapps\common\RimWorld\Mods\SRALib\Source\SRALib\SRALib\obj\Release\SRALib.pdb
+D:\steam\steamapps\common\RimWorld\Mods\SRALib\1.6\Assemblies\SRALib.dll
+D:\steam\steamapps\common\RimWorld\Mods\SRALib\1.6\Assemblies\SRALib.pdb

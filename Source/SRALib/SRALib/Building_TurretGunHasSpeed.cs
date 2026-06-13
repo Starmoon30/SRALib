@@ -58,6 +58,20 @@ namespace SRA
 
         public float curAngle;
 
+        // 运行时缓存 gun def 上的多炮管配置，避免每 tick/draw 重复查 mod extension。
+        private ModExtension_ShootWithOffset shootWithOffsetExt;
+
+        // 每根炮管各自维护动画状态，下标必须与 ModExtension_ShootWithOffset.offsets 对齐。
+        private List<float> barrelRecoilStates;
+
+        private List<int> barrelRecoilTimers;
+
+        private List<int> muzzleFlashTimers;
+
+        private Material barrelMaterial;
+
+        private Material muzzleFlashMaterial;
+
         private const int TryStartShootSomethingIntervalTicks = 15;
 
         //public static Material ForcedTargetLineMat = MaterialPool.MatFrom(GenDraw.LineTexPath, ShaderDatabase.Transparent, new Color(1f, 0.5f, 0.5f));
@@ -234,6 +248,7 @@ namespace SRA
             refuelableComp = GetComp<CompRefuelable>();
             powerCellComp = GetComp<CompMechPowerCell>();
             hackableComp = GetComp<CompHackable>();
+            RecacheShootWithOffsetAnimationData();
             if (!respawningAfterLoad)
             {
                 top.SetRotationFromOrientation();
@@ -257,6 +272,9 @@ namespace SRA
             Scribe_Values.Look(ref holdFire, "holdFire", defaultValue: false);
             Scribe_Values.Look(ref burstActivated, "burstActivated", defaultValue: false);
             Scribe_Values.Look(ref curAngle, "curAngle", 0f);
+            Scribe_Collections.Look(ref barrelRecoilStates, "barrelRecoilStates", LookMode.Value);
+            Scribe_Collections.Look(ref barrelRecoilTimers, "barrelRecoilTimers", LookMode.Value);
+            Scribe_Collections.Look(ref muzzleFlashTimers, "muzzleFlashTimers", LookMode.Value);
             Scribe_Deep.Look(ref gun, "gun");
             BackCompatibility.PostExposeData(this);
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
@@ -270,6 +288,7 @@ namespace SRA
                 {
                     UpdateGunVerbs();
                 }
+                RecacheShootWithOffsetAnimationData();
             }
         }
 
@@ -352,6 +371,7 @@ namespace SRA
 
             base.Tick();
             curAngle = TrimAngle(curAngle);
+            UpdateShootWithOffsetAnimations();
             if (CanExtractShell && MannedByColonist)
             {
                 CompChangeableProjectile compChangeableProjectile = gun.TryGetComp<CompChangeableProjectile>();
@@ -585,6 +605,314 @@ namespace SRA
 
             return AttackVerb.verbProps.defaultCooldownTime;
         }
+
+        private void RecacheShootWithOffsetAnimationData()
+        {
+            shootWithOffsetExt = gun?.def.GetModExtension<ModExtension_ShootWithOffset>() ?? def.GetModExtension<ModExtension_ShootWithOffset>();
+            barrelMaterial = null;
+            muzzleFlashMaterial = null;
+            EnsureShootWithOffsetAnimationListSizes();
+            if (shootWithOffsetExt == null)
+            {
+                return;
+            }
+
+            // 材质加载放到 LongEvent 完成后执行，避免初始化阶段触发纹理加载时机问题。
+            if (!shootWithOffsetExt.barrelTexturePath.NullOrEmpty())
+            {
+                ModExtension_ShootWithOffset ext = shootWithOffsetExt;
+                LongEventHandler.ExecuteWhenFinished(delegate
+                {
+                    Shader shader = ext.barrelUseGlowShader ? ShaderDatabase.MoteGlow : ShaderDatabase.DefaultShader;
+                    barrelMaterial = MaterialPool.MatFrom(ext.barrelTexturePath, shader, ext.barrelColor);
+                });
+            }
+
+            if (!shootWithOffsetExt.muzzleFlashTexturePath.NullOrEmpty())
+            {
+                ModExtension_ShootWithOffset ext = shootWithOffsetExt;
+                LongEventHandler.ExecuteWhenFinished(delegate
+                {
+                    Shader shader = ext.muzzleFlashUseGlowShader ? ShaderDatabase.MoteGlow : ShaderDatabase.DefaultShader;
+                    muzzleFlashMaterial = MaterialPool.MatFrom(ext.muzzleFlashTexturePath, shader, ext.muzzleFlashColor);
+                });
+            }
+        }
+
+        private void EnsureShootWithOffsetAnimationListSizes()
+        {
+            int count = shootWithOffsetExt == null ? 0 : shootWithOffsetExt.SlotCount;
+
+            // offsets 数量可能因 XML 修改或读档变化而改变，读档后要把状态列表重新对齐。
+            EnsureListSize(ref barrelRecoilStates, count, 0f);
+            EnsureListSize(ref barrelRecoilTimers, count, 0);
+            EnsureListSize(ref muzzleFlashTimers, count, 0);
+        }
+
+        private static void EnsureListSize<T>(ref List<T> list, int count, T value)
+        {
+            if (count <= 0)
+            {
+                list = null;
+                return;
+            }
+
+            if (list == null)
+            {
+                list = new List<T>(count);
+            }
+
+            while (list.Count < count)
+            {
+                list.Add(value);
+            }
+
+            if (list.Count > count)
+            {
+                list.RemoveRange(count, list.Count - count);
+            }
+        }
+
+        public void Notify_BarrelFired(int barrelIndex)
+        {
+            // 这个方法只由实际发射 projectile 的 Verb 调用，因此 barrelIndex 一定代表真实开火炮管。
+            if (shootWithOffsetExt == null)
+            {
+                RecacheShootWithOffsetAnimationData();
+            }
+
+            if (shootWithOffsetExt == null || barrelIndex < 0)
+            {
+                return;
+            }
+
+            EnsureShootWithOffsetAnimationListSizes();
+            int slotCount = shootWithOffsetExt.SlotCount;
+            if (slotCount <= 0)
+            {
+                return;
+            }
+
+            barrelIndex = GenMath.PositiveMod(barrelIndex, slotCount);
+            if (shootWithOffsetExt.HasBarrelRecoil && barrelRecoilTimers != null && barrelIndex < barrelRecoilTimers.Count)
+            {
+                // 再次开火会重置该炮管动画，适配极高射速或多 burst 叠加。
+                barrelRecoilTimers[barrelIndex] = Mathf.Max(1, shootWithOffsetExt.recoilDurationTicks);
+            }
+
+            if (shootWithOffsetExt.HasMuzzleFlash && muzzleFlashTimers != null && barrelIndex < muzzleFlashTimers.Count)
+            {
+                muzzleFlashTimers[barrelIndex] = shootWithOffsetExt.MuzzleFlashDurationTicks;
+            }
+        }
+
+        private void UpdateShootWithOffsetAnimations()
+        {
+            if (shootWithOffsetExt == null)
+            {
+                return;
+            }
+
+            EnsureShootWithOffsetAnimationListSizes();
+            UpdateBarrelRecoil();
+            UpdateMuzzleFlash();
+        }
+
+        private void UpdateBarrelRecoil()
+        {
+            if (barrelRecoilTimers == null || barrelRecoilStates == null || shootWithOffsetExt == null)
+            {
+                return;
+            }
+
+            int duration = Mathf.Max(1, shootWithOffsetExt.recoilDurationTicks);
+            int kickTicks = Mathf.Clamp(shootWithOffsetExt.recoilKickTicks, 1, duration);
+            int returnTicks = Mathf.Max(1, duration - kickTicks);
+            for (int i = 0; i < barrelRecoilTimers.Count; i++)
+            {
+                if (barrelRecoilTimers[i] <= 0)
+                {
+                    barrelRecoilStates[i] = 0f;
+                    continue;
+                }
+
+                int elapsed = duration - barrelRecoilTimers[i];
+                if (elapsed < kickTicks)
+                {
+                    // 后坐阶段使用二次曲线，让炮管刚开火时更有冲击感。
+                    float progress = Mathf.Clamp01((float)(elapsed + 1) / kickTicks);
+                    barrelRecoilStates[i] = progress * progress;
+                }
+                else
+                {
+                    // 回弹阶段也使用二次曲线，末尾自然减速回到原位。
+                    float progress = Mathf.Clamp01((float)(elapsed - kickTicks + 1) / returnTicks);
+                    barrelRecoilStates[i] = 1f - progress * progress;
+                }
+
+                barrelRecoilTimers[i]--;
+            }
+        }
+
+        private void UpdateMuzzleFlash()
+        {
+            if (muzzleFlashTimers == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < muzzleFlashTimers.Count; i++)
+            {
+                if (muzzleFlashTimers[i] > 0)
+                {
+                    muzzleFlashTimers[i]--;
+                }
+            }
+        }
+
+        private void DrawShootWithOffsetAnimations(Vector3 drawLoc, Vector3 turretRecoilDrawOffset, float turretRecoilAngleOffset, bool drawBelowTurretTop)
+        {
+            if (shootWithOffsetExt == null || (!shootWithOffsetExt.HasBarrelRecoil && !shootWithOffsetExt.HasMuzzleFlash))
+            {
+                return;
+            }
+
+            if (!shootWithOffsetExt.HasBarrelRecoil && !AnyMuzzleFlashActive())
+            {
+                return;
+            }
+
+            EnsureShootWithOffsetAnimationListSizes();
+            int slotCount = shootWithOffsetExt.SlotCount;
+            if (slotCount <= 0)
+            {
+                return;
+            }
+
+            Vector3 origin = SRA_ShootWithOffsetUtility.TurretTopCenter(this, drawLoc, turretRecoilDrawOffset, turretRecoilAngleOffset);
+            origin.y = TurretPartAltitudeFor(drawLoc.y + Altitudes.AltInc, 0f);
+            float aimAngle = ShootWithOffsetDrawAngle();
+            Quaternion graphicRotation = SRA_ShootWithOffsetUtility.TurretGraphicRotation(aimAngle);
+            Quaternion inverseGraphicRotation = Quaternion.Inverse(graphicRotation);
+
+            // 逐根炮管绘制。坐标点全部由同一个 origin + aimAngle + local offset 生成，
+            // graphicRotation 只负责贴图朝向，不再参与解释 offset。
+            for (int i = 0; i < slotCount; i++)
+            {
+                Vector2 offset = shootWithOffsetExt.GetOffsetFor(i);
+                Vector2 flashOffset = offset + shootWithOffsetExt.MuzzleFlashLocalOffset;
+                float recoil = barrelRecoilStates != null && i < barrelRecoilStates.Count ? barrelRecoilStates[i] * shootWithOffsetExt.recoilAmount : 0f;
+                Vector2 barrelLocalCenter = new Vector2(offset.x, offset.y - recoil);
+
+                // offsets 是统一基准点：projectile 出生点、炮管默认中心、火焰默认中心都从这里派生。
+                // 制退只移动炮管中心；火焰只应用显式 muzzleFlashOffset / muzzleFlashForwardOffset。
+                Vector3 barrelCenter = SRA_ShootWithOffsetUtility.LocalOffsetToWorld(origin, aimAngle, barrelLocalCenter);
+                Vector3 flashCenter = SRA_ShootWithOffsetUtility.LocalOffsetToWorld(origin, aimAngle, flashOffset);
+                DrawBarrel(origin, barrelCenter, graphicRotation, inverseGraphicRotation, drawBelowTurretTop);
+                DrawMuzzleFlash(i, origin, flashCenter, graphicRotation, inverseGraphicRotation, drawBelowTurretTop);
+            }
+        }
+
+        private float ShootWithOffsetDrawAngle()
+        {
+            float? aimAngleOverride = AttackVerb?.AimAngleOverride;
+            return aimAngleOverride ?? curAngle;
+        }
+
+        private bool AnyMuzzleFlashActive()
+        {
+            if (muzzleFlashTimers == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < muzzleFlashTimers.Count; i++)
+            {
+                if (muzzleFlashTimers[i] > 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private float TurretPartAltitudeFor(float turretTopAltitude, float offset)
+        {
+            float layerMin = def.altitudeLayer.AltitudeFor() + 0.001f;
+            int nextLayerIndex = Mathf.Min((int)def.altitudeLayer + 1, (int)AltitudeLayer._Count - 1);
+            float layerMax = ((AltitudeLayer)nextLayerIndex).AltitudeFor() - 0.001f;
+            if (layerMax <= layerMin)
+            {
+                return turretTopAltitude + offset;
+            }
+
+            return Mathf.Clamp(turretTopAltitude + offset, layerMin, layerMax);
+        }
+
+        private void DrawBarrel(Vector3 sortOrigin, Vector3 barrelCenter, Quaternion graphicRotation, Quaternion inverseGraphicRotation, bool drawBelowTurretTop)
+        {
+            if (barrelMaterial == null || shootWithOffsetExt == null || !shootWithOffsetExt.HasBarrelRecoil)
+            {
+                return;
+            }
+
+            if (PartDrawsBelowTurretTop(shootWithOffsetExt.barrelAltitudeOffset) != drawBelowTurretTop)
+            {
+                return;
+            }
+
+            // DrawShootWithOffsetAnimations 已经算出炮管中心；这里仅负责锚定绘制和高度排序。
+            float turretTopAltitude = sortOrigin.y;
+            float visualAltitude = TurretPartAltitudeFor(turretTopAltitude, shootWithOffsetExt.barrelAltitudeOffset);
+            sortOrigin.y = SortAltitudeForPart(turretTopAltitude, visualAltitude);
+            barrelCenter.y = visualAltitude;
+            Vector3 localVisualCenter = inverseGraphicRotation * (barrelCenter - sortOrigin);
+            Mesh mesh = SRA_FrameMeshPool.GetAnchoredMesh(localVisualCenter, shootWithOffsetExt.barrelTextureSize);
+            Graphics.DrawMesh(mesh, Matrix4x4.TRS(sortOrigin, graphicRotation, Vector3.one), barrelMaterial, 0);
+        }
+
+        private void DrawMuzzleFlash(int index, Vector3 sortOrigin, Vector3 flashCenter, Quaternion graphicRotation, Quaternion inverseGraphicRotation, bool drawBelowTurretTop)
+        {
+            if (muzzleFlashMaterial == null || shootWithOffsetExt == null || !shootWithOffsetExt.HasMuzzleFlash || muzzleFlashTimers == null || index >= muzzleFlashTimers.Count || muzzleFlashTimers[index] <= 0)
+            {
+                return;
+            }
+
+            if (PartDrawsBelowTurretTop(shootWithOffsetExt.muzzleFlashAltitudeOffset) != drawBelowTurretTop)
+            {
+                return;
+            }
+
+            int totalTicks = shootWithOffsetExt.MuzzleFlashDurationTicks;
+            int elapsedTicks = Mathf.Clamp(totalTicks - muzzleFlashTimers[index], 0, totalTicks - 1);
+            int ticksPerFrame = Mathf.Max(1, shootWithOffsetExt.muzzleFlashTicksPerFrame);
+            int frame = Mathf.Clamp(elapsedTicks / ticksPerFrame, 0, Mathf.Max(1, shootWithOffsetExt.muzzleFlashFrameCount) - 1);
+
+            Vector3 drawPos = flashCenter;
+            float turretTopAltitude = sortOrigin.y;
+            float visualAltitude = TurretPartAltitudeFor(turretTopAltitude, shootWithOffsetExt.muzzleFlashAltitudeOffset);
+            sortOrigin.y = SortAltitudeForPart(turretTopAltitude, visualAltitude);
+            drawPos.y = visualAltitude;
+
+            // 通过带局部偏移的 UV mesh 播放序列帧，同时让排序锚点保持在父炮塔顶层中心。
+            Vector3 localVisualCenter = inverseGraphicRotation * (drawPos - sortOrigin);
+            Mesh frameMesh = SRA_FrameMeshPool.GetAnchoredFrameMesh(localVisualCenter, shootWithOffsetExt.muzzleFlashDrawSize, frame, shootWithOffsetExt.muzzleFlashFrameCount, shootWithOffsetExt.muzzleFlashFrameColumns);
+            Graphics.DrawMesh(frameMesh, Matrix4x4.TRS(sortOrigin, graphicRotation, Vector3.one), muzzleFlashMaterial, 0);
+        }
+
+        private static bool PartDrawsBelowTurretTop(float altitudeOffset)
+        {
+            return altitudeOffset < 0f;
+        }
+
+        private static float SortAltitudeForPart(float turretTopAltitude, float visualAltitude)
+        {
+            // 负偏移只降低实际视觉顶点，不降低排序锚点。
+            // 否则会丢掉南侧父炮塔相对北侧炮塔的一格排序优势。
+            return Mathf.Max(turretTopAltitude, visualAltitude);
+        }
+
         public override string GetInspectString()
         {
             StringBuilder stringBuilder = new StringBuilder();
@@ -629,7 +957,9 @@ namespace SRA
                 EquipmentUtility.Recoil(def.building.turretGunDef, (Verb_LaunchProjectile)AttackVerb, out drawOffset, out angleOffset, top.CurRotation);
             }
 
+            DrawShootWithOffsetAnimations(drawLoc, drawOffset, angleOffset, drawBelowTurretTop: true);
             top.DrawTurret(drawLoc, drawOffset, angleOffset);
+            DrawShootWithOffsetAnimations(drawLoc, drawOffset, angleOffset, drawBelowTurretTop: false);
             base.DrawAt(drawLoc, flip);
         }
 
@@ -810,6 +1140,7 @@ namespace SRA
         {
             gun = ThingMaker.MakeThing(def.building.turretGunDef);
             UpdateGunVerbs();
+            RecacheShootWithOffsetAnimationData();
         }
 
         private void UpdateGunVerbs()

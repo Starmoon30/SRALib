@@ -102,6 +102,10 @@ namespace SRA
                 barrier.Props.DamageTakenMax.ToString(),
                 barrier.Props.DamageTakenReduce.ToString()
             ));
+            if (barrier.Props.BlockStunAndMentalState)
+            {
+                tooltipText.Append("SRA_BarrierPsychicBulwarkExtra".Translate());
+            }
             if (barrier.Props.HardenedBarrier)
             {
                 tooltipText.Append("SRA_BarrierHardenedExtra".Translate());

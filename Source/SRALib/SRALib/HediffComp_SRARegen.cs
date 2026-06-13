@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using RimWorld;
 using Verse;
 
@@ -70,7 +71,7 @@ namespace SRA
                         else
                         {
                             Hediff_MissingPart hediff_MissingPart = hediff as Hediff_MissingPart;
-                            bool isValidMissingPart = hediff_MissingPart != null && base.Pawn.health.hediffSet.GetMissingPartFor(hediff_MissingPart.Part.parent) == null && !base.Pawn.health.hediffSet.GetInjuredParts().Contains(hediff_MissingPart.Part.parent);
+                            bool isValidMissingPart = this.CanRestoreMissingPart(hediff_MissingPart);
                             if (isValidMissingPart)
                             {
                                 HediffComp_SRARegen.hediffsToHeal.Add(hediff);
@@ -109,25 +110,27 @@ namespace SRA
                             bool isMissingPart = hediff_MissingPart2 != null;
                             if (isMissingPart)
                             {
-                                bool isIgnoredPart = HediffComp_SRARegen.ignoreParts.Contains(hediff_MissingPart2.Part);
-                                if (!isIgnoredPart)
+                                if (this.CanRestoreMissingPart(hediff_MissingPart2))
                                 {
-                                    float maxHealth = hediff_MissingPart2.Part.def.GetMaxHealth(base.Pawn);
+                                    BodyPartRecord part = hediff_MissingPart2.Part;
+                                    float maxHealth = part.def.GetMaxHealth(base.Pawn);
                                     float healAmountForThisMissingPart = healingLeft / (float)remainingHediffCount;
                                     bool healingNotEnoughForWholePart = healAmountForThisMissingPart < maxHealth;
                                     if (healingNotEnoughForWholePart)
                                     {
-                                        BodyPartRecord part = hediff_MissingPart2.Part;
                                         Hediff hediff3 = HediffMaker.MakeHediff(hediff_MissingPart2.lastInjury ?? HediffDefOf.Cut, base.Pawn, part);
-                                        base.Pawn.health.RemoveHediff(hediff2);
-                                        base.Pawn.health.AddHediff(hediff3, part, null, null);
                                         hediff3.Severity = maxHealth - healAmountForThisMissingPart;
+                                        base.Pawn.health.RestorePart(part, null, false);
+                                        if (this.CanAddHediffToPart(part))
+                                        {
+                                            base.Pawn.health.AddHediff(hediff3, part, null, null);
+                                        }
                                         healingLeft -= healAmountForThisMissingPart;
                                     }
                                     else
                                     {
                                         healingLeft -= maxHealth;
-                                        base.Pawn.health.RemoveHediff(hediff2);
+                                        base.Pawn.health.RestorePart(part, null, true);
                                     }
                                 }
                             }
@@ -146,6 +149,35 @@ namespace SRA
                 );
             }
         }
+
+        private bool CanRestoreMissingPart(Hediff_MissingPart missingPart)
+        {
+            BodyPartRecord part = missingPart?.Part;
+            if (part == null || HediffComp_SRARegen.ignoreParts.Contains(part))
+            {
+                return false;
+            }
+
+            BodyPartRecord parent = part.parent;
+            while (parent != null)
+            {
+                if (base.Pawn.health.hediffSet.GetMissingPartFor(parent) != null)
+                {
+                    return false;
+                }
+
+                parent = parent.parent;
+            }
+
+            return part.parent == null || !base.Pawn.health.hediffSet.GetInjuredParts().Contains(part.parent);
+        }
+
+        private bool CanAddHediffToPart(BodyPartRecord part)
+        {
+            return part != null
+                && base.Pawn.health.hediffSet.GetNotMissingParts(BodyPartHeight.Undefined, BodyPartDepth.Undefined, null, null).Contains(part);
+        }
+
         private static List<Hediff> hediffsToHeal = new List<Hediff>();
 
         private static List<BodyPartRecord> ignoreParts = new List<BodyPartRecord>();

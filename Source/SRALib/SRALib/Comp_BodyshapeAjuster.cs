@@ -28,13 +28,11 @@ namespace SRA
         public override void Notify_Equipped(Pawn pawn)
         {
             base.Notify_Equipped(pawn);
-            bool flag = pawn.story.bodyType == BodyTypeDefOf.Hulk || pawn.story.bodyType == BodyTypeDefOf.Fat;
-            if (flag)
+            if (pawn.story.bodyType == BodyTypeDefOf.Hulk || pawn.story.bodyType == BodyTypeDefOf.Fat)
             {
                 this.BodyShape = pawn.story.bodyType;
                 this.ChangedBS = true;
-                bool flag2 = pawn.gender == Gender.Male;
-                if (flag2)
+                if (pawn.gender == Gender.Male)
                 {
                     pawn.story.bodyType = BodyTypeDefOf.Male;
                 }
@@ -48,8 +46,7 @@ namespace SRA
         public override void Notify_Unequipped(Pawn pawn)
         {
             base.Notify_Unequipped(pawn);
-            bool changedBS = this.ChangedBS;
-            if (changedBS)
+            if (this.ChangedBS)
             {
                 pawn.story.bodyType = this.BodyShape;
                 this.ChangedBS = false;

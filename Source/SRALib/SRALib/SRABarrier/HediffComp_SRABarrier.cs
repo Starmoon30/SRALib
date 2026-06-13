@@ -39,6 +39,7 @@ namespace SRA
 
     public class HediffComp_SRABarrier : HediffComp, IAlwaysShowGizmo
     {
+        private static HediffDef porcupineQuillDef;
         private float currentBarrier;
         private int lastDamageTick = -1;
         private int brokenTick = -1;
@@ -59,6 +60,18 @@ namespace SRA
 
         public bool CanAbsorb =>
             isActive && CurrentBarrier > 0 && !InCooldown;
+
+        public static HediffDef PorcupineQuillDef
+        {
+            get
+            {
+                if (porcupineQuillDef == null)
+                {
+                    porcupineQuillDef = DefDatabase<HediffDef>.GetNamedSilentFail("PorcupineQuill");
+                }
+                return porcupineQuillDef;
+            }
+        }
 
         public override void CompPostMake() =>
             CurrentBarrier = Props.maxBarrier;
@@ -296,11 +309,8 @@ namespace SRA
             Pawn pawn = Pawn;
             if (pawn != null)
             {
-                Hediff catatonicBreakdown = pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf.CatatonicBreakdown, false);
-                if (catatonicBreakdown != null)
-                {
-                    pawn.health.RemoveHediff(catatonicBreakdown);
-                }
+                RemoveAllHediffsOfDef(pawn, HediffDefOf.CatatonicBreakdown);
+                RemoveAllHediffsOfDef(pawn, PorcupineQuillDef);
                 pawn.stances?.stunner?.StopStun();
                 MentalState mentalState = pawn.MentalState;
                 if (mentalState != null)
@@ -308,6 +318,71 @@ namespace SRA
                     mentalState.RecoverFromState();
                 }
             }
+        }
+
+        private static void RemoveAllHediffsOfDef(Pawn pawn, HediffDef def)
+        {
+            if (pawn?.health?.hediffSet == null || def == null)
+            {
+                return;
+            }
+
+            Hediff hediff;
+            while ((hediff = pawn.health.hediffSet.GetFirstHediffOfDef(def, false)) != null)
+            {
+                pawn.health.RemoveHediff(hediff);
+            }
+        }
+
+        public static bool IsBlockedMentalBarrierHediff(HediffDef def)
+        {
+            if (def == null)
+            {
+                return false;
+            }
+
+            if (def == HediffDefOf.CatatonicBreakdown)
+            {
+                return true;
+            }
+
+            HediffDef porcupineQuill = PorcupineQuillDef;
+            if (porcupineQuill != null && def == porcupineQuill)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        public static bool PawnHasActiveMentalBarrier(Pawn pawn)
+        {
+            if (pawn == null)
+            {
+                return false;
+            }
+
+            List<HediffComp_SRABarrier> barriers = SRABarrierCache.GetSorted(pawn);
+            if (barriers == null || barriers.Count == 0)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < barriers.Count; i++)
+            {
+                HediffComp_SRABarrier barrier = barriers[i];
+                if (barrier == null || barrier.parent == null)
+                {
+                    continue;
+                }
+
+                if (barrier.isActive && barrier.Props.BlockStunAndMentalState)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         public override string CompTipStringExtra
@@ -323,6 +398,10 @@ namespace SRA
                     Props.DamageTakenMult.ToString(),
                     Props.DamageTakenMax.ToString(),
                     Props.DamageTakenReduce.ToString()));
+                if (Props.BlockStunAndMentalState)
+                {
+                    stringBuilder.Append("SRA_BarrierPsychicBulwarkExtra".Translate());
+                }
                 if (Props.HardenedBarrier)
                 {
                     stringBuilder.Append("SRA_BarrierHardenedExtra".Translate());
