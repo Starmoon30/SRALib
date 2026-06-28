@@ -22,6 +22,9 @@ namespace SRA
                 return this.def.GetModExtension<DamageWorker_NoDamageFactor_Extension>();
             }
         }
+
+        protected virtual float PenetrationFactor => this.Props?.penetrationFactor ?? 0f;
+
         public override DamageWorker.DamageResult Apply(DamageInfo dinfo, Thing thing)
         {
             Pawn pawn = thing as Pawn;
@@ -215,7 +218,7 @@ namespace SRA
                 float incomingDamageFactor = pawn.GetStatValue(StatDefOf.IncomingDamageFactor, true, -1);
                 if (incomingDamageFactor < 1f)
                 {
-                    incomingDamageFactor = incomingDamageFactor * (1f - this.Props.penetrationFactor) + this.Props.penetrationFactor;
+                    incomingDamageFactor = incomingDamageFactor * (1f - this.PenetrationFactor) + this.PenetrationFactor;
                 }
                 num *= incomingDamageFactor;
             }

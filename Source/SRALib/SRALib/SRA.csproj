@@ -110,6 +110,7 @@
     <Compile Include="CompSustainedShoot.cs" />
     <Compile Include="CompBuildingDrawExtraFourRot.cs" />
     <Compile Include="CompPlaySoundOnSpawn.cs" />
+    <Compile Include="DamageWorker_AddInjury_CapacitySource.cs" />
     <Compile Include="DamageWorker_AddInjury_NoDamageFactor.cs" />
     <Compile Include="Building_VacDoor.cs" />
     <Compile Include="EventSystem\Condition.cs" />

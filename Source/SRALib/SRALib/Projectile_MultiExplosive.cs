@@ -19,10 +19,24 @@ namespace SRA
         public EffecterDef explosionEffect;
         public int explosionEffectLifetimeTicks;
         public bool onlyAntiHostile = false;
+        // 穿透障碍：爆炸影响范围不再被墙体或其它满填充建筑阻挡。
+        public bool penetrateObstacles = false;
+        // 采矿：爆炸伤害会被记为采矿伤害，掉落量按原版采矿收益累计结算。
+        public bool mining = false;
 
+        // 爆炸影响每个格子前尝试生成的物体。
+        public ThingDef preExplosionSpawnThingDef = null;
+        // 爆炸影响每个格子前生成物体的概率。
+        public float preExplosionSpawnChance = 0f;
+        // 爆炸影响每个格子前生成物体的数量。
+        public int preExplosionSpawnThingCount = 1;
+        // 爆炸开始时在爆炸中心尝试生成的单个物体。
+        public ThingDef preExplosionSpawnSingleThingDef = null;
         public ThingDef postExplosionSpawnThingDef = null;
         public float postExplosionSpawnChance = 0f;
         public int postExplosionSpawnThingCount = 1;
+        // 爆炸结束时在爆炸中心尝试生成的单个物体。
+        public ThingDef postExplosionSpawnSingleThingDef = null;
         public GasType ? postExplosionGasType = null;
         public float ? postExplosionGasRadiusOverride = null;
         public int postExplosionGasAmount = 255;
@@ -45,6 +59,8 @@ namespace SRA
 
     public class Projectile_MultiExplosive : Projectile
     {
+        private const int MiningYieldApplications = 2;
+
         protected virtual bool isNorthArcTrail => false;
         private TailBulletDef tailBulletDefInt;
         protected List<int> tailFleckTicks = new List<int>();
@@ -239,10 +255,20 @@ namespace SRA
                         // 敌我识别
                         if (!GenHostility.HostileTo(thing, launcher))
                         {
-                            thingsIgnoredByExplosion.Add(thing);
+                            AddIgnoredThing(thingsIgnoredByExplosion, thing);
                         }
                     }
                 }
+            }
+            List<IntVec3> affectedCellsOverride = null;
+            if (properties.penetrateObstacles)
+            {
+                affectedCellsOverride = GetPenetratingExplosionCells(Position, Map, properties.radius);
+            }
+            if (properties.mining)
+            {
+                List<IntVec3> miningCells = affectedCellsOverride ?? GetStandardExplosionCells(properties);
+                ApplyMiningExplosionToMineables(properties, miningCells, thingsIgnoredByExplosion);
             }
             GenExplosion.DoExplosion(
                 center: Position,
@@ -257,14 +283,249 @@ namespace SRA
                 projectile: def,
                 intendedTarget: intendedTarget.Thing,
                 damageFalloff: properties.explosionDamageFalloff,
+                preExplosionSpawnThingDef: properties.preExplosionSpawnThingDef,
+                preExplosionSpawnChance: properties.preExplosionSpawnChance,
+                preExplosionSpawnThingCount: properties.preExplosionSpawnThingCount,
                 postExplosionSpawnThingDef: properties.postExplosionSpawnThingDef,
                 postExplosionSpawnChance: properties.postExplosionSpawnChance,
                 postExplosionSpawnThingCount: properties.postExplosionSpawnThingCount,
                 postExplosionGasType: properties.postExplosionGasType,
                 postExplosionGasRadiusOverride: properties.postExplosionGasRadiusOverride,
                 postExplosionGasAmount: properties.postExplosionGasAmount,
-                ignoredThings: thingsIgnoredByExplosion
+                ignoredThings: thingsIgnoredByExplosion,
+                overrideCells: affectedCellsOverride,
+                preExplosionSpawnSingleThingDef: properties.preExplosionSpawnSingleThingDef,
+                postExplosionSpawnSingleThingDef: properties.postExplosionSpawnSingleThingDef
             );
+        }
+
+        private static List<IntVec3> GetPenetratingExplosionCells(IntVec3 center, Map map, float radius)
+        {
+            List<IntVec3> cells = new List<IntVec3>();
+            foreach (IntVec3 cell in GenRadial.RadialCellsAround(center, radius, true))
+            {
+                if (cell.InBounds(map))
+                {
+                    cells.Add(cell);
+                }
+            }
+
+            return cells;
+        }
+
+        private List<IntVec3> GetStandardExplosionCells(MultiExplosionProperties properties)
+        {
+            List<IntVec3> cells = new List<IntVec3>();
+            if (properties.damageDef == null)
+            {
+                return cells;
+            }
+
+            foreach (IntVec3 cell in properties.damageDef.Worker.ExplosionCellsToHit(Position, Map, properties.radius))
+            {
+                cells.Add(cell);
+            }
+
+            return cells;
+        }
+
+        private void ApplyMiningExplosionToMineables(MultiExplosionProperties properties, List<IntVec3> cells, List<Thing> ignoredThings)
+        {
+            if (cells == null || cells.Count == 0 || Map == null)
+            {
+                return;
+            }
+
+            HashSet<Thing> processedMineables = new HashSet<Thing>();
+            for (int i = 0; i < cells.Count; i++)
+            {
+                IntVec3 cell = cells[i];
+                if (!cell.InBounds(Map))
+                {
+                    continue;
+                }
+
+                List<Thing> thingList = Map.thingGrid.ThingsListAt(cell);
+                for (int j = thingList.Count - 1; j >= 0; j--)
+                {
+                    Mineable mineable = thingList[j] as Mineable;
+                    if (mineable == null || mineable.Destroyed || !processedMineables.Add(mineable))
+                    {
+                        continue;
+                    }
+
+                    AddIgnoredThing(ignoredThings, mineable);
+                    ApplyMiningExplosionToMineable(properties, mineable, cell, ignoredThings);
+                }
+            }
+        }
+
+        private void ApplyMiningExplosionToMineable(MultiExplosionProperties properties, Mineable mineable, IntVec3 cell, List<Thing> ignoredThings)
+        {
+            if (!mineable.def.useHitPoints || properties.damageDef != null && !properties.damageDef.harmsHealth)
+            {
+                return;
+            }
+
+            float adjustedDamage = GetAdjustedBuildingDamage(properties.damageDef, GetExplosionDamageAmountAt(properties, cell), mineable);
+            int damage = Mathf.Min(mineable.HitPoints, GenMath.RoundRandom(adjustedDamage));
+            if (damage <= 0)
+            {
+                return;
+            }
+
+            if (damage >= mineable.HitPoints)
+            {
+                DestroyMineableFromMiningDamage(mineable, damage, ignoredThings);
+                return;
+            }
+
+            ApplyMiningYield(mineable, damage);
+            mineable.HitPoints -= damage;
+        }
+
+        private void ApplyMiningYield(Mineable mineable, int damage)
+        {
+            Pawn miner = launcher as Pawn;
+            for (int i = 0; i < MiningYieldApplications; i++)
+            {
+                mineable.Notify_TookMiningDamage(damage, miner);
+            }
+        }
+
+        private int GetExplosionDamageAmountAt(MultiExplosionProperties properties, IntVec3 cell)
+        {
+            int damageAmount = ResolveDamageAmount(properties);
+            if (!properties.explosionDamageFalloff || properties.radius <= 0f)
+            {
+                return damageAmount;
+            }
+
+            float t = cell.DistanceTo(Position) / properties.radius;
+            return Mathf.Max(GenMath.RoundRandom(Mathf.Lerp(damageAmount, damageAmount * 0.2f, t)), 1);
+        }
+
+        private static int ResolveDamageAmount(MultiExplosionProperties properties)
+        {
+            if (properties.damageAmount >= 0)
+            {
+                return properties.damageAmount;
+            }
+
+            if (properties.damageDef != null && properties.damageDef.defaultDamage >= 0)
+            {
+                return properties.damageDef.defaultDamage;
+            }
+
+            return 1;
+        }
+
+        private float GetAdjustedBuildingDamage(DamageDef damageDef, float damageAmount, Building building)
+        {
+            if (damageDef == null)
+            {
+                return damageAmount;
+            }
+
+            float adjustedDamage = damageAmount * damageDef.buildingDamageFactor;
+            adjustedDamage *= building.def.passability == Traversability.Impassable ? damageDef.buildingDamageFactorImpassable : damageDef.buildingDamageFactorPassable;
+            if (damageDef.scaleDamageToBuildingsBasedOnFlammability)
+            {
+                adjustedDamage *= Mathf.Max(0.05f, building.GetStatValue(StatDefOf.Flammability, true, -1));
+            }
+
+            Pawn pawn = launcher as Pawn;
+            if (pawn != null && pawn.IsShambler)
+            {
+                adjustedDamage *= 1.5f;
+            }
+
+            return adjustedDamage;
+        }
+
+        private void DestroyMineableFromMiningDamage(Mineable mineable, int damage, List<Thing> ignoredThings)
+        {
+            if (mineable.Destroyed)
+            {
+                return;
+            }
+
+            Map map = mineable.Map;
+            IntVec3 position = mineable.Position;
+            ThingDef yieldThingDef = mineable.def.building?.mineableThing;
+            Dictionary<Thing, int> yieldStacksBefore = GetNearbyThingStacks(map, position, yieldThingDef);
+            ApplyMiningYield(mineable, damage);
+            mineable.DestroyMined(launcher as Pawn);
+            AddNewOrChangedYieldThingsToIgnored(map, position, yieldThingDef, yieldStacksBefore, ignoredThings);
+        }
+
+        private static void AddIgnoredThing(List<Thing> ignoredThings, Thing thing)
+        {
+            if (thing != null && !ignoredThings.Contains(thing))
+            {
+                ignoredThings.Add(thing);
+            }
+        }
+
+        private static Dictionary<Thing, int> GetNearbyThingStacks(Map map, IntVec3 center, ThingDef thingDef)
+        {
+            Dictionary<Thing, int> stacks = new Dictionary<Thing, int>();
+            if (map == null || thingDef == null)
+            {
+                return stacks;
+            }
+
+            foreach (IntVec3 cell in GenRadial.RadialCellsAround(center, 5f, true))
+            {
+                if (!cell.InBounds(map))
+                {
+                    continue;
+                }
+
+                List<Thing> thingList = map.thingGrid.ThingsListAt(cell);
+                for (int i = 0; i < thingList.Count; i++)
+                {
+                    Thing thing = thingList[i];
+                    if (thing.def == thingDef && !stacks.ContainsKey(thing))
+                    {
+                        stacks.Add(thing, thing.stackCount);
+                    }
+                }
+            }
+
+            return stacks;
+        }
+
+        private static void AddNewOrChangedYieldThingsToIgnored(Map map, IntVec3 center, ThingDef thingDef, Dictionary<Thing, int> stacksBefore, List<Thing> ignoredThings)
+        {
+            if (map == null || thingDef == null)
+            {
+                return;
+            }
+
+            foreach (IntVec3 cell in GenRadial.RadialCellsAround(center, 5f, true))
+            {
+                if (!cell.InBounds(map))
+                {
+                    continue;
+                }
+
+                List<Thing> thingList = map.thingGrid.ThingsListAt(cell);
+                for (int i = 0; i < thingList.Count; i++)
+                {
+                    Thing thing = thingList[i];
+                    if (thing.def != thingDef)
+                    {
+                        continue;
+                    }
+
+                    int stackCountBefore;
+                    if (stacksBefore == null || !stacksBefore.TryGetValue(thing, out stackCountBefore) || thing.stackCount > stackCountBefore)
+                    {
+                        AddIgnoredThing(ignoredThings, thing);
+                    }
+                }
+            }
         }
 
         private void LaunchAdditionalBullets(BulletLaunchProperties properties)

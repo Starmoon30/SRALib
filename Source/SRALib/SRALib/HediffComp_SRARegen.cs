@@ -119,12 +119,9 @@ namespace SRA
                                     if (healingNotEnoughForWholePart)
                                     {
                                         Hediff hediff3 = HediffMaker.MakeHediff(hediff_MissingPart2.lastInjury ?? HediffDefOf.Cut, base.Pawn, part);
+                                        base.Pawn.health.RemoveHediff(hediff2);
+                                        base.Pawn.health.AddHediff(hediff3, part, null, null);
                                         hediff3.Severity = maxHealth - healAmountForThisMissingPart;
-                                        base.Pawn.health.RestorePart(part, null, false);
-                                        if (this.CanAddHediffToPart(part))
-                                        {
-                                            base.Pawn.health.AddHediff(hediff3, part, null, null);
-                                        }
                                         healingLeft -= healAmountForThisMissingPart;
                                     }
                                     else

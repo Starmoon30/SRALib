@@ -3,11 +3,19 @@
   "WorkspaceRootPath": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|d:\\steam\\steamapps\\common\\rimworld\\mods\\sralib\\source\\sralib\\sralib\\srabarrier\\hediffcomp_srabarrier.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|d:\\steam\\steamapps\\common\\rimworld\\mods\\sralib\\source\\sralib\\sralib\\projectile_multiexplosive.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\projectile_multiexplosive.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\hediffcomp_sraregen.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\hediffcomp_sraregen.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\srabarrier\\hediffcomp_srabarrier.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\srabarrier\\hediffcomp_srabarrier.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|d:\\steam\\steamapps\\common\\rimworld\\mods\\sralib\\source\\sralib\\sralib\\comp_bodyshapeajuster.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\comp_bodyshapeajuster.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\comp_bodyshapeajuster.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
@@ -19,16 +27,8 @@
       "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\srabarrier\\srabarrierharmonypatches.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\projectile_multiexplosive.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\projectile_multiexplosive.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\tailbulletdef.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\tailbulletdef.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\building_turretgunhasspeed.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|solutionrelative:sralib\\building_turretgunhasspeed.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{C1FB607E-E314-42C7-B6EE-D7849E96E82A}|SRALib\\SRA.csproj|D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\sralib\\comp_repairtower.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -74,24 +74,35 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 0,
+          "SelectedChildIndex": 4,
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 1,
+              "Title": "HediffComp_SRARegen.cs",
+              "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\HediffComp_SRARegen.cs",
+              "RelativeDocumentMoniker": "SRALib\\HediffComp_SRARegen.cs",
+              "ToolTip": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\HediffComp_SRARegen.cs",
+              "RelativeToolTip": "SRALib\\HediffComp_SRARegen.cs",
+              "ViewState": "AQIAAG4AAAAAAAAAAAAcwHcAAAAlAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-24T17:43:06.654Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
               "Title": "HediffComp_SRABarrier.cs",
               "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\SRABarrier\\HediffComp_SRABarrier.cs",
               "RelativeDocumentMoniker": "SRALib\\SRABarrier\\HediffComp_SRABarrier.cs",
               "ToolTip": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\SRABarrier\\HediffComp_SRABarrier.cs",
               "RelativeToolTip": "SRALib\\SRABarrier\\HediffComp_SRABarrier.cs",
-              "ViewState": "AQIAACABAAAAAAAAAAA7wCgBAAAdAAAA",
+              "ViewState": "AQIAADABAAAAAAAAAAAkwCgBAAANAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-06-07T04:20:27.366Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-06-07T04:20:27.366Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 4,
               "Title": "Comp_MultiTurretGun.cs",
               "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\Comp_MultiTurretGun.cs",
               "RelativeDocumentMoniker": "SRALib\\Comp_MultiTurretGun.cs",
@@ -103,7 +114,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 5,
               "Title": "SRABarrierHarmonyPatches.cs",
               "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\SRABarrier\\SRABarrierHarmonyPatches.cs",
               "RelativeDocumentMoniker": "SRALib\\SRABarrier\\SRABarrierHarmonyPatches.cs",
@@ -115,19 +126,20 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 0,
               "Title": "Projectile_MultiExplosive.cs",
               "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\Projectile_MultiExplosive.cs",
               "RelativeDocumentMoniker": "SRALib\\Projectile_MultiExplosive.cs",
               "ToolTip": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\Projectile_MultiExplosive.cs",
               "RelativeToolTip": "SRALib\\Projectile_MultiExplosive.cs",
-              "ViewState": "AQIAAGAAAAAAAAAAAAAYwG8AAABCAAAA",
+              "ViewState": "AQIAAAkAAAAAAAAAAAAAABsAAAApAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-05-23T07:55:43.198Z"
+              "WhenOpened": "2026-05-23T07:55:43.198Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 5,
+              "DocumentIndex": 6,
               "Title": "TailBulletDef.cs",
               "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\TailBulletDef.cs",
               "RelativeDocumentMoniker": "SRALib\\TailBulletDef.cs",
@@ -175,7 +187,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 3,
               "Title": "Comp_BodyshapeAjuster.cs",
               "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\Comp_BodyshapeAjuster.cs",
               "RelativeDocumentMoniker": "SRALib\\Comp_BodyshapeAjuster.cs",
@@ -183,8 +195,7 @@
               "RelativeToolTip": "SRALib\\Comp_BodyshapeAjuster.cs",
               "ViewState": "AQIAACUAAAAAAAAAAAAkwDkAAABgAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-05-09T01:53:46.353Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-05-09T01:53:46.353Z"
             },
             {
               "$type": "Document",
@@ -257,18 +268,6 @@
               "ViewState": "AQIAAAAAAAAAAAAAAAAAAAQAAAABAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-05-02T15:45:26.234Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 6,
-              "Title": "Building_TurretGunHasSpeed.cs",
-              "DocumentMoniker": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\Building_TurretGunHasSpeed.cs",
-              "RelativeDocumentMoniker": "SRALib\\Building_TurretGunHasSpeed.cs",
-              "ToolTip": "D:\\steam\\steamapps\\common\\RimWorld\\Mods\\SRALib\\Source\\SRALib\\SRALib\\Building_TurretGunHasSpeed.cs",
-              "RelativeToolTip": "SRALib\\Building_TurretGunHasSpeed.cs",
-              "ViewState": "AQIAADMAAAAAAAAAAAAYwEMAAAAaAAAA",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-04-03T16:09:23.695Z"
             }
           ]
         }
