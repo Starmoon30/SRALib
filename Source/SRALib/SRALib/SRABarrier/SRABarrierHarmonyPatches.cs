@@ -34,7 +34,7 @@ namespace SRA
             return HediffComp_SRABarrier.PawnHasActiveMentalBarrier(p);
         }
 
-        public static void PreApplyDamage_Prefix(Pawn __instance, ref DamageInfo dinfo)
+        public static void PreApplyDamage_Prefix(Pawn __instance, ref DamageInfo dinfo, ref bool absorbed)
         {
             if (__instance == null || __instance.Dead || __instance.health == null) return;
             if (dinfo.Amount <= 0.001f) return;
@@ -52,6 +52,7 @@ namespace SRA
                 if (dinfo.Amount <= 0.001f)
                 {
                     dinfo.SetAmount(0f);
+                    absorbed = true;
                     return;
                 }
             }

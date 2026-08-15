@@ -6,18 +6,40 @@ using Verse;
 
 namespace SRA
 {
+    public class VacDoorExtension : DefModExtension
+    {
+        // Prevent unreleased prisoners, including prison-break pawns with CanOpenAnyDoor,
+        // from opening this door normally. This does not prevent attacking or destroying it.
+        public bool preventPrisonerPrying = false;
+    }
+
     public class Building_VacDoor : Building_SupportedDoor
     {
+        private VacDoorExtension VacDoorProps
+        {
+            get
+            {
+                if (!this.vacDoorPropsResolved)
+                {
+                    this.vacDoorPropsCached = def.GetModExtension<VacDoorExtension>();
+                    this.vacDoorPropsResolved = true;
+                }
+
+                return this.vacDoorPropsCached;
+            }
+        }
+
         public CompPowerTrader PowerTrader
         {
             get
             {
-                CompPowerTrader result;
-                if ((result = this.powerTraderCached) == null)
+                if (!this.powerTraderResolved)
                 {
-                    result = (this.powerTraderCached = base.GetComp<CompPowerTrader>());
+                    this.powerTraderCached = base.GetComp<CompPowerTrader>();
+                    this.powerTraderResolved = true;
                 }
-                return result;
+
+                return this.powerTraderCached;
             }
         }
         public VacuumComponent Vacuum
@@ -33,18 +55,29 @@ namespace SRA
                 return result;
             }
         }
+
+        public override bool PawnCanOpen(Pawn p)
+        {
+            if (PreventsPrisonerPrying(p))
+            {
+                return false;
+            }
+
+            return base.PawnCanOpen(p);
+        }
+
         public override bool ExchangeVacuum
         {
             get
             {
-                return !this.IsAirtight || (base.Open && !this.PowerTrader.PowerOn);
+                return !this.IsAirtight || (base.Open && !this.PowerAvailable);
             }
         }
         protected override float TempEqualizeRate
         {
             get
             {
-                if (!this.PowerTrader.PowerOn)
+                if (!this.PowerAvailable)
                 {
                     return base.TempEqualizeRate;
                 }
@@ -63,7 +96,22 @@ namespace SRA
                 vacuum.Dirty();
             }
         }
+
+        private bool PreventsPrisonerPrying(Pawn p)
+        {
+            return (VacDoorProps?.preventPrisonerPrying ?? false) &&
+                   p != null &&
+                   p.IsPrisoner &&
+                   (p.guest == null || !p.guest.Released) &&
+                   p.HostFaction == Faction;
+        }
+
+        private bool PowerAvailable => this.PowerTrader == null || this.PowerTrader.PowerOn;
+
+        private VacDoorExtension vacDoorPropsCached;
+        private bool vacDoorPropsResolved;
         private CompPowerTrader powerTraderCached;
+        private bool powerTraderResolved;
         private VacuumComponent vacuumCached;
     }
 }

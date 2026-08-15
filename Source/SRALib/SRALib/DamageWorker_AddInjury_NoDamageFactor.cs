@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using RimWorld;
 using UnityEngine;
@@ -10,7 +11,34 @@ namespace SRA
 
     public class DamageWorker_NoDamageFactor_Extension : DefModExtension
     {
+        // IncomingDamageFactor 小于 1 时的穿透比例；0 完全吃承伤减免，1 完全穿透承伤减免。
         public float penetrationFactor = 0f;
+
+        // 可选的器官命中配置。不定义时不启用任何器官定向逻辑。
+        public DirectOrganDamageProperties organDamage;
+
+        public DirectOrganDamageProperties GetActiveOrganDamageProperties()
+        {
+            return organDamage;
+        }
+    }
+
+    public class DirectOrganDamageProperties
+    {
+        // 器官命中目标：直接指定能力来源器官标签，例如 SightSource、ConsciousnessSource。
+        public List<BodyPartTagDef> capacitySourceTags = new List<BodyPartTagDef>();
+
+        // 器官命中目标：通过能力名映射到原版 capacity source tag，例如 Consciousness、BloodPumping。
+        public List<PawnCapacityDef> capacities = new List<PawnCapacityDef>();
+
+        // 指定了器官过滤但没有找到可用器官时，是否跳过本次 Pawn 伤害。
+        public bool skipPawnWhenNoTargetPart = true;
+
+        // 有器官命中规则时，非 Pawn 目标是否仍按普通 Thing 受伤。
+        public bool allowNonPawnDamage = true;
+
+        // 有器官命中规则时，是否阻止常规伤害扩散到非目标部位。
+        public bool preventDamagePropagation = true;
     }
     public class DamageWorker_AddInjury_NoDamageFactor : DamageWorker
     {
@@ -30,12 +58,17 @@ namespace SRA
             Pawn pawn = thing as Pawn;
             if (pawn == null)
             {
+                DamageWorker_NoDamageFactor_Extension props = Props;
+                if (ShouldSkipNonPawnDamage(props))
+                {
+                    return new DamageWorker.DamageResult();
+                }
+
                 return base.Apply(dinfo, thing);
             }
             return this.ApplyToPawn(dinfo, pawn);
         }
 
-        // Token: 0x06002926 RID: 10534 RVA: 0x000D89A8 File Offset: 0x000D6BA8
         private DamageWorker.DamageResult ApplyToPawn(DamageInfo dinfo, Pawn pawn)
         {
             DamageWorker.DamageResult damageResult = new DamageWorker.DamageResult();
@@ -49,7 +82,11 @@ namespace SRA
             }
             Map mapHeld = pawn.MapHeld;
             bool spawnedOrAnyParentSpawned = pawn.SpawnedOrAnyParentSpawned;
-            if (dinfo.ApplyAllDamage)
+            DamageWorker_NoDamageFactor_Extension props = Props;
+            DirectOrganDamageProperties organDamage = props?.GetActiveOrganDamageProperties();
+            bool skipRegularDamage = ShouldSkipRegularDamageForOrganDamage(ref dinfo, pawn, organDamage);
+
+            if (!skipRegularDamage && dinfo.ApplyAllDamage)
             {
                 float num = dinfo.Amount;
                 int num2 = 25;
@@ -67,7 +104,7 @@ namespace SRA
                 }
                 while (num > 0f);
             }
-            else if (dinfo.AllowDamagePropagation && dinfo.Amount >= (float)dinfo.Def.minDamageToFragment)
+            else if (!skipRegularDamage && dinfo.AllowDamagePropagation && dinfo.Amount >= (float)dinfo.Def.minDamageToFragment)
             {
                 int randomInRange = dinfo.DamagePropagationPartsRange.RandomInRange;
                 for (int i = 0; i < randomInRange; i++)
@@ -77,7 +114,7 @@ namespace SRA
                     this.ApplyDamageToPart(dinfo3, pawn, damageResult);
                 }
             }
-            else
+            else if (!skipRegularDamage)
             {
                 this.ApplyDamageToPart(dinfo, pawn, damageResult);
                 this.ApplySmallPawnDamagePropagation(dinfo, pawn, damageResult);
@@ -174,7 +211,62 @@ namespace SRA
             return damageResult;
         }
 
-        // Token: 0x06002927 RID: 10535 RVA: 0x000D8D94 File Offset: 0x000D6F94
+        private static bool ShouldSkipNonPawnDamage(DamageWorker_NoDamageFactor_Extension props)
+        {
+            DirectOrganDamageProperties organDamage = props?.GetActiveOrganDamageProperties();
+            if (organDamage == null)
+            {
+                return false;
+            }
+
+            return !organDamage.allowNonPawnDamage;
+        }
+
+        private bool ShouldSkipRegularDamageForOrganDamage(
+            ref DamageInfo dinfo,
+            Pawn pawn,
+            DirectOrganDamageProperties organDamage)
+        {
+            if (!HasOrganDamageTargetFilters(organDamage))
+            {
+                return false;
+            }
+
+            List<BodyPartTagDef> targetTags = ResolveOrganDamageTargetTags(organDamage);
+            if (DirectHediffApplicationUtility.GetAvailableTargetParts(pawn, targetTags).Count == 0)
+            {
+                return organDamage.skipPawnWhenNoTargetPart;
+            }
+
+            if (organDamage.preventDamagePropagation)
+            {
+                dinfo.SetAllowDamagePropagation(false);
+            }
+
+            return false;
+        }
+
+        private static bool HasOrganDamageTargetFilters(DirectOrganDamageProperties organDamage)
+        {
+            ResolveOrganDamageTargets(organDamage, out List<BodyPartTagDef> targetTags, out List<PawnCapacityDef> targetCapacities);
+            return DirectHediffApplicationUtility.HasTargetFilters(targetTags, targetCapacities);
+        }
+
+        private static void ResolveOrganDamageTargets(
+            DirectOrganDamageProperties organDamage,
+            out List<BodyPartTagDef> targetTags,
+            out List<PawnCapacityDef> targetCapacities)
+        {
+            targetTags = organDamage?.capacitySourceTags;
+            targetCapacities = organDamage?.capacities;
+        }
+
+        private static List<BodyPartTagDef> ResolveOrganDamageTargetTags(DirectOrganDamageProperties organDamage)
+        {
+            ResolveOrganDamageTargets(organDamage, out List<BodyPartTagDef> targetTags, out List<PawnCapacityDef> targetCapacities);
+            return DirectHediffApplicationUtility.GetTargetTags(targetTags, targetCapacities);
+        }
+
         private void ApplySmallPawnDamagePropagation(DamageInfo dinfo, Pawn pawn, DamageWorker.DamageResult result)
         {
             if (!dinfo.AllowDamagePropagation)
@@ -189,7 +281,6 @@ namespace SRA
             }
         }
 
-        // Token: 0x06002928 RID: 10536 RVA: 0x000D8E60 File Offset: 0x000D7060
         private void ApplyDamageToPart(DamageInfo dinfo, Pawn pawn, DamageWorker.DamageResult result)
         {
             BodyPartRecord exactPartFromDamageInfo = this.GetExactPartFromDamageInfo(dinfo, pawn);
@@ -245,7 +336,6 @@ namespace SRA
             this.ApplySpecialEffectsToPart(pawn, num, dinfo, result);
         }
 
-        // Token: 0x06002929 RID: 10537 RVA: 0x000D8FBD File Offset: 0x000D71BD
         protected virtual void ApplySpecialEffectsToPart(Pawn pawn, float totalDamage, DamageInfo dinfo, DamageWorker.DamageResult result)
         {
             totalDamage = this.ReduceDamageToPreserveOutsideParts(totalDamage, dinfo, pawn);
@@ -253,7 +343,6 @@ namespace SRA
             this.CheckDuplicateDamageToOuterParts(dinfo, pawn, totalDamage, result);
         }
 
-        // Token: 0x0600292A RID: 10538 RVA: 0x000D8FE4 File Offset: 0x000D71E4
         protected float FinalizeAndAddInjury(Pawn pawn, float totalDamage, DamageInfo dinfo, DamageWorker.DamageResult result)
         {
             if (pawn.health.hediffSet.PartIsMissing(dinfo.HitPart))
@@ -308,7 +397,6 @@ namespace SRA
             return this.FinalizeAndAddInjury(pawn, hediff_Injury, dinfo, result);
         }
 
-        // Token: 0x0600292B RID: 10539 RVA: 0x000D916C File Offset: 0x000D736C
         protected float FinalizeAndAddInjury(Pawn pawn, Hediff_Injury injury, DamageInfo dinfo, DamageWorker.DamageResult result)
         {
             HediffComp_GetsPermanent hediffComp_GetsPermanent = injury.TryGetComp<HediffComp_GetsPermanent>();
@@ -362,7 +450,6 @@ namespace SRA
             return num4;
         }
 
-        // Token: 0x0600292C RID: 10540 RVA: 0x000D93B0 File Offset: 0x000D75B0
         private void CheckDuplicateDamageToOuterParts(DamageInfo dinfo, Pawn pawn, float totalDamage, DamageWorker.DamageResult result)
         {
             if (!dinfo.AllowDamagePropagation)
@@ -408,15 +495,24 @@ namespace SRA
             }
         }
 
-        // Token: 0x0600292D RID: 10541 RVA: 0x000D94FF File Offset: 0x000D76FF
         private static bool IsHeadshot(DamageInfo dinfo, Pawn pawn)
         {
             return !dinfo.InstantPermanentInjury && dinfo.HitPart.groups.Contains(BodyPartGroupDefOf.FullHead) && dinfo.Def.isRanged;
         }
 
-        // Token: 0x0600292E RID: 10542 RVA: 0x000D9534 File Offset: 0x000D7734
         private BodyPartRecord GetExactPartFromDamageInfo(DamageInfo dinfo, Pawn pawn)
         {
+            BodyPartRecord organDamagePart = ChooseOrganDamageHitPart(dinfo, pawn);
+            if (organDamagePart != null)
+            {
+                return organDamagePart;
+            }
+
+            if (ShouldSkipDamageBecauseOrganTargetIsMissing(pawn))
+            {
+                return null;
+            }
+
             if (dinfo.HitPart == null)
             {
                 BodyPartRecord bodyPartRecord = this.ChooseHitPart(dinfo, pawn);
@@ -433,13 +529,50 @@ namespace SRA
             return dinfo.HitPart;
         }
 
-        // Token: 0x0600292F RID: 10543 RVA: 0x000D95AA File Offset: 0x000D77AA
         protected virtual BodyPartRecord ChooseHitPart(DamageInfo dinfo, Pawn pawn)
         {
             return pawn.health.hediffSet.GetRandomNotMissingPart(dinfo.Def, dinfo.Height, dinfo.Depth, null);
         }
 
-        // Token: 0x06002930 RID: 10544 RVA: 0x000D95D4 File Offset: 0x000D77D4
+        private BodyPartRecord ChooseOrganDamageHitPart(DamageInfo dinfo, Pawn pawn)
+        {
+            DamageWorker_NoDamageFactor_Extension props = Props;
+            DirectOrganDamageProperties organDamage = props?.GetActiveOrganDamageProperties();
+            if (!HasOrganDamageTargetFilters(organDamage))
+            {
+                return null;
+            }
+
+            List<BodyPartRecord> availableTargetParts = DirectHediffApplicationUtility.GetAvailableTargetParts(
+                pawn,
+                ResolveOrganDamageTargetTags(organDamage));
+            if (availableTargetParts.Count == 0)
+            {
+                return null;
+            }
+
+            BodyPartRecord hitPart = dinfo.HitPart;
+            if (hitPart != null && availableTargetParts.Contains(hitPart))
+            {
+                return hitPart;
+            }
+
+            return DirectHediffApplicationUtility.ChooseWeightedPart(availableTargetParts);
+        }
+
+        private bool ShouldSkipDamageBecauseOrganTargetIsMissing(Pawn pawn)
+        {
+            DamageWorker_NoDamageFactor_Extension props = Props;
+            DirectOrganDamageProperties organDamage = props?.GetActiveOrganDamageProperties();
+            if (!HasOrganDamageTargetFilters(organDamage))
+            {
+                return false;
+            }
+
+            return organDamage.skipPawnWhenNoTargetPart &&
+                DirectHediffApplicationUtility.GetAvailableTargetParts(pawn, ResolveOrganDamageTargetTags(organDamage)).Count == 0;
+        }
+
         private static void PlayWoundedVoiceSound(DamageInfo dinfo, Pawn pawn)
         {
             if (pawn.Dead)
@@ -460,7 +593,6 @@ namespace SRA
             }
         }
 
-        // Token: 0x06002931 RID: 10545 RVA: 0x000D9674 File Offset: 0x000D7874
         protected float ReduceDamageToPreserveOutsideParts(float postArmorDamage, DamageInfo dinfo, Pawn pawn)
         {
             if (!DamageWorker_AddInjury.ShouldReduceDamageToPreservePart(dinfo.HitPart))
@@ -481,7 +613,6 @@ namespace SRA
             return postArmorDamage = partHealth - 1f;
         }
 
-        // Token: 0x06002932 RID: 10546 RVA: 0x000D96EC File Offset: 0x000D78EC
         public static bool ShouldReduceDamageToPreservePart(BodyPartRecord bodyPart)
         {
             return bodyPart.depth == BodyPartDepth.Outside && !bodyPart.IsCorePart;

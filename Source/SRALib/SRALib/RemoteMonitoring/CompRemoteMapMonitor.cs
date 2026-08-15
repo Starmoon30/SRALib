@@ -1,5 +1,6 @@
 using RimWorld;
 using RimWorld.Planet;
+using System;
 using System.Collections.Generic;
 using Verse;
 
@@ -56,6 +57,11 @@ namespace SRA
             if (!TryEnsureObservedTargetIsValid())
             {
                 yield break;
+            }
+
+            foreach (Gizmo artilleryGizmo in RemoteArtilleryUtility.BuildRemoteArtilleryGizmos(this))
+            {
+                yield return artilleryGizmo;
             }
 
             if (observedMap == null)
@@ -193,6 +199,34 @@ namespace SRA
             }
         }
 
+        public bool CanUseRemoteMonitoringForRemoteAction(out string disabledReason)
+        {
+            disabledReason = null;
+            if (!CanUseCommands())
+            {
+                disabledReason = Props.noTargetMessageKey.Translate();
+                return false;
+            }
+
+            if (!IsResearchUnlocked())
+            {
+                disabledReason = GetResearchDisabledReason();
+                return false;
+            }
+
+            return true;
+        }
+
+        public bool CanSelectRemoteMapTarget(MapParent target)
+        {
+            return target != null && !target.Destroyed && IsResearchUnlocked() && !IsForbiddenSettlementTarget(target);
+        }
+
+        public void OpenObservedMap(Action<Map> onOpened)
+        {
+            OpenObservedMapInternal(onOpened);
+        }
+
         private bool CanUseCommands()
         {
             if (parent.Faction != Faction.OfPlayer)
@@ -267,6 +301,11 @@ namespace SRA
 
         private void OpenObservedMap()
         {
+            OpenObservedMapInternal(null);
+        }
+
+        private void OpenObservedMapInternal(Action<Map> onOpened)
+        {
             if (!IsResearchUnlocked())
             {
                 Messages.Message(GetResearchDisabledReason(), MessageTypeDefOf.RejectInput, false);
@@ -286,7 +325,7 @@ namespace SRA
 
             if (observedMap.HasMap && observedMap.Map != null)
             {
-                FinalizeOpenedMap(observedMap.Map);
+                FinalizeOpenedMap(observedMap.Map, onOpened);
                 return;
             }
 
@@ -299,11 +338,16 @@ namespace SRA
                     return;
                 }
 
-                LongEventHandler.ExecuteWhenFinished(() => FinalizeOpenedMap(generatedMap));
+                LongEventHandler.ExecuteWhenFinished(() => FinalizeOpenedMap(generatedMap, onOpened));
             }, "GeneratingMap", false, null, true);
         }
 
         private void FinalizeOpenedMap(Map map)
+        {
+            FinalizeOpenedMap(map, null);
+        }
+
+        private void FinalizeOpenedMap(Map map, Action<Map> onOpened)
         {
             if (map == null)
             {
@@ -317,6 +361,8 @@ namespace SRA
             {
                 CameraJumper.TryJump(new GlobalTargetInfo(map.Center, map));
             }
+
+            onOpened?.Invoke(map);
         }
 
         private void RefreshCacheRegistration()
@@ -370,20 +416,12 @@ namespace SRA
 
         private bool IsForbiddenSettlementTarget(MapParent target)
         {
-            return target is Settlement settlement &&
-                   settlement.Faction != null &&
-                   !settlement.Faction.IsPlayer &&
-                   !settlement.Faction.HostileTo(Faction.OfPlayer);
+            return RemoteMonitoringUtility.IsForbiddenSettlementTarget(target);
         }
 
         private string GetNonHostileSettlementReason(MapParent target)
         {
-            if (target is Settlement settlement && settlement.Faction != null)
-            {
-                return Props.nonHostileSettlementMessageKey.Translate(settlement.Faction.Name);
-            }
-
-            return Props.nonHostileSettlementMessageKey.Translate(target.LabelCap);
+            return RemoteMonitoringUtility.GetNonHostileSettlementReason(target, Props.nonHostileSettlementMessageKey);
         }
     }
 }

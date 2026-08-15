@@ -9,19 +9,75 @@ using Verse;
 
 namespace SRA
 {
+    public static class SRA_TurretRangeOverlayUtility
+    {
+        private const float MinRangeDisplayThreshold = 0.1f;
+
+        public static VerbProperties FindSupportedTurretRangeVerb(ThingDef thingDef)
+        {
+            List<VerbProperties> verbs = thingDef?.building?.turretGunDef?.Verbs;
+            if (verbs.NullOrEmpty())
+            {
+                return null;
+            }
+
+            for (int i = 0; i < verbs.Count; i++)
+            {
+                VerbProperties verbProperties = verbs[i];
+                if (IsSupportedTurretRangeVerb(verbProperties))
+                {
+                    return verbProperties;
+                }
+            }
+
+            return null;
+        }
+
+        public static bool IsSupportedTurretRangeVerb(VerbProperties verbProperties)
+        {
+            Type verbClass = verbProperties?.verbClass;
+            return verbClass != null
+                && (typeof(Verb_ShootWithOffset).IsAssignableFrom(verbClass)
+                    || typeof(Verb_SRAShootBeam).IsAssignableFrom(verbClass));
+        }
+
+        public static void DrawTurretRangeRings(IntVec3 center, float maxRange, float minRange)
+        {
+            if (minRange >= maxRange)
+            {
+                return;
+            }
+
+            if (CanDrawRangeRing(maxRange))
+            {
+                GenDraw.DrawRadiusRing(center, maxRange);
+            }
+
+            if (minRange > MinRangeDisplayThreshold && CanDrawRangeRing(minRange))
+            {
+                GenDraw.DrawRadiusRing(center, minRange);
+            }
+        }
+
+        private static bool CanDrawRangeRing(float radius)
+        {
+            return radius > 0f
+                // GenDraw.DrawRadiusRing uses GenRadial.NumCellsInRadius internally;
+                // radius >= MaxRadialPatternRadius would log an error.
+                && radius < GenRadial.MaxRadialPatternRadius;
+        }
+    }
+
     public class PlaceWorker_ShowTurretWithOffsetRadius : PlaceWorker
     {
         public override AcceptanceReport AllowsPlacing(BuildableDef checkingDef, IntVec3 loc, Rot4 rot, Map map, Thing thingToIgnore = null, Thing thing = null)
         {
-            VerbProperties verbProperties = ((ThingDef)checkingDef).building.turretGunDef.Verbs.Find((VerbProperties v) => v.verbClass == typeof(Verb_ShootWithOffset));
-            if (verbProperties.range > 0f && verbProperties.range < 80f)
+            VerbProperties verbProperties = SRA_TurretRangeOverlayUtility.FindSupportedTurretRangeVerb(checkingDef as ThingDef);
+            if (verbProperties != null)
             {
-                GenDraw.DrawRadiusRing(loc, verbProperties.range);
+                SRA_TurretRangeOverlayUtility.DrawTurretRangeRings(loc, verbProperties.range, verbProperties.minRange);
             }
-            if (verbProperties.minRange > 0f && verbProperties.minRange < 80f)
-            {
-                GenDraw.DrawRadiusRing(loc, verbProperties.minRange);
-            }
+
             return true;
         }
     }
@@ -477,8 +533,117 @@ namespace SRA
         }
     }
     public class Verb_ShootWithOffset : Verb_Shoot
-    {  
+    {
         public int offset = 0;
+
+        public CompSustainedShoot CompSustainedShoot
+        {
+            get
+            {
+                return base.EquipmentSource?.TryGetComp<CompSustainedShoot>();
+            }
+        }
+
+        protected override int ShotsPerBurst
+        {
+            get
+            {
+                Comp_HNGT_GlobalBallisticAttack remoteArtilleryComp = GetRemoteArtilleryComp();
+                if (remoteArtilleryComp != null && remoteArtilleryComp.IsFiringInterMap)
+                {
+                    return Mathf.Max(1, remoteArtilleryComp.RemoteBurstShotCount);
+                }
+
+                CompSustainedShoot compSustainedShoot = this.CompSustainedShoot;
+                bool hasCachedShots = this.state == VerbState.Idle && compSustainedShoot != null && compSustainedShoot.cachedBurstShotsLeft >= 1;
+                if (hasCachedShots)
+                {
+                    return compSustainedShoot.cachedBurstShotsLeft;
+                }
+
+                return base.BurstShotCount;
+            }
+        }
+
+        public int BurstShotsLeft
+        {
+            get
+            {
+                return this.burstShotsLeft;
+            }
+        }
+
+        public override void OrderForceTarget(LocalTargetInfo target)
+        {
+            if (this.CompSustainedShoot == null)
+            {
+                base.OrderForceTarget(target);
+                return;
+            }
+
+            this.forceTargetedDownedPawn = null;
+            base.OrderForceTarget(target);
+            if (target.Pawn != null && target.Pawn.Downed && target.Pawn.Spawned)
+            {
+                this.forceTargetedDownedPawn = target.Pawn;
+            }
+
+            this.currentTarget = target;
+        }
+
+        public override void WarmupComplete()
+        {
+            if (IsRemoteArtilleryActive)
+            {
+                base.WarmupComplete();
+                return;
+            }
+
+            CompSustainedShoot compSustainedShoot = this.CompSustainedShoot;
+            if (compSustainedShoot == null)
+            {
+                base.WarmupComplete();
+                return;
+            }
+
+            compSustainedShoot.Notify_SustainedVerbStarted();
+            this.burstShotsLeft = this.ShotsPerBurst;
+            this.state = VerbState.Bursting;
+            base.TryCastNextBurstShot();
+            compSustainedShoot.Notify_SustainedBurstProgress(this.burstShotsLeft);
+            Pawn pawn = this.currentTarget.Thing as Pawn;
+            if (pawn != null && !pawn.Downed && !pawn.IsColonyMech && this.CasterIsPawn && this.CasterPawn.skills != null && this.burstShotsLeft == base.BurstShotCount)
+            {
+                float baseExperience = pawn.HostileTo(this.caster) ? 170f : 20f;
+                float cycleTime = this.verbProps.AdjustedFullCycleTime(this, this.CasterPawn);
+                this.CasterPawn.skills.Learn(SkillDefOf.Shooting, baseExperience * cycleTime, false, false);
+            }
+        }
+
+        public override void BurstingTick()
+        {
+            base.BurstingTick();
+            if (!IsRemoteArtilleryActive)
+            {
+                this.CompSustainedShoot?.Notify_SustainedBurstProgress(this.burstShotsLeft);
+            }
+        }
+
+        public void ResetPreservingCastCompleteCallback()
+        {
+            // Vanilla Verb.Reset clears castCompleteCallback, but turrets need it to restore burst cooldown.
+            Action callback = this.castCompleteCallback;
+            base.Reset();
+            this.castCompleteCallback = callback;
+            this.forceTargetedDownedPawn = null;
+        }
+
+        public override void ExposeData()
+        {
+            base.ExposeData();
+            Scribe_References.Look<Pawn>(ref this.forceTargetedDownedPawn, "forceTargetedDownedPawn", false);
+        }
+
         protected override bool TryCastShot()
         {
             bool num = BaseTryCastShot();
@@ -503,6 +668,12 @@ namespace SRA
                 return false;
             }
 
+            Comp_HNGT_GlobalBallisticAttack remoteArtilleryComp = (caster as ThingWithComps)?.GetComp<Comp_HNGT_GlobalBallisticAttack>();
+            if (remoteArtilleryComp != null && remoteArtilleryComp.IsFiringInterMap)
+            {
+                return TryCastRemoteArtilleryFakeShot(projectile);
+            }
+
             ShootLine resultingLine;
             bool flag = TryFindShootLineFromTo(caster.Position, currentTarget, out resultingLine);
             if (verbProps.stopBurstWithoutLos && !flag)
@@ -512,8 +683,7 @@ namespace SRA
 
             if (base.EquipmentSource != null)
             {
-                base.EquipmentSource.GetComp<CompChangeableProjectile>()?.Notify_ProjectileLaunched();
-                base.EquipmentSource.GetComp<CompApparelVerbOwner_Charged>()?.UsedOnce();
+                TryConsumeEquipmentShot(requireLoadedAmmo: false);
             }
 
             lastShotTick = Find.TickManager.TicksGame;
@@ -632,6 +802,108 @@ namespace SRA
             return true;
         }
 
+        private bool TryCastRemoteArtilleryFakeShot(ThingDef projectileDef)
+        {
+            if (caster?.Map == null || !currentTarget.IsValid)
+            {
+                return false;
+            }
+
+            if (!TryConsumeEquipmentShot(requireLoadedAmmo: true))
+            {
+                return false;
+            }
+
+            Thing manningPawn = caster;
+            Thing equipmentSource = base.EquipmentSource;
+            CompMannable compMannable = caster.TryGetComp<CompMannable>();
+            if (compMannable?.ManningPawn != null)
+            {
+                manningPawn = compMannable.ManningPawn;
+                equipmentSource = caster;
+            }
+
+            Vector3 launchPos = ApplyProjectileOffset(caster.DrawPos, equipmentSource);
+            IntVec3 spawnCell = launchPos.ToIntVec3();
+            if (!spawnCell.InBounds(caster.Map))
+            {
+                spawnCell = caster.Position;
+            }
+
+            Thing spawnedThing = GenSpawn.Spawn(projectileDef, spawnCell, caster.Map, WipeMode.Vanish);
+            if (!(spawnedThing is Projectile fakeProjectile))
+            {
+                spawnedThing.Destroy(DestroyMode.Vanish);
+                return false;
+            }
+
+            fakeProjectile.Launch(
+                manningPawn,
+                launchPos,
+                currentTarget.Cell,
+                currentTarget,
+                ProjectileHitFlags.None,
+                false,
+                equipmentSource,
+                null);
+            lastShotTick = Find.TickManager.TicksGame;
+            return true;
+        }
+
+        private bool TryConsumeEquipmentShot(bool requireLoadedAmmo)
+        {
+            CompChangeableProjectile compChangeableProjectile = base.EquipmentSource?.GetComp<CompChangeableProjectile>();
+            CompRefuelable refuelableAmmo = requireLoadedAmmo ? GetRemoteArtilleryFuelComp() : null;
+            if (requireLoadedAmmo)
+            {
+                if (compChangeableProjectile != null && !compChangeableProjectile.Loaded)
+                {
+                    return false;
+                }
+
+                if (refuelableAmmo != null && refuelableAmmo.Fuel < Comp_HNGT_GlobalBallisticAttack.RemoteFuelPerFakeShot)
+                {
+                    return false;
+                }
+            }
+
+            if (compChangeableProjectile != null)
+            {
+                compChangeableProjectile.Notify_ProjectileLaunched();
+            }
+
+            if (refuelableAmmo != null)
+            {
+                refuelableAmmo.ConsumeFuel(Comp_HNGT_GlobalBallisticAttack.RemoteFuelPerFakeShot);
+            }
+
+            base.EquipmentSource?.GetComp<CompApparelVerbOwner_Charged>()?.UsedOnce();
+            return true;
+        }
+
+        private CompRefuelable GetRemoteArtilleryFuelComp()
+        {
+            Building_TurretGunHasSpeed turret = caster as Building_TurretGunHasSpeed;
+            if (turret == null)
+            {
+                return null;
+            }
+
+            Comp_HNGT_GlobalBallisticAttack remoteArtilleryComp = turret.GetComp<Comp_HNGT_GlobalBallisticAttack>();
+            if (remoteArtilleryComp == null || !remoteArtilleryComp.IsFiringInterMap)
+            {
+                return null;
+            }
+
+            CompRefuelable refuelable = turret.refuelableComp ?? turret.TryGetComp<CompRefuelable>();
+            if (refuelable == null || refuelable.Props == null || !refuelable.Props.consumeFuelOnlyWhenUsed)
+            {
+                return null;
+            }
+
+            return refuelable;
+        }
+
         protected Vector3 ApplyProjectileOffset(Vector3 originalDrawPos, Thing equipmentSource)
         {
             ModExtension_ShootWithOffset offsetExtension = GetShootWithOffsetExtension(equipmentSource);
@@ -685,13 +957,37 @@ namespace SRA
         {
             // 原版 TryCastNextBurstShot 在每发成功后才递减 burstShotsLeft。
             // 因此开火前第 N 发的索引是 BurstShotCount - burstShotsLeft。
-            int shotIndex = BurstShotCount - burstShotsLeft;
+            int shotIndex = GetCurrentBurstShotCount() - burstShotsLeft;
             if (shotIndex >= 0)
             {
                 return shotIndex;
             }
 
             return 0;
+        }
+
+        private int GetCurrentBurstShotCount()
+        {
+            Comp_HNGT_GlobalBallisticAttack remoteArtilleryComp = GetRemoteArtilleryComp();
+            if (remoteArtilleryComp != null && remoteArtilleryComp.IsFiringInterMap)
+            {
+                return Mathf.Max(1, remoteArtilleryComp.RemoteBurstShotCount);
+            }
+
+            return BurstShotCount;
+        }
+
+        private Comp_HNGT_GlobalBallisticAttack GetRemoteArtilleryComp()
+        {
+            return (caster as ThingWithComps)?.GetComp<Comp_HNGT_GlobalBallisticAttack>();
+        }
+
+        private bool IsRemoteArtilleryActive
+        {
+            get
+            {
+                return GetRemoteArtilleryComp()?.IsFiringInterMap ?? false;
+            }
         }
 
         protected int GetLegacyShotIndex()
@@ -717,6 +1013,8 @@ namespace SRA
             // 转换为：0°=东，90°=南，180°=西，270°=北
             return -rimworldAngle - 90f;
         }
+
+        public Pawn forceTargetedDownedPawn;
 
     }
 }

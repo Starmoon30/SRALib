@@ -21,20 +21,98 @@ namespace SRA
 
     public class HediffCompProperties_SRABarrier : HediffCompProperties
     {
+        // Maximum stored barrier points.
         public float maxBarrier = 100f;
+
+        // Barrier damage multiplier. Higher values make the same incoming hit consume more barrier.
         public float DamageTakenMult = 1f;
+
+        // Maximum barrier-relevant damage per hit. Values at or below 0 disable the cap.
         public float DamageTakenMax = 0f;
+
+        // Flat reduction before barrier damage is applied. Values at or below 0 disable the reduction.
         public float DamageTakenReduce = 0f;
+
+        // Barrier points restored once per real-time second after regenDelay has passed.
         public float regenRate = 5f;
+
+        // Seconds after taking damage before normal regeneration can resume.
         public float regenDelay = 3f;
+
+        // Seconds after the barrier breaks before it can reactivate.
         public float rechargeCooldown = 10f;
+
+        // Remove the parent hediff immediately when the barrier breaks.
         public bool RemoveWhenDestroy = false;
+
+        // Psychic bulwark: blocks stun, mental states, catatonic breakdown, and porcupine quills.
         public bool BlockStunAndMentalState = false;
+
+        // Hardened barrier: damage against the barrier is processed through the pawn's final armor.
         public bool HardenedBarrier = false;
+
+        // Deflective barrier: uses the pawn's final MeleeDodgeChance as a universal dodge chance.
         public bool DeflectiveBarrier = false;
+
+        // Higher priority barriers attempt to absorb damage before lower priority barriers.
         public int priority = 0;
 
+        // Effects fired once when a real barrier hit reduces the barrier to zero.
+        public List<SRABarrierEffect> whenDestroy;
+
+        // Effects fired once when regeneration or recharge raises the barrier from not-full to full.
+        public List<SRABarrierEffect> whenRegenFull;
+
+        // Effects fired after a hit actually consumes barrier points. Direct blocks do not fire this.
+        public List<SRABarrierEffect> whenAbsorbDamage;
+
         public HediffCompProperties_SRABarrier() => compClass = typeof(HediffComp_SRABarrier);
+
+        public override IEnumerable<string> ConfigErrors(HediffDef parentDef)
+        {
+            foreach (string error in base.ConfigErrors(parentDef))
+            {
+                yield return error;
+            }
+
+            foreach (string error in ConfigErrorsForEffects(whenDestroy, nameof(whenDestroy)))
+            {
+                yield return error;
+            }
+
+            foreach (string error in ConfigErrorsForEffects(whenRegenFull, nameof(whenRegenFull)))
+            {
+                yield return error;
+            }
+
+            foreach (string error in ConfigErrorsForEffects(whenAbsorbDamage, nameof(whenAbsorbDamage)))
+            {
+                yield return error;
+            }
+        }
+
+        private static IEnumerable<string> ConfigErrorsForEffects(List<SRABarrierEffect> effects, string listName)
+        {
+            if (effects.NullOrEmpty())
+            {
+                yield break;
+            }
+
+            for (int i = 0; i < effects.Count; i++)
+            {
+                SRABarrierEffect effect = effects[i];
+                if (effect == null)
+                {
+                    yield return $"{listName} contains a null effect at index {i}.";
+                    continue;
+                }
+
+                foreach (string error in effect.ConfigErrors())
+                {
+                    yield return $"{listName}[{i}]: {error}";
+                }
+            }
+        }
     }
 
     public class HediffComp_SRABarrier : HediffComp, IAlwaysShowGizmo
@@ -43,6 +121,8 @@ namespace SRA
         private float currentBarrier;
         private int lastDamageTick = -1;
         private int brokenTick = -1;
+        private Dictionary<string, int> effectLastRunTicks;
+        private bool initialRegenFullTriggered;
         public bool isActive = true;
 
         public HediffCompProperties_SRABarrier Props =>
@@ -80,6 +160,7 @@ namespace SRA
         {
             base.CompPostPostAdd(dinfo);
             SRABarrierCache.MarkDirty(Pawn);
+            TryTriggerInitialRegenFullEffects();
         }
 
         public override void CompPostPostRemoved()
@@ -100,10 +181,16 @@ namespace SRA
             Scribe_Values.Look(ref currentBarrier, "currentBarrier");
             Scribe_Values.Look(ref lastDamageTick, "lastDamageTick", -1);
             Scribe_Values.Look(ref brokenTick, "brokenTick", -1);
+            Scribe_Collections.Look(ref effectLastRunTicks, "effectLastRunTicks", LookMode.Value, LookMode.Value);
+            Scribe_Values.Look(ref initialRegenFullTriggered, "initialRegenFullTriggered", true);
             Scribe_Values.Look(ref isActive, "isActive", true);
 
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
             {
+                if (effectLastRunTicks == null)
+                {
+                    effectLastRunTicks = new Dictionary<string, int>();
+                }
                 SRABarrierCache.MarkDirty(Pawn);
             }
         }
@@ -129,7 +216,9 @@ namespace SRA
                     {
                         if (Props.rechargeCooldown > 0)
                         {
+                            float barrierBefore = CurrentBarrier;
                             CurrentBarrier = Props.maxBarrier;
+                            TryTriggerRegenFullEffects(barrierBefore);
                             SRALib_DefOf.EnergyShield_Reset.PlayOneShot(new TargetInfo(Pawn.Position, Pawn.Map, false));
                         }
                         isActive = true;
@@ -153,7 +242,9 @@ namespace SRA
 
                 if (pastRegenDelay)
                 {
+                    float barrierBefore = CurrentBarrier;
                     CurrentBarrier += Props.regenRate;
+                    TryTriggerRegenFullEffects(barrierBefore);
                 }
             }
         }
@@ -165,6 +256,7 @@ namespace SRA
                 return;
             }
 
+            float damageBefore = dinfo.Amount;
             float damageToAbsorb = dinfo.Amount;
             Damage_SRABarrier_factor_Extension ext = dinfo.Def.GetModExtension<Damage_SRABarrier_factor_Extension>();
             if (ext != null && ext.damage_SRABarrier_factor >= 0f)
@@ -210,10 +302,22 @@ namespace SRA
                 return;
             }
 
+            float barrierBefore = CurrentBarrier;
             float absorbed = Mathf.Min(CurrentBarrier / Props.DamageTakenMult / incomingDamageFactor, damageToAbsorb);
-            CurrentBarrier -= absorbed * Props.DamageTakenMult * incomingDamageFactor;
+            float barrierDamageTaken = absorbed * Props.DamageTakenMult * incomingDamageFactor;
+            CurrentBarrier -= barrierDamageTaken;
             dinfo.SetAmount(Mathf.Min(dinfo.Amount, damageToAbsorb - absorbed));
             lastDamageTick = Find.TickManager.TicksGame;
+            TriggerEffects(
+                Props.whenAbsorbDamage,
+                SRABarrierEffectTrigger.WhenAbsorbDamage,
+                dinfo,
+                damageBefore,
+                dinfo.Amount,
+                absorbed,
+                barrierDamageTaken,
+                barrierBefore,
+                CurrentBarrier);
 
             if (CurrentBarrier <= 0.001f)
             {
@@ -221,9 +325,130 @@ namespace SRA
                 brokenTick = Find.TickManager.TicksGame;
                 isActive = false;
                 SRALib_DefOf.EnergyShield_Broken.PlayOneShot(new TargetInfo(Pawn.Position, Pawn.Map, false));
+                TriggerEffects(
+                    Props.whenDestroy,
+                    SRABarrierEffectTrigger.WhenDestroy,
+                    dinfo,
+                    damageBefore,
+                    dinfo.Amount,
+                    absorbed,
+                    barrierDamageTaken,
+                    barrierBefore,
+                    CurrentBarrier);
                 if (Props.RemoveWhenDestroy)
                 {
                     parent.Severity = 0f;
+                }
+            }
+        }
+
+        public bool CanRunEffect(string key, int cooldownTicks)
+        {
+            if (key.NullOrEmpty() || cooldownTicks <= 0)
+            {
+                return true;
+            }
+
+            if (effectLastRunTicks == null || !effectLastRunTicks.TryGetValue(key, out int lastTick))
+            {
+                return true;
+            }
+
+            return Find.TickManager.TicksGame >= lastTick + cooldownTicks;
+        }
+
+        public void NotifyEffectRan(string key)
+        {
+            if (key.NullOrEmpty())
+            {
+                return;
+            }
+
+            if (effectLastRunTicks == null)
+            {
+                effectLastRunTicks = new Dictionary<string, int>();
+            }
+
+            effectLastRunTicks[key] = Find.TickManager.TicksGame;
+        }
+
+        private void TryTriggerRegenFullEffects(float barrierBefore)
+        {
+            if (barrierBefore >= Props.maxBarrier || CurrentBarrier < Props.maxBarrier)
+            {
+                return;
+            }
+
+            TriggerEffects(
+                Props.whenRegenFull,
+                SRABarrierEffectTrigger.WhenRegenFull,
+                null,
+                0f,
+                0f,
+                0f,
+                0f,
+                barrierBefore,
+                CurrentBarrier);
+        }
+
+        private void TryTriggerInitialRegenFullEffects()
+        {
+            if (initialRegenFullTriggered || Pawn == null)
+            {
+                return;
+            }
+
+            initialRegenFullTriggered = true;
+
+            // A newly added barrier starts at full strength and should behave like it just crossed
+            // the full threshold, so XML authors can use whenRegenFull for initial shield effects.
+            TryTriggerRegenFullEffects(0f);
+        }
+
+        private void TriggerEffects(
+            List<SRABarrierEffect> effects,
+            SRABarrierEffectTrigger trigger,
+            DamageInfo? dinfo,
+            float damageBefore,
+            float damageAfter,
+            float absorbedDamage,
+            float barrierDamageTaken,
+            float barrierBefore,
+            float barrierAfter)
+        {
+            if (effects.NullOrEmpty() || Pawn == null)
+            {
+                return;
+            }
+
+            SRABarrierEffectContext context = new SRABarrierEffectContext
+            {
+                barrier = this,
+                pawn = Pawn,
+                dinfo = dinfo,
+                damageBefore = damageBefore,
+                damageAfter = damageAfter,
+                absorbedDamage = absorbedDamage,
+                barrierDamageTaken = barrierDamageTaken,
+                barrierBefore = barrierBefore,
+                barrierAfter = barrierAfter
+            };
+
+            for (int i = 0; i < effects.Count; i++)
+            {
+                SRABarrierEffect effect = effects[i];
+                if (effect == null)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    effect.TryApply(context, trigger, i);
+                }
+                catch (Exception ex)
+                {
+                    Log.Error("[SRA Barrier] Effect failed on " + Pawn.ToStringSafe() + ": " + ex);
                 }
             }
         }

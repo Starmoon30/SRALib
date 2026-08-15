@@ -1,6 +1,5 @@
 ﻿
 using System.Collections.Generic;
-using System.Linq;
 using RimWorld;
 using UnityEngine;
 using Verse;
@@ -10,144 +9,98 @@ namespace SRA
 {
     public class SRA_RailgunProjectileExtension : DefModExtension
     {
-        // 穿透配置
+        // 非目标命中后允许继续飞行的次数。
         public int maxPenetrations = 1;
-        public int penetrationDelayTicks = 15; // 默认0.25秒(60tick/秒)
+        // 两次穿透命中之间的最小间隔，避免同一格或同一批目标反复触发。
+        public int penetrationDelayTicks = 15;
 
-        // 爆炸配置
+        // 每次有效命中时生成的爆炸半径。
         public float explosionRadius = 1.5f;
+        // 爆炸伤害；<= 0 时使用 projectile 本体按武器解析后的伤害。
         public int explosionDamage = 0;
+        // 爆炸穿甲；<= 0 时使用 projectile 本体按武器解析后的穿甲。
         public float explosionArmorPenetration = 0f;
+        // 爆炸使用的伤害类型。
         public DamageDef damageDef = DamageDefOf.Bullet;
+        // 爆炸音效。
         public SoundDef explosionSound = SRALib_DefOf.EnergyShield_Broken;
+        // 爆炸前播放的额外 Effecter。
         public EffecterDef explosionEffect;
+        // Effecter 维持时间；<= 0 时立即触发并清理。
         public int explosionEffectLifetimeTicks;
 
+        // 爆炸半径内额外施加的 Hediff。
         public HediffDef explosionHediff;
+        // Hediff 严重度；<= 0 时按 1 处理，避免生成无效 hediff。
         public float explosionHediffSeverity = 0f;
-
     }
+
     public class Projectile_SRA_Railgun : Projectile
     {
-        // 穿透配置
         private int penetrationsLeft;
         private int lastPenetrationTick;
-        private Thing LasthitThing;
+        private Thing lastHitThing;
+        private int resolvedExplosionDamage = -1;
+        private float resolvedExplosionArmorPenetration = -1f;
+        private SRA_RailgunProjectileExtension projectileExt;
+        private readonly HashSet<Thing> tmpIgnoredThings = new HashSet<Thing>();
+        private readonly HashSet<Thing> tmpExtraDamageTargetSet = new HashSet<Thing>();
+        private readonly List<Thing> tmpExtraDamageTargets = new List<Thing>();
 
-        // 获取XML配置
-        private SRA_RailgunProjectileExtension ProjectileExt =>
-            def.GetModExtension<SRA_RailgunProjectileExtension>();
-        
+        private SRA_RailgunProjectileExtension ProjectileExt
+        {
+            get
+            {
+                if (projectileExt == null)
+                {
+                    projectileExt = def.GetModExtension<SRA_RailgunProjectileExtension>();
+                }
+
+                return projectileExt;
+            }
+        }
 
         protected override void Impact(Thing hitThing, bool blockedByShield = false)
         {
-            if (ProjectileExt == null)
+            SRA_RailgunProjectileExtension ext = ProjectileExt;
+            if (ext == null)
             {
                 base.Impact(hitThing, blockedByShield);
                 return;
             }
-            Map map = base.Map;
-            IntVec3 position = base.Position;
-            Thing launcher = base.launcher;
 
-            // 检查是否为预定目标或需要穿透
-            bool isIntendedTarget =
-                intendedTarget.Thing == null ||
-                hitThing == intendedTarget.Thing || hitThing == null;
-
-            bool canPenetrate =
-                ProjectileExt != null &&
-                penetrationsLeft > 0 &&
-                (Find.TickManager.TicksGame - lastPenetrationTick) >= ProjectileExt.penetrationDelayTicks;
-            if (hitThing == null || hitThing != LasthitThing)
+            Map map = Map;
+            if (map == null)
             {
-                LasthitThing = hitThing;
-                BattleLogEntry_RangedImpact battleLogEntry_RangedImpact = new BattleLogEntry_RangedImpact(launcher, hitThing, intendedTarget.Thing, equipmentDef, def, targetCoverDef);
-                Find.BattleLog.Add(battleLogEntry_RangedImpact);
-                Pawn pawn;
-                bool instigatorGuilty = (pawn = (launcher as Pawn)) == null || !pawn.Drafted;
-
-                if (ProjectileExt.explosionEffect != null)
-                {
-                    Effecter effecter = ProjectileExt.explosionEffect.Spawn().Trigger(new TargetInfo(Position, launcher.Map, false), this.launcher, -1);
-                    if (ProjectileExt.explosionEffectLifetimeTicks != 0)
-                    {
-                        Map.effecterMaintainer.AddEffecterToMaintain(effecter, Position.ToVector3().ToIntVec3(), ProjectileExt.explosionEffectLifetimeTicks);
-                    }
-                    else
-                    {
-                        effecter.Trigger(new TargetInfo(Position, Map, false), new TargetInfo(Position, Map, false), -1);
-                        effecter.Cleanup();
-                    }
-                }
-                List<Thing> thingsIgnoredByExplosion = new List<Thing>();
-                foreach (IntVec3 cell in GenRadial.RadialCellsAround(position, ProjectileExt.explosionRadius, true))
-                {
-                    if (!cell.InBounds(map)) continue;
-
-                    // 创建事物列表的副本以避免枚举时修改集合
-                    List<Thing> thingsInCell = map.thingGrid.ThingsListAt(cell).ToList();
-
-                    foreach (Thing thing in thingsInCell)
-                    {
-                        // 检查物体是否已被销毁
-                        if (thing.Destroyed) continue;
-
-                        // 敌我识别
-                        if (thing != hitThing && !GenHostility.HostileTo(thing, launcher))
-                        {
-                            thingsIgnoredByExplosion.Add(thing);
-                        }
-                        else
-                        {
-                            if (def.projectile.extraDamages != null)
-                            {
-                                foreach (ExtraDamage extraDamage in def.projectile.extraDamages)
-                                {
-                                    if (Rand.Chance(extraDamage.chance))
-                                    {
-                                        DamageInfo dinfo2 = new DamageInfo(extraDamage.def, extraDamage.amount, extraDamage.AdjustedArmorPenetration(), ExactRotation.eulerAngles.y, launcher, null, equipmentDef, DamageInfo.SourceCategory.ThingOrUnknown, intendedTarget.Thing, instigatorGuilty);
-                                        thing.TakeDamage(dinfo2).AssociateWithLog(battleLogEntry_RangedImpact);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                // 施加爆炸范围内的 Hediff
-                if (ProjectileExt?.explosionHediff != null)
-                {
-                    ApplyHediffInExplosionRadius(position, map);
-                }
-                // 生成穿透爆炸
-                GenExplosion.DoExplosion(
-                    center: position,
-                    map: map,
-                    radius: ProjectileExt.explosionRadius,
-                    damType: ProjectileExt.damageDef,
-                    instigator: launcher,
-                    damAmount: ProjectileExt.explosionDamage,
-                    armorPenetration: ProjectileExt.explosionArmorPenetration,
-                    explosionSound: ProjectileExt.explosionSound,
-                    weapon: equipmentDef,
-                    projectile: def,
-                    intendedTarget: intendedTarget.Thing,
-                    ignoredThings: thingsIgnoredByExplosion
-                );
-
-            }
-            // 非目标且满足穿透条件
-            if (!isIntendedTarget && canPenetrate)
-            {
-                // 更新穿透状态
-                penetrationsLeft--;
-                lastPenetrationTick = Find.TickManager.TicksGame;
-
-                // 继续飞行（不销毁）
+                base.Impact(hitThing, blockedByShield);
                 return;
             }
 
-            // 命中目标或无法穿透时执行标准命中
+            if (ShouldIgnoreCollision(hitThing))
+            {
+                if (Position == DestinationCell)
+                {
+                    ProcessImpact(ext, null, map, Position);
+                    base.Impact(null, blockedByShield);
+                }
+
+                return;
+            }
+
+            bool isIntendedTarget = IsIntendedTarget(hitThing);
+            if (hitThing == null || hitThing != lastHitThing)
+            {
+                lastHitThing = hitThing;
+                ProcessImpact(ext, hitThing, map, Position);
+            }
+
+            if (!isIntendedTarget && CanPenetrate(ext))
+            {
+                penetrationsLeft--;
+                lastPenetrationTick = Find.TickManager.TicksGame;
+                return;
+            }
+
             base.Impact(hitThing, blockedByShield);
         }
 
@@ -156,6 +109,9 @@ namespace SRA
             base.ExposeData();
             Scribe_Values.Look(ref penetrationsLeft, "penetrationsLeft", 0);
             Scribe_Values.Look(ref lastPenetrationTick, "lastPenetrationTick", 0);
+            Scribe_References.Look(ref lastHitThing, "lastHitThing");
+            Scribe_Values.Look(ref resolvedExplosionDamage, "resolvedExplosionDamage", -1);
+            Scribe_Values.Look(ref resolvedExplosionArmorPenetration, "resolvedExplosionArmorPenetration", -1f);
         }
 
         public override void Launch(Thing launcher, Vector3 origin, LocalTargetInfo usedTarget, LocalTargetInfo intendedTarget, ProjectileHitFlags hitFlags, bool preventFriendlyFire = false, Thing equipment = null, ThingDef targetCoverDef = null)
@@ -171,62 +127,258 @@ namespace SRA
                 targetCoverDef
             );
 
-            // 初始化穿透计数器
-            if (ProjectileExt != null)
+            projectileExt = def.GetModExtension<SRA_RailgunProjectileExtension>();
+            if (projectileExt != null)
             {
-                penetrationsLeft = ProjectileExt.maxPenetrations;
-                lastPenetrationTick = -ProjectileExt.penetrationDelayTicks; // 允许立即穿透
-            }
-            if (ProjectileExt.explosionDamage <= 0)
-            {
-                ProjectileExt.explosionDamage = def.projectile.GetDamageAmount(equipment);
-            }
-            if (ProjectileExt.explosionArmorPenetration <= 0)
-            {
-                ProjectileExt.explosionArmorPenetration = def.projectile.GetArmorPenetration(equipment);
+                penetrationsLeft = projectileExt.maxPenetrations;
+                lastPenetrationTick = -projectileExt.penetrationDelayTicks;
+                resolvedExplosionDamage = ResolveExplosionDamage(projectileExt);
+                resolvedExplosionArmorPenetration = ResolveExplosionArmorPenetration(projectileExt);
             }
         }
 
-        // 给单个目标施加 Hediff
-        private void ApplyHediffToTarget(Pawn target, HediffDef hediffDef, float severity = -1f)
+        private void ProcessImpact(SRA_RailgunProjectileExtension ext, Thing hitThing, Map map, IntVec3 position)
         {
-            Hediff hediff = HediffMaker.MakeHediff(hediffDef, target);
-            // 设置严重程度（如果配置了）
-            if (severity > 0)
+            bool filterNonHostiles = !IsExplicitSameFactionBuildingTarget(hitThing);
+            BattleLogEntry_RangedImpact battleLogEntry = new BattleLogEntry_RangedImpact(launcher, hitThing, intendedTarget.Thing, equipmentDef, def, targetCoverDef);
+            Find.BattleLog.Add(battleLogEntry);
+            bool instigatorGuilty = !(launcher is Pawn pawn) || !pawn.Drafted;
+
+            SpawnExplosionEffect(ext, map, position);
+            List<Thing> ignoredThings = CollectIgnoredThingsAndExtraDamageTargets(ext, hitThing, map, position, filterNonHostiles);
+            ApplyExtraDamages(battleLogEntry, instigatorGuilty);
+
+            if (ext.explosionHediff != null)
             {
-                hediff.Severity = Mathf.Clamp(severity, 0, hediffDef.maxSeverity);
+                ApplyHediffToCollectedPawnTargets(ext, filterNonHostiles);
             }
-            Hediff existing = target.health.hediffSet.GetFirstHediffOfDef(hediffDef);
-            if (existing != null)
+
+            GenExplosion.DoExplosion(
+                center: position,
+                map: map,
+                radius: ext.explosionRadius,
+                damType: ext.damageDef,
+                instigator: launcher,
+                damAmount: ResolvedExplosionDamage(ext),
+                armorPenetration: ResolvedExplosionArmorPenetration(ext),
+                explosionSound: ext.explosionSound,
+                weapon: equipmentDef,
+                projectile: def,
+                intendedTarget: intendedTarget.Thing,
+                ignoredThings: ignoredThings);
+
+            tmpIgnoredThings.Clear();
+            tmpExtraDamageTargetSet.Clear();
+            tmpExtraDamageTargets.Clear();
+        }
+
+        private void SpawnExplosionEffect(SRA_RailgunProjectileExtension ext, Map map, IntVec3 position)
+        {
+            if (ext.explosionEffect == null)
             {
-                // 增加现有 Hediff 的严重程度
-                existing.Severity += severity;
+                return;
+            }
+
+            TargetInfo target = new TargetInfo(position, map, false);
+            Effecter effecter = ext.explosionEffect.Spawn().Trigger(target, target, -1);
+            if (ext.explosionEffectLifetimeTicks > 0)
+            {
+                map.effecterMaintainer.AddEffecterToMaintain(effecter, position, ext.explosionEffectLifetimeTicks);
             }
             else
             {
-                // 施加新 Hediff
-                Hediff newHediff = HediffMaker.MakeHediff(hediffDef, target);
-                newHediff.Severity = severity;
-                target.health.AddHediff(newHediff);
+                effecter.Trigger(target, target, -1);
+                effecter.Cleanup();
             }
         }
-        // 在爆炸半径内施加 Hediff
-        private void ApplyHediffInExplosionRadius(IntVec3 center, Map map)
-        {
-            if (map == null) return;
 
-            // 获取爆炸半径内的所有单元格
-            foreach (IntVec3 cell in GenRadial.RadialCellsAround(center, ProjectileExt.explosionRadius, true))
+        private List<Thing> CollectIgnoredThingsAndExtraDamageTargets(SRA_RailgunProjectileExtension ext, Thing hitThing, Map map, IntVec3 position, bool filterNonHostiles)
+        {
+            tmpIgnoredThings.Clear();
+            tmpExtraDamageTargetSet.Clear();
+            tmpExtraDamageTargets.Clear();
+
+            foreach (IntVec3 cell in GenRadial.RadialCellsAround(position, ext.explosionRadius, true))
             {
-                if (!cell.InBounds(map)) continue;
-                // 获取单元格内的所有 Pawn
-                List<Thing> things = cell.GetThingList(map);
-                foreach (Thing thing in things)
+                if (!cell.InBounds(map))
                 {
-                    if (thing is Pawn pawn && GenHostility.HostileTo(pawn, launcher))
+                    continue;
+                }
+
+                List<Thing> thingsInCell = map.thingGrid.ThingsListAt(cell);
+                for (int i = thingsInCell.Count - 1; i >= 0; i--)
+                {
+                    Thing thing = thingsInCell[i];
+                    if (thing == null || thing.Destroyed)
                     {
-                        ApplyHediffToTarget(pawn, ProjectileExt.explosionHediff, ProjectileExt.explosionHediffSeverity);
+                        continue;
                     }
+
+                    if (thing == this)
+                    {
+                        tmpIgnoredThings.Add(thing);
+                        continue;
+                    }
+
+                    if (filterNonHostiles && thing != hitThing && !GenHostility.HostileTo(thing, launcher))
+                    {
+                        tmpIgnoredThings.Add(thing);
+                        continue;
+                    }
+
+                    AddExtraDamageTarget(thing);
+                }
+            }
+
+            return tmpIgnoredThings.Count > 0 ? new List<Thing>(tmpIgnoredThings) : null;
+        }
+
+        private void AddExtraDamageTarget(Thing thing)
+        {
+            if (tmpExtraDamageTargetSet.Add(thing))
+            {
+                tmpExtraDamageTargets.Add(thing);
+            }
+        }
+
+        private void ApplyExtraDamages(BattleLogEntry_RangedImpact battleLogEntry, bool instigatorGuilty)
+        {
+            if (tmpExtraDamageTargets.Count == 0)
+            {
+                return;
+            }
+
+            foreach (Thing thing in tmpExtraDamageTargets)
+            {
+                if (thing == null || thing.Destroyed)
+                {
+                    continue;
+                }
+
+                ApplyExtraDamageList(thing, battleLogEntry, instigatorGuilty, extraDamages);
+                ApplyExtraDamageList(thing, battleLogEntry, instigatorGuilty, def.projectile.extraDamages);
+            }
+        }
+
+        private void ApplyExtraDamageList(Thing thing, BattleLogEntry_RangedImpact battleLogEntry, bool instigatorGuilty, List<ExtraDamage> extraDamageList)
+        {
+            if (extraDamageList.NullOrEmpty())
+            {
+                return;
+            }
+
+            for (int i = 0; i < extraDamageList.Count; i++)
+            {
+                ExtraDamage extraDamage = extraDamageList[i];
+                if (extraDamage?.def == null || extraDamage.amount <= 0f || !Rand.Chance(extraDamage.chance))
+                {
+                    continue;
+                }
+
+                DamageInfo dinfo = new DamageInfo(extraDamage.def, extraDamage.amount, extraDamage.AdjustedArmorPenetration(), ExactRotation.eulerAngles.y, launcher, null, equipmentDef, DamageInfo.SourceCategory.ThingOrUnknown, intendedTarget.Thing, instigatorGuilty);
+                thing.TakeDamage(dinfo).AssociateWithLog(battleLogEntry);
+            }
+        }
+
+        private bool ShouldIgnoreCollision(Thing hitThing)
+        {
+            return IsSameFactionBuilding(hitThing) && !IsExplicitTarget(hitThing);
+        }
+
+        private bool IsExplicitSameFactionBuildingTarget(Thing hitThing)
+        {
+            return IsSameFactionBuilding(hitThing) && IsExplicitTarget(hitThing);
+        }
+
+        private bool IsSameFactionBuilding(Thing thing)
+        {
+            if (!(thing is Building building))
+            {
+                return false;
+            }
+
+            Faction launcherFaction = launcher?.Faction ?? Faction;
+            Faction buildingFaction = building.Faction;
+            return launcherFaction != null && buildingFaction != null && launcherFaction == buildingFaction;
+        }
+
+        private bool IsExplicitTarget(Thing thing)
+        {
+            return thing != null && (usedTarget.Thing == thing || intendedTarget.Thing == thing);
+        }
+
+        private bool IsIntendedTarget(Thing hitThing)
+        {
+            return intendedTarget.Thing == null || hitThing == intendedTarget.Thing || hitThing == null;
+        }
+
+        private bool CanPenetrate(SRA_RailgunProjectileExtension ext)
+        {
+            return penetrationsLeft > 0 && Find.TickManager.TicksGame - lastPenetrationTick >= ext.penetrationDelayTicks;
+        }
+
+        private int ResolvedExplosionDamage(SRA_RailgunProjectileExtension ext)
+        {
+            if (resolvedExplosionDamage < 0)
+            {
+                resolvedExplosionDamage = ResolveExplosionDamage(ext);
+            }
+
+            return resolvedExplosionDamage;
+        }
+
+        private float ResolvedExplosionArmorPenetration(SRA_RailgunProjectileExtension ext)
+        {
+            if (resolvedExplosionArmorPenetration < 0f)
+            {
+                resolvedExplosionArmorPenetration = ResolveExplosionArmorPenetration(ext);
+            }
+
+            return resolvedExplosionArmorPenetration;
+        }
+
+        private int ResolveExplosionDamage(SRA_RailgunProjectileExtension ext)
+        {
+            return ext.explosionDamage > 0 ? ext.explosionDamage : DamageAmount;
+        }
+
+        private float ResolveExplosionArmorPenetration(SRA_RailgunProjectileExtension ext)
+        {
+            return ext.explosionArmorPenetration > 0f ? ext.explosionArmorPenetration : ArmorPenetration;
+        }
+
+        private void ApplyHediffToTarget(Pawn target, HediffDef hediffDef, float severity)
+        {
+            if (target == null || target.Dead || hediffDef == null)
+            {
+                return;
+            }
+
+            float resolvedSeverity = severity > 0f ? severity : 1f;
+            Hediff existing = target.health?.hediffSet?.GetFirstHediffOfDef(hediffDef);
+            if (existing != null)
+            {
+                existing.Severity = ClampHediffSeverity(hediffDef, existing.Severity + resolvedSeverity);
+                return;
+            }
+
+            Hediff hediff = HediffMaker.MakeHediff(hediffDef, target);
+            hediff.Severity = ClampHediffSeverity(hediffDef, resolvedSeverity);
+            target.health.AddHediff(hediff);
+        }
+
+        private static float ClampHediffSeverity(HediffDef hediffDef, float severity)
+        {
+            return hediffDef.maxSeverity > 0f ? Mathf.Min(severity, hediffDef.maxSeverity) : severity;
+        }
+
+        private void ApplyHediffToCollectedPawnTargets(SRA_RailgunProjectileExtension ext, bool filterNonHostiles)
+        {
+            foreach (Thing thing in tmpExtraDamageTargets)
+            {
+                if (thing is Pawn pawn && (!filterNonHostiles || GenHostility.HostileTo(pawn, launcher)))
+                {
+                    ApplyHediffToTarget(pawn, ext.explosionHediff, ext.explosionHediffSeverity);
                 }
             }
         }

@@ -15,19 +15,87 @@ namespace SRA
             compClass = typeof(Comp_MultiTurretGun);
         }
     }
-    public class Comp_MultiTurretGun : CompTurretGun
+    public class Comp_MultiTurretGun : CompTurretGun, ISustainedShootTurretDriver
     {
         private bool fireAtWill = true;
         public new CompProperties_MultiTurretGun Props => (CompProperties_MultiTurretGun)props;
+
+        public LocalTargetInfo SustainedShootCurrentTarget => currentTarget;
+
         public override void CompTick()
         {
-            base.CompTick();
-            if (!currentTarget.IsValid && burstCooldownTicksLeft <= 0)
+            CompSustainedShoot compSustainedShoot = GetSustainedShootComp();
+            bool sustainedShootStarted;
+            bool sustainedShootActive = TickSustainedShootComp(compSustainedShoot, out sustainedShootStarted);
+            if (!sustainedShootStarted)
+            {
+                base.CompTick();
+                sustainedShootActive = TickSustainedShootComp(compSustainedShoot, out sustainedShootStarted);
+            }
+
+            if (!sustainedShootActive && !sustainedShootStarted && !currentTarget.IsValid && burstCooldownTicksLeft <= 0)
             {
                 // 在其他情况下没有目标且冷却结束时也回正
                 curRotation = parent.Rotation.AsAngle + Props.angleOffset;
             }
         }
+
+        private CompSustainedShoot GetSustainedShootComp()
+        {
+            if (!(AttackVerb is Verb_ShootWithOffset))
+            {
+                return null;
+            }
+
+            return gun?.TryGetComp<CompSustainedShoot>();
+        }
+
+        private bool TickSustainedShootComp(CompSustainedShoot compSustainedShoot, out bool startedCast)
+        {
+            startedCast = false;
+            if (compSustainedShoot == null)
+            {
+                return false;
+            }
+
+            return compSustainedShoot.TickSustainedShootForTurret((ISustainedShootTurretDriver)this, out startedCast);
+        }
+
+        public LocalTargetInfo TryFindSustainedShootTarget()
+        {
+            if (!fireAtWill)
+            {
+                return LocalTargetInfo.Invalid;
+            }
+
+            return (Thing)AttackTargetFinder.BestShootTargetFromCurrentPosition(this, TargetScanFlags.NeedThreat | TargetScanFlags.NeedAutoTargetable);
+        }
+
+        public void ClearSustainedShootDelay()
+        {
+            burstWarmupTicksLeft = 0;
+            burstCooldownTicksLeft = 0;
+        }
+
+        public void PrepareSustainedShootTarget(LocalTargetInfo target)
+        {
+            ClearSustainedShootDelay();
+            currentTarget = target;
+            if (target.IsValid)
+            {
+                curRotation = (target.Cell.ToVector3Shifted() - parent.DrawPos).AngleFlat() + Props.angleOffset;
+            }
+        }
+
+        public bool CanStartSustainedShoot(LocalTargetInfo target)
+        {
+            return true;
+        }
+
+        public void Notify_SustainedShootStarted(LocalTargetInfo target)
+        {
+        }
+
         private void MakeGun()
         {
             gun = ThingMaker.MakeThing(Props.turretDef);

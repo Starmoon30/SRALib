@@ -19,11 +19,10 @@
 	<SRAExecuteDeathDesc>立即自毁。</SRAExecuteDeathDesc>
 	<SRAExecuteDeathTip>剩余时间：</SRAExecuteDeathTip>
 
-	
+
 	<SRA_IgnoreTerrainCostTipExtra>\n-近地悬浮：该单位的移动速度不受地形影响。\n</SRA_IgnoreTerrainCostTipExtra>
 
 
-	
 	<SRAWeaponSwitcherLabel>武器/模式切换</SRAWeaponSwitcherLabel>
 	<SRAWeaponSwitcherDesc>切换武器的类型或者模式。</SRAWeaponSwitcherDesc>
 
@@ -43,6 +42,34 @@
 	<SRA_RemoteMonitoring_InspectString>远程地图监控目标：{0}</SRA_RemoteMonitoring_InspectString>
 	<SRA_RemoteMonitoring_ResearchRequiredMessage>需要完成科技：{0}</SRA_RemoteMonitoring_ResearchRequiredMessage>
 	<SRA_RemoteMonitoring_NonHostileSettlementMessage>不能选择或打开未敌对势力的据点。当前势力：{0}</SRA_RemoteMonitoring_NonHostileSettlementMessage>
+	<SRA_RemoteArtillery_CommandLabel>{0}（{1}/{2}）</SRA_RemoteArtillery_CommandLabel>
+	<SRA_RemoteArtillery_CommandDesc>调度该类别中可用的跨地图火炮，对远程地图进行炮击。火炮类别：{0}</SRA_RemoteArtillery_CommandDesc>
+	<SRA_RemoteArtillery_LocalCommandLabel>跨地图打击：{0}</SRA_RemoteArtillery_LocalCommandLabel>
+	<SRA_RemoteArtillery_LocalCommandDesc>使用这门火炮对一个已存在的地图进行跨地图打击。火炮类别：{0}</SRA_RemoteArtillery_LocalCommandDesc>
+	<SRA_RemoteArtillery_TargetPrompt>为 {0} 选择目标地图</SRA_RemoteArtillery_TargetPrompt>
+	<SRA_RemoteArtillery_NoAvailable>没有可调度的 {0} 火炮。</SRA_RemoteArtillery_NoAvailable>
+	<SRA_RemoteArtillery_NoAvailableForTarget>没有可向此地图开火的 {0} 火炮。</SRA_RemoteArtillery_NoAvailableForTarget>
+	<SRA_RemoteArtillery_NoExistingTargetMap>当前没有可作为目标的已存在地图。</SRA_RemoteArtillery_NoExistingTargetMap>
+	<SRA_RemoteArtillery_InvalidTarget>无效的炮击目标。</SRA_RemoteArtillery_InvalidTarget>
+	<SRA_RemoteArtillery_InvalidMapSelection>你必须选择一个能够承载地图的世界物体。</SRA_RemoteArtillery_InvalidMapSelection>
+	<SRA_RemoteArtillery_MissingDefinition>{0} 缺少跨地图火炮的世界飞行物或载荷定义。</SRA_RemoteArtillery_MissingDefinition>
+	<SRA_RemoteArtillery_CooldownLeft>冷却中：{0}</SRA_RemoteArtillery_CooldownLeft>
+	<SRA_RemoteArtillery_NoAmmo>{0} 没有已装填的弹药。</SRA_RemoteArtillery_NoAmmo>
+	<SRA_RemoteArtillery_NotEnoughAmmo>{0} 已装填弹药不足。已装填：{1}，需要：{2}。</SRA_RemoteArtillery_NotEnoughAmmo>
+	<SRA_RemoteArtillery_NoFuelAmmo>{0} 没有可消耗的弹药。</SRA_RemoteArtillery_NoFuelAmmo>
+	<SRA_RemoteArtillery_NotEnoughFuelAmmo>{0} 弹药不足。当前：{1}，需要：{2}。</SRA_RemoteArtillery_NotEnoughFuelAmmo>
+	<SRA_RemoteArtillery_AlreadyFiring>{0} 正在执行跨地图打击。</SRA_RemoteArtillery_AlreadyFiring>
+	<SRA_RemoteArtillery_LocalUnavailable>{0} 当前无法开火。</SRA_RemoteArtillery_LocalUnavailable>
+	<SRA_RemoteArtillery_AimingMouse>{0}：{1}/{2}</SRA_RemoteArtillery_AimingMouse>
+	<SRA_RemoteArtillery_GlobalAttackArrived>{0} 已抵达 {1}。</SRA_RemoteArtillery_GlobalAttackArrived>
+	<SRA_RemoteArtillery_UnknownLabel>未知火炮</SRA_RemoteArtillery_UnknownLabel>
+	<SRA_RemoteArtillery_TargetMapKind_Surface>地表地图</SRA_RemoteArtillery_TargetMapKind_Surface>
+	<SRA_RemoteArtillery_TargetMapKind_Pocket>口袋地图</SRA_RemoteArtillery_TargetMapKind_Pocket>
+	<SRA_RemoteArtillery_TargetMapMenuLabel>{0} - {1}，地图 #{2}，{3}，{4}</SRA_RemoteArtillery_TargetMapMenuLabel>
+	<SRA_RemoteArtillery_TargetMapMenuLabel_WithDetail>{0}（{1}）- {2}，地图 #{3}，{4}，{5}</SRA_RemoteArtillery_TargetMapMenuLabel_WithDetail>
+	<SRA_RemoteArtillery_TargetMapTile>世界格 {0}</SRA_RemoteArtillery_TargetMapTile>
+	<SRA_RemoteArtillery_TargetMapNoTile>无世界格</SRA_RemoteArtillery_TargetMapNoTile>
+	<SRA_RemoteArtillery_TargetMapSize>{0}x{1}</SRA_RemoteArtillery_TargetMapSize>
 
 	<SRA_ClearTimedGameConditions_Label>解除限时天气</SRA_ClearTimedGameConditions_Label>
 	<SRA_ClearTimedGameConditions_Desc>解除当前地图上所有不在白名单中的限时天气状况或环境效果。</SRA_ClearTimedGameConditions_Desc>
@@ -54,4 +81,48 @@
 	<SRA_BuildingDamageAdjusterValueMult>损伤效率：{0}</SRA_BuildingDamageAdjusterValueMult>
 	<SRA_BuildingDamageAdjusterValueMax>损伤上限：{0}</SRA_BuildingDamageAdjusterValueMax>
 	<SRA_BuildingDamageAdjusterValueReduce>损伤降低：{0}</SRA_BuildingDamageAdjusterValueReduce>
+
+	<SRA_BeamDamageLabel>光束伤害</SRA_BeamDamageLabel>
+	<SRA_BeamDamageDesc>光束每次命中造成的伤害。</SRA_BeamDamageDesc>
+	<SRA_BeamDamageValue>{0}：{1}</SRA_BeamDamageValue>
+	<SRA_BeamTotalDamageValue>{0}：总计 {1}</SRA_BeamTotalDamageValue>
+	<SRA_BeamDamageFrequencyLabel>伤害频率</SRA_BeamDamageFrequencyLabel>
+	<SRA_BeamDamageFrequencyDesc>光束触发伤害判定的频率。</SRA_BeamDamageFrequencyDesc>
+	<SRA_BeamDamageFrequencyValue>每秒 {0} 次（每 {1} tick）</SRA_BeamDamageFrequencyValue>
+	<SRA_BeamArmorPenetrationLabel>光束穿甲</SRA_BeamArmorPenetrationLabel>
+	<SRA_BeamArmorPenetrationDesc>光束的护甲穿透值。</SRA_BeamArmorPenetrationDesc>
+	<SRA_BeamArmorPenetrationSource_Override>{0}：{1}</SRA_BeamArmorPenetrationSource_Override>
+	<SRA_BeamAreaLabel>光束判定范围</SRA_BeamAreaLabel>
+	<SRA_BeamAreaDesc>光束落点和路径的判定范围。</SRA_BeamAreaDesc>
+	<SRA_BeamHitRadiusValue>落点判定半径：{0}</SRA_BeamHitRadiusValue>
+	<SRA_BeamPathDamageValue>路径伤害：半径 {0}，伤害倍率 {1}</SRA_BeamPathDamageValue>
+
+	<SRA_ResurrectionBeacon_BindCommandLabel>绑定单位 ({0})</SRA_ResurrectionBeacon_BindCommandLabel>
+	<SRA_ResurrectionBeacon_BindCommandDesc>选择要绑定到此信标的单位。绑定单位即将死亡时会被传送回信标。</SRA_ResurrectionBeacon_BindCommandDesc>
+	<SRA_ResurrectionBeacon_DisabledNoPower>需要供电才能使用信标。</SRA_ResurrectionBeacon_DisabledNoPower>
+	<SRA_ResurrectionBeacon_WindowTitle>信标绑定单位</SRA_ResurrectionBeacon_WindowTitle>
+	<SRA_ResurrectionBeacon_SearchLabel>搜索</SRA_ResurrectionBeacon_SearchLabel>
+	<SRA_ResurrectionBeacon_BoundCount>已绑定：{0}/{1}</SRA_ResurrectionBeacon_BoundCount>
+	<SRA_ResurrectionBeacon_BindVisible>绑定当前列表</SRA_ResurrectionBeacon_BindVisible>
+	<SRA_ResurrectionBeacon_UnbindVisible>解绑当前列表</SRA_ResurrectionBeacon_UnbindVisible>
+	<SRA_ResurrectionBeacon_NoBindablePawns>当前地图没有可绑定单位。</SRA_ResurrectionBeacon_NoBindablePawns>
+	<SRA_ResurrectionBeacon_NoSearchResults>没有匹配的单位。</SRA_ResurrectionBeacon_NoSearchResults>
+	<SRA_ResurrectionBeacon_BoundStatus>已绑定</SRA_ResurrectionBeacon_BoundStatus>
+	<SRA_ResurrectionBeacon_UnboundStatus>未绑定</SRA_ResurrectionBeacon_UnboundStatus>
+	<SRA_ResurrectionBeacon_InspectString>已绑定单位：{0}</SRA_ResurrectionBeacon_InspectString>
+	<SRA_ResurrectionBeacon_ResurrectedMessage>{0} 的死亡已被 {1} 拦截，单位已传送回信标。</SRA_ResurrectionBeacon_ResurrectedMessage>
+
+	<SRA_WarUnitSpawner_AutoMode>自动迎击模式</SRA_WarUnitSpawner_AutoMode>
+	<SRA_WarUnitSpawner_AutoModeDesc>检测到敌对目标时自动部署已储备的战争单元。</SRA_WarUnitSpawner_AutoModeDesc>
+	<SRA_WarUnitSpawner_Deploy>部署战争单元：{0}</SRA_WarUnitSpawner_Deploy>
+	<SRA_WarUnitSpawner_DeployDesc>立即部署一个当前选择类型的储备战争单元。</SRA_WarUnitSpawner_DeployDesc>
+	<SRA_WarUnitSpawner_ChangeUnit>切换战争单元</SRA_WarUnitSpawner_ChangeUnit>
+	<SRA_WarUnitSpawner_ChangeUnitDesc>当前选择：{0}</SRA_WarUnitSpawner_ChangeUnitDesc>
+	<SRA_WarUnitSpawner_StatusHeader>战争单元储备：</SRA_WarUnitSpawner_StatusHeader>
+	<SRA_WarUnitSpawner_StatusLine>{0}：{1}/{2}，生产进度：{3}</SRA_WarUnitSpawner_StatusLine>
+	<SRA_WarUnitSpawner_SelectionOption>{0}（{1}/{2}）</SRA_WarUnitSpawner_SelectionOption>
+	<SRA_WarUnitSpawner_DisabledNoUnit>没有可部署的战争单元定义。</SRA_WarUnitSpawner_DisabledNoUnit>
+	<SRA_WarUnitSpawner_DisabledNoPower>需要供电才能部署战争单元。</SRA_WarUnitSpawner_DisabledNoPower>
+	<SRA_WarUnitSpawner_DisabledNoStock>{0} 没有可用储备。</SRA_WarUnitSpawner_DisabledNoStock>
+	<SRA_WarUnitSpawner_NoUnit>无</SRA_WarUnitSpawner_NoUnit>
 </LanguageData>

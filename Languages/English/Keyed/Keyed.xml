@@ -43,6 +43,34 @@
 	<SRA_RemoteMonitoring_InspectString>Remote map monitoring target: {0}</SRA_RemoteMonitoring_InspectString>
 	<SRA_RemoteMonitoring_ResearchRequiredMessage>Required research not completed: {0}</SRA_RemoteMonitoring_ResearchRequiredMessage>
 	<SRA_RemoteMonitoring_NonHostileSettlementMessage>You cannot select or open a settlement from a faction that is not hostile. Current faction: {0}</SRA_RemoteMonitoring_NonHostileSettlementMessage>
+	<SRA_RemoteArtillery_CommandLabel>{0} ({1}/{2})</SRA_RemoteArtillery_CommandLabel>
+	<SRA_RemoteArtillery_CommandDesc>Dispatch available cross-map artillery of this type to bombard a remote map. Artillery type: {0}</SRA_RemoteArtillery_CommandDesc>
+	<SRA_RemoteArtillery_LocalCommandLabel>Cross-map strike: {0}</SRA_RemoteArtillery_LocalCommandLabel>
+	<SRA_RemoteArtillery_LocalCommandDesc>Use this artillery piece to bombard an existing loaded map. Artillery type: {0}</SRA_RemoteArtillery_LocalCommandDesc>
+	<SRA_RemoteArtillery_TargetPrompt>Select a target map for {0}</SRA_RemoteArtillery_TargetPrompt>
+	<SRA_RemoteArtillery_NoAvailable>No available {0} artillery.</SRA_RemoteArtillery_NoAvailable>
+	<SRA_RemoteArtillery_NoAvailableForTarget>No available {0} artillery can fire at this map.</SRA_RemoteArtillery_NoAvailableForTarget>
+	<SRA_RemoteArtillery_NoExistingTargetMap>No existing target map is available.</SRA_RemoteArtillery_NoExistingTargetMap>
+	<SRA_RemoteArtillery_InvalidTarget>Invalid bombardment target.</SRA_RemoteArtillery_InvalidTarget>
+	<SRA_RemoteArtillery_InvalidMapSelection>You must select a world object that can host a map.</SRA_RemoteArtillery_InvalidMapSelection>
+	<SRA_RemoteArtillery_MissingDefinition>{0} is missing its cross-map artillery world object or payload definition.</SRA_RemoteArtillery_MissingDefinition>
+	<SRA_RemoteArtillery_CooldownLeft>Cooldown remaining: {0}</SRA_RemoteArtillery_CooldownLeft>
+	<SRA_RemoteArtillery_NoAmmo>{0} has no loaded ammunition.</SRA_RemoteArtillery_NoAmmo>
+	<SRA_RemoteArtillery_NotEnoughAmmo>{0} does not have enough loaded ammunition. Loaded: {1}, required: {2}.</SRA_RemoteArtillery_NotEnoughAmmo>
+	<SRA_RemoteArtillery_NoFuelAmmo>{0} has no consumable ammunition fuel.</SRA_RemoteArtillery_NoFuelAmmo>
+	<SRA_RemoteArtillery_NotEnoughFuelAmmo>{0} does not have enough ammunition fuel. Current: {1}, required: {2}.</SRA_RemoteArtillery_NotEnoughFuelAmmo>
+	<SRA_RemoteArtillery_AlreadyFiring>{0} is already executing a cross-map strike.</SRA_RemoteArtillery_AlreadyFiring>
+	<SRA_RemoteArtillery_LocalUnavailable>{0} cannot fire right now.</SRA_RemoteArtillery_LocalUnavailable>
+	<SRA_RemoteArtillery_AimingMouse>{0}: {1}/{2}</SRA_RemoteArtillery_AimingMouse>
+	<SRA_RemoteArtillery_GlobalAttackArrived>{0} has arrived at {1}.</SRA_RemoteArtillery_GlobalAttackArrived>
+	<SRA_RemoteArtillery_UnknownLabel>Unknown artillery</SRA_RemoteArtillery_UnknownLabel>
+	<SRA_RemoteArtillery_TargetMapKind_Surface>surface map</SRA_RemoteArtillery_TargetMapKind_Surface>
+	<SRA_RemoteArtillery_TargetMapKind_Pocket>pocket map</SRA_RemoteArtillery_TargetMapKind_Pocket>
+	<SRA_RemoteArtillery_TargetMapMenuLabel>{0} - {1}, map #{2}, {3}, {4}</SRA_RemoteArtillery_TargetMapMenuLabel>
+	<SRA_RemoteArtillery_TargetMapMenuLabel_WithDetail>{0} ({1}) - {2}, map #{3}, {4}, {5}</SRA_RemoteArtillery_TargetMapMenuLabel_WithDetail>
+	<SRA_RemoteArtillery_TargetMapTile>tile {0}</SRA_RemoteArtillery_TargetMapTile>
+	<SRA_RemoteArtillery_TargetMapNoTile>no world tile</SRA_RemoteArtillery_TargetMapNoTile>
+	<SRA_RemoteArtillery_TargetMapSize>{0}x{1}</SRA_RemoteArtillery_TargetMapSize>
 
 	<SRA_ClearTimedGameConditions_Label>Clear timed weather</SRA_ClearTimedGameConditions_Label>
 	<SRA_ClearTimedGameConditions_Desc>Remove all timed weather conditions or environmental effects on the current map that are not in the whitelist.</SRA_ClearTimedGameConditions_Desc>
@@ -54,4 +82,48 @@
 	<SRA_BuildingDamageAdjusterValueMult>Damage efficiency: {0}</SRA_BuildingDamageAdjusterValueMult>
 	<SRA_BuildingDamageAdjusterValueMax>Damage cap: {0}</SRA_BuildingDamageAdjusterValueMax>
 	<SRA_BuildingDamageAdjusterValueReduce>Damage reduction: {0}</SRA_BuildingDamageAdjusterValueReduce>
+
+	<SRA_BeamDamageLabel>Beam damage</SRA_BeamDamageLabel>
+	<SRA_BeamDamageDesc>Damage dealt by each beam hit.</SRA_BeamDamageDesc>
+	<SRA_BeamDamageValue>{0}: {1}</SRA_BeamDamageValue>
+	<SRA_BeamTotalDamageValue>{0}: {1} total</SRA_BeamTotalDamageValue>
+	<SRA_BeamDamageFrequencyLabel>Damage frequency</SRA_BeamDamageFrequencyLabel>
+	<SRA_BeamDamageFrequencyDesc>How often the beam performs damage checks.</SRA_BeamDamageFrequencyDesc>
+	<SRA_BeamDamageFrequencyValue>{0} per second (every {1} ticks)</SRA_BeamDamageFrequencyValue>
+	<SRA_BeamArmorPenetrationLabel>Beam armor penetration</SRA_BeamArmorPenetrationLabel>
+	<SRA_BeamArmorPenetrationDesc>The beam's armor penetration value.</SRA_BeamArmorPenetrationDesc>
+	<SRA_BeamArmorPenetrationSource_Override>{0}: {1}</SRA_BeamArmorPenetrationSource_Override>
+	<SRA_BeamAreaLabel>Beam hit area</SRA_BeamAreaLabel>
+	<SRA_BeamAreaDesc>Hit area used by the beam impact point and path.</SRA_BeamAreaDesc>
+	<SRA_BeamHitRadiusValue>Impact hit radius: {0}</SRA_BeamHitRadiusValue>
+	<SRA_BeamPathDamageValue>Path damage: radius {0}, damage factor {1}</SRA_BeamPathDamageValue>
+
+	<SRA_ResurrectionBeacon_BindCommandLabel>Bind pawns ({0})</SRA_ResurrectionBeacon_BindCommandLabel>
+	<SRA_ResurrectionBeacon_BindCommandDesc>Select pawns to bind to this beacon. Bound pawns are teleported back to the beacon when they would die.</SRA_ResurrectionBeacon_BindCommandDesc>
+	<SRA_ResurrectionBeacon_DisabledNoPower>Power is required to use the beacon.</SRA_ResurrectionBeacon_DisabledNoPower>
+	<SRA_ResurrectionBeacon_WindowTitle>Beacon pawn bindings</SRA_ResurrectionBeacon_WindowTitle>
+	<SRA_ResurrectionBeacon_SearchLabel>Search</SRA_ResurrectionBeacon_SearchLabel>
+	<SRA_ResurrectionBeacon_BoundCount>Bound: {0}/{1}</SRA_ResurrectionBeacon_BoundCount>
+	<SRA_ResurrectionBeacon_BindVisible>Bind visible</SRA_ResurrectionBeacon_BindVisible>
+	<SRA_ResurrectionBeacon_UnbindVisible>Unbind visible</SRA_ResurrectionBeacon_UnbindVisible>
+	<SRA_ResurrectionBeacon_NoBindablePawns>There are no bindable pawns on this map.</SRA_ResurrectionBeacon_NoBindablePawns>
+	<SRA_ResurrectionBeacon_NoSearchResults>No pawns match the search filter.</SRA_ResurrectionBeacon_NoSearchResults>
+	<SRA_ResurrectionBeacon_BoundStatus>Bound</SRA_ResurrectionBeacon_BoundStatus>
+	<SRA_ResurrectionBeacon_UnboundStatus>Unbound</SRA_ResurrectionBeacon_UnboundStatus>
+	<SRA_ResurrectionBeacon_InspectString>Bound pawns: {0}</SRA_ResurrectionBeacon_InspectString>
+	<SRA_ResurrectionBeacon_ResurrectedMessage>{0}'s death was intercepted by {1}, and the pawn was teleported back to the beacon.</SRA_ResurrectionBeacon_ResurrectedMessage>
+
+	<SRA_WarUnitSpawner_AutoMode>Auto-intercept mode</SRA_WarUnitSpawner_AutoMode>
+	<SRA_WarUnitSpawner_AutoModeDesc>Automatically deploy stored war units when hostile threats are detected.</SRA_WarUnitSpawner_AutoModeDesc>
+	<SRA_WarUnitSpawner_Deploy>Deploy war unit: {0}</SRA_WarUnitSpawner_Deploy>
+	<SRA_WarUnitSpawner_DeployDesc>Immediately deploy one stored war unit of the selected type.</SRA_WarUnitSpawner_DeployDesc>
+	<SRA_WarUnitSpawner_ChangeUnit>Switch war unit</SRA_WarUnitSpawner_ChangeUnit>
+	<SRA_WarUnitSpawner_ChangeUnitDesc>Currently selected: {0}</SRA_WarUnitSpawner_ChangeUnitDesc>
+	<SRA_WarUnitSpawner_StatusHeader>War unit reserves:</SRA_WarUnitSpawner_StatusHeader>
+	<SRA_WarUnitSpawner_StatusLine>{0}: {1}/{2}, production progress: {3}</SRA_WarUnitSpawner_StatusLine>
+	<SRA_WarUnitSpawner_SelectionOption>{0} ({1}/{2})</SRA_WarUnitSpawner_SelectionOption>
+	<SRA_WarUnitSpawner_DisabledNoUnit>No deployable war unit is configured.</SRA_WarUnitSpawner_DisabledNoUnit>
+	<SRA_WarUnitSpawner_DisabledNoPower>Power is required to deploy war units.</SRA_WarUnitSpawner_DisabledNoPower>
+	<SRA_WarUnitSpawner_DisabledNoStock>No stored {0} is available.</SRA_WarUnitSpawner_DisabledNoStock>
+	<SRA_WarUnitSpawner_NoUnit>None</SRA_WarUnitSpawner_NoUnit>
 </LanguageData>

@@ -22,7 +22,7 @@ namespace SRA
         public bool disabled;
     }
 
-    public class Building_TurretGunHasSpeed : Building_Turret, IAttackTarget
+    public class Building_TurretGunHasSpeed : Building_Turret, IAttackTarget, ISustainedShootTurretDriver
     {
         protected int burstCooldownTicksLeft;
 
@@ -115,6 +115,8 @@ namespace SRA
 
         public override LocalTargetInfo CurrentTarget => currentTargetInt;
 
+        public LocalTargetInfo SustainedShootCurrentTarget => CurrentTarget;
+
         private bool WarmingUp => burstWarmupTicksLeft > 0;
 
         public override Verb AttackVerb => GunCompEq.PrimaryVerb;
@@ -146,16 +148,13 @@ namespace SRA
 
         private bool IsMortar => def.building.IsMortar;
 
-        private bool IsMortarOrProjectileFliesOverhead
+        private bool CanAcquireTargetsThroughBlockedLOS
         {
             get
             {
-                if (!AttackVerb.ProjectileFliesOverhead())
-                {
-                    return IsMortar;
-                }
-
-                return true;
+                Verb attackVerb = AttackVerb;
+                // 原版飞越弹不要求目标 LOS；显式关闭 requireLineOfSight 的 verb 也应获得同样的索敌能力。
+                return attackVerb != null && (attackVerb.ProjectileFliesOverhead() || !attackVerb.verbProps.requireLineOfSight);
             }
         }
 
@@ -258,9 +257,11 @@ namespace SRA
 
         public override void DeSpawn(DestroyMode mode = DestroyMode.Vanish)
         {
+            ResetGunVerbs();
             base.DeSpawn(mode);
             ResetCurrentTarget();
             progressBarEffecter?.Cleanup();
+            progressBarEffecter = null;
         }
 
         public override void ExposeData()
@@ -359,7 +360,10 @@ namespace SRA
 
         protected override void Tick()
         {
-            if (Active && currentTargetInt.IsValid)
+            Comp_HNGT_GlobalBallisticAttack remoteArtilleryComp = GetComp<Comp_HNGT_GlobalBallisticAttack>();
+            bool remoteArtilleryActive = remoteArtilleryComp != null && remoteArtilleryComp.IsFiringInterMap;
+
+            if (!remoteArtilleryActive && Active && currentTargetInt.IsValid)
             {
                 if (burstWarmupTicksLeft == 1 && Mathf.Abs(deltaAngle) > rotateSpeed)
                 {
@@ -398,8 +402,29 @@ namespace SRA
 
             if (Active && (mannableComp == null || mannableComp.MannedNow) && !base.IsStunned && base.Spawned)
             {
-                GunCompEq.verbTracker.VerbsTick();
-                if (AttackVerb.state == VerbState.Bursting)
+                if (remoteArtilleryActive)
+                {
+                    GunCompEq.verbTracker.VerbsTick();
+                    if (burstCooldownTicksLeft > 0)
+                    {
+                        burstCooldownTicksLeft--;
+                    }
+
+                    remoteArtilleryComp.TickInterMapFireForTurret(this);
+                    top.TurretTopTick();
+                    return;
+                }
+
+                CompSustainedShoot compSustainedShoot = GetGunSustainedShootComp();
+                bool sustainedShootStarted;
+                bool sustainedShootActive = TickGunSustainedShootComp(compSustainedShoot, out sustainedShootStarted);
+                if (!sustainedShootStarted)
+                {
+                    GunCompEq.verbTracker.VerbsTick();
+                    sustainedShootActive = TickGunSustainedShootComp(compSustainedShoot, out sustainedShootStarted);
+                }
+
+                if (AttackVerb.state == VerbState.Bursting || sustainedShootActive || sustainedShootStarted)
                 {
                     return;
                 }
@@ -524,7 +549,7 @@ namespace SRA
             }
 
             TargetScanFlags targetScanFlags = TargetScanFlags.NeedThreat | TargetScanFlags.NeedAutoTargetable;
-            if (!AttackVerb.ProjectileFliesOverhead())
+            if (!CanAcquireTargetsThroughBlockedLOS)
             {
                 targetScanFlags |= TargetScanFlags.NeedLOSToAll;
                 targetScanFlags |= TargetScanFlags.LOSBlockableByGas;
@@ -704,6 +729,144 @@ namespace SRA
             {
                 muzzleFlashTimers[barrelIndex] = shootWithOffsetExt.MuzzleFlashDurationTicks;
             }
+        }
+
+        private CompSustainedShoot GetGunSustainedShootComp()
+        {
+            if (!(AttackVerb is Verb_ShootWithOffset))
+            {
+                return null;
+            }
+
+            // Turret guns are inner Things, so their comps are not ticked by the map tick list.
+            return gun?.TryGetComp<CompSustainedShoot>();
+        }
+
+        private bool TickGunSustainedShootComp(CompSustainedShoot compSustainedShoot, out bool startedCast)
+        {
+            startedCast = false;
+            if (compSustainedShoot == null)
+            {
+                return false;
+            }
+
+            return compSustainedShoot.TickSustainedShootForTurret((ISustainedShootTurretDriver)this, out startedCast);
+        }
+
+        public LocalTargetInfo TryFindSustainedShootTarget()
+        {
+            return TryFindNewTarget();
+        }
+
+        public void ClearSustainedShootDelay()
+        {
+            if (progressBarEffecter != null)
+            {
+                progressBarEffecter.Cleanup();
+                progressBarEffecter = null;
+            }
+
+            burstWarmupTicksLeft = 0;
+            burstCooldownTicksLeft = 0;
+        }
+
+        public void PrepareSustainedShootTarget(LocalTargetInfo target)
+        {
+            ClearSustainedShootDelay();
+            currentTargetInt = target;
+        }
+
+        public bool CanStartSustainedShoot(LocalTargetInfo target)
+        {
+            if (!target.IsValid)
+            {
+                return false;
+            }
+
+            currentTargetInt = target;
+            return Mathf.Abs(deltaAngle) <= 0.1f;
+        }
+
+        public void Notify_SustainedShootStarted(LocalTargetInfo target)
+        {
+            OnAttackedTarget(target);
+        }
+
+        public bool SRA_CanAcceptRemoteArtilleryOrder
+        {
+            get
+            {
+                if (!Spawned || Destroyed || Faction != Faction.OfPlayer || base.IsStunned)
+                {
+                    return false;
+                }
+
+                if ((holdFire && CanToggleHoldFire) || !Active || (mannableComp != null && !mannableComp.MannedNow))
+                {
+                    return false;
+                }
+
+                return gun?.TryGetComp<CompEquippable>()?.PrimaryVerb?.Available() ?? false;
+            }
+        }
+
+        public bool SRA_CanBeginRemoteArtilleryBurst
+        {
+            get
+            {
+                return SRA_CanAcceptRemoteArtilleryOrder &&
+                       AttackVerb.state == VerbState.Idle &&
+                       burstCooldownTicksLeft <= 0 &&
+                       burstWarmupTicksLeft <= 0;
+            }
+        }
+
+        public bool SRA_RemoteArtilleryVisualBurstFinished
+        {
+            get
+            {
+                return AttackVerb.state == VerbState.Idle && burstWarmupTicksLeft <= 0;
+            }
+        }
+
+        public void SRA_ClearRemoteArtilleryTarget()
+        {
+            if (progressBarEffecter != null)
+            {
+                progressBarEffecter.Cleanup();
+                progressBarEffecter = null;
+            }
+
+            currentTargetInt = LocalTargetInfo.Invalid;
+            burstWarmupTicksLeft = 0;
+        }
+
+        public void SRA_RotateRemoteArtilleryTowards(float targetAngle)
+        {
+            float angleDiff = Mathf.DeltaAngle(curAngle, targetAngle);
+            if (!Mathf.Approximately(angleDiff, 0f))
+            {
+                float speed = rotateSpeed;
+                curAngle += Mathf.Abs(angleDiff) > speed ? Mathf.Sign(angleDiff) * speed : angleDiff;
+                curAngle = TrimAngle(curAngle);
+            }
+        }
+
+        public bool SRA_TryBeginRemoteArtilleryBurst(LocalTargetInfo target)
+        {
+            if (!target.IsValid)
+            {
+                return false;
+            }
+
+            currentTargetInt = target;
+            bool started = AttackVerb.TryStartCastOn(CurrentTarget);
+            if (started)
+            {
+                OnAttackedTarget(CurrentTarget);
+            }
+
+            return started;
         }
 
         private void UpdateShootWithOffsetAnimations()
@@ -968,18 +1131,7 @@ namespace SRA
             base.DrawExtraSelectionOverlays();
             float effectiveRange = AttackVerb.EffectiveRange;
             float num = AttackVerb.verbProps.EffectiveMinRange(allowAdjacentShot: true);
-            if (num < effectiveRange)
-            {
-                if (effectiveRange < 90f)
-                {
-                    GenDraw.DrawRadiusRing(base.Position, effectiveRange);
-                }
-
-                if (num < 90f && num > 0.1f)
-                {
-                    GenDraw.DrawRadiusRing(base.Position, num);
-                }
-            }
+            SRA_TurretRangeOverlayUtility.DrawTurretRangeRings(base.Position, effectiveRange, num);
 
             if (WarmingUp)
             {
@@ -1134,6 +1286,21 @@ namespace SRA
         {
             currentTargetInt = LocalTargetInfo.Invalid;
             burstWarmupTicksLeft = 0;
+        }
+
+        private void ResetGunVerbs()
+        {
+            CompEquippable compEquippable = gun?.TryGetComp<CompEquippable>();
+            if (compEquippable == null)
+            {
+                return;
+            }
+
+            List<Verb> allVerbs = compEquippable.AllVerbs;
+            for (int i = 0; i < allVerbs.Count; i++)
+            {
+                allVerbs[i]?.Reset();
+            }
         }
 
         public void MakeGun()

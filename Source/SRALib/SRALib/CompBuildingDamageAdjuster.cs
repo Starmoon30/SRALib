@@ -1,3 +1,4 @@
+using RimWorld;
 using UnityEngine;
 using Verse;
 
@@ -16,7 +17,25 @@ namespace SRA
                 return;
             }
 
-            float damage = dinfo.Amount;
+            float vanillaBuildingFactor = GetVanillaBuildingDamageFactor(dinfo);
+            float damage = ApplyDamageAdjustment(dinfo.Amount * vanillaBuildingFactor);
+            if (vanillaBuildingFactor > 0f)
+            {
+                damage /= vanillaBuildingFactor;
+            }
+
+            if (damage <= 0f)
+            {
+                dinfo.SetAmount(0f);
+                absorbed = true;
+                return;
+            }
+
+            dinfo.SetAmount(damage);
+        }
+
+        private float ApplyDamageAdjustment(float damage)
+        {
             if (Props.damageTakenMax > 0f)
             {
                 damage = Mathf.Min(damage, Props.damageTakenMax);
@@ -28,15 +47,37 @@ namespace SRA
             }
 
             damage *= Props.damageTakenMult;
+            return damage;
+        }
 
-            if (damage <= 0f)
+        private float GetVanillaBuildingDamageFactor(DamageInfo dinfo)
+        {
+            if (parent == null || parent.def == null || !parent.def.useHitPoints || !dinfo.Def.harmsHealth || parent.def.category != ThingCategory.Building)
             {
-                dinfo.SetAmount(0f);
-                absorbed = true;
-                return;
+                return 1f;
             }
 
-            dinfo.SetAmount(damage);
+            float factor = dinfo.Def.buildingDamageFactor;
+            factor *= parent.def.passability == Traversability.Impassable
+                ? dinfo.Def.buildingDamageFactorImpassable
+                : dinfo.Def.buildingDamageFactorPassable;
+
+            if (dinfo.Def.scaleDamageToBuildingsBasedOnFlammability)
+            {
+                factor *= Mathf.Max(0.05f, parent.GetStatValue(StatDefOf.Flammability, true, -1));
+            }
+
+            if (dinfo.Instigator is Pawn pawn && pawn.IsShambler)
+            {
+                factor *= 1.5f;
+            }
+
+            if (ModsConfig.BiotechActive && dinfo.Instigator != null && (dinfo.WeaponBodyPartGroup != null || (dinfo.Weapon != null && dinfo.Weapon.IsMeleeWeapon)) && parent.def.IsDoor)
+            {
+                factor *= dinfo.Instigator.GetStatValue(StatDefOf.MeleeDoorDamageFactor, true, -1);
+            }
+
+            return factor;
         }
     }
 }

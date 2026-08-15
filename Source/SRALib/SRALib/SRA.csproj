@@ -110,8 +110,9 @@
     <Compile Include="CompSustainedShoot.cs" />
     <Compile Include="CompBuildingDrawExtraFourRot.cs" />
     <Compile Include="CompPlaySoundOnSpawn.cs" />
-    <Compile Include="DamageWorker_AddInjury_CapacitySource.cs" />
     <Compile Include="DamageWorker_AddInjury_NoDamageFactor.cs" />
+    <Compile Include="DirectHediffApplicationUtility.cs" />
+    <Compile Include="ExplosionWithProcessing.cs" />
     <Compile Include="Building_VacDoor.cs" />
     <Compile Include="EventSystem\Condition.cs" />
     <Compile Include="EventSystem\DebugActions.cs" />
@@ -149,11 +150,19 @@
     <Compile Include="Flyover\SRA_SpawnFlyOver\CompAbilityEffect_SpawnFlyOver.cs" />
     <Compile Include="Flyover\SRA_SpawnFlyOver\CompProperties_AbilitySpawnFlyOver.cs" />
     <Compile Include="Flyover\ThingclassFlyOver.cs" />
+    <Compile Include="HeavyNavalGunTurret\Comp_HNGT_GlobalBallisticAttack.cs" />
+    <Compile Include="HeavyNavalGunTurret\DamageWorker_NuclearFlame.cs" />
+    <Compile Include="HeavyNavalGunTurret\GlobalAttackMapLabelUtility.cs" />
+    <Compile Include="HeavyNavalGunTurret\HighOrbitAttack.cs" />
+    <Compile Include="HeavyNavalGunTurret\Projectile_CompoundExplosion.cs" />
+    <Compile Include="HeavyNavalGunTurret\RemoteArtilleryUtility.cs" />
+    <Compile Include="HeavyNavalGunTurret\WorldObject_GlobalAttackDevice.cs" />
     <Compile Include="RemoteMonitoring\CompProperties_RemoteMapMonitor.cs" />
     <Compile Include="RemoteMonitoring\CompRemoteMapMonitor.cs" />
     <Compile Include="RemoteMonitoring\Patch_MapPawns_AnyPawnBlockingMapRemoval_RemoteMonitoring.cs" />
     <Compile Include="RemoteMonitoring\RemoteMonitoringMapCache.cs" />
     <Compile Include="RemoteMonitoring\RemoteMonitoringUtility.cs" />
+    <Compile Include="ResurrectionBeacon\CompResurrectionBeacon.cs" />
     <Compile Include="SRALog.cs" />
     <Compile Include="HediffComp_SRANeedMin.cs" />
     <Compile Include="HediffComp_WeaponSwitcher.cs" />
@@ -167,11 +176,13 @@
     <Compile Include="Verb_MeleeAttackDamage_AOE.cs" />
     <Compile Include="HediffComp_CountdownDeath.cs" />
     <Compile Include="SRABarrier\HediffComp_SRABarrier.cs" />
+    <Compile Include="SRABarrier\SRABarrierEffects.cs" />
     <Compile Include="HediffComp_SRARegen.cs" />
     <Compile Include="HediffComp_TopTurret.cs" />
     <Compile Include="HediffWithSeverityLabel.cs" />
     <Compile Include="Mortar_Patch.cs" />
     <Compile Include="Mote_ScaleAndRotate.cs" />
+    <Compile Include="Mote_TiledBeamSheath.cs" />
     <Compile Include="Projectile_BeamWithEffect.cs" />
     <Compile Include="Projectile_BulletWithEffect.cs" />
     <Compile Include="Projectile_MultiExplosive.cs" />
@@ -184,8 +195,11 @@
     <Compile Include="ThingDefOf.cs" />
     <Compile Include="Thing_ExcaliburBeam.cs" />
     <Compile Include="Verb_KT_Tachyon_Lances.cs" />
+    <Compile Include="Verb_SRAShootBeam.cs" />
+    <Compile Include="Verb_SRAShootBeamStats.cs" />
     <Compile Include="Verb_ShootArc.cs" />
     <Compile Include="Verb_ShootWithOffset.cs" />
+    <Compile Include="WarUnitSpawner\Comp_SRAWarUnitSpawner.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

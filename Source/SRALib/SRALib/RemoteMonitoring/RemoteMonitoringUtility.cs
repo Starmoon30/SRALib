@@ -78,5 +78,23 @@ namespace SRA
 
             return icon ?? BaseContent.BadTex;
         }
+
+        public static bool IsForbiddenSettlementTarget(MapParent target)
+        {
+            return target is Settlement settlement &&
+                   settlement.Faction != null &&
+                   !settlement.Faction.IsPlayer &&
+                   !settlement.Faction.HostileTo(Faction.OfPlayer);
+        }
+
+        public static string GetNonHostileSettlementReason(MapParent target, string messageKey = "SRA_RemoteMonitoring_NonHostileSettlementMessage")
+        {
+            if (target is Settlement settlement && settlement.Faction != null)
+            {
+                return messageKey.Translate(settlement.Faction.Name);
+            }
+
+            return messageKey.Translate(target?.LabelCap ?? "SRA_RemoteArtillery_UnknownLabel".Translate());
+        }
     }
 }

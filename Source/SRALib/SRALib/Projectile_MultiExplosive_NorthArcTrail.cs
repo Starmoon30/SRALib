@@ -312,6 +312,12 @@ public class NorthArcModExtension : DefModExtension
                 return;
             }
 
+            if (landed)
+            {
+                base.Tick();
+                return;
+            }
+
             // === 追踪系统更新 ===
             if (enableTracking)
             {
@@ -356,8 +362,11 @@ public class NorthArcModExtension : DefModExtension
             lastTickPosition = PositionWithHeight;
             if (ticksFlying > totalTicks)
             {
-                Position = PositionWithHeight.ToIntVec3();
-                Impact(null);
+                if (!landed)
+                {
+                    Position = PositionWithHeight.ToIntVec3();
+                    Impact(null);
+                }
                 return;
             }
         }

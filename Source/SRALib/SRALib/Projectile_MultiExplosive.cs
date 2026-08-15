@@ -40,6 +40,13 @@ namespace SRA
         public GasType ? postExplosionGasType = null;
         public float ? postExplosionGasRadiusOverride = null;
         public int postExplosionGasAmount = 255;
+
+        // Notify_Explosion 前执行的额外处理；存在任意处理器时会改用 ExplosionWithProcessing。
+        public List<ExplosionNotifyEffect> preNotifyEffects = new List<ExplosionNotifyEffect>();
+        // Notify_Explosion 后执行的额外处理；存在任意处理器时会改用 ExplosionWithProcessing。
+        public List<ExplosionNotifyEffect> postNotifyEffects = new List<ExplosionNotifyEffect>();
+
+        public bool HasExplosionProcessing => !preNotifyEffects.NullOrEmpty() || !postNotifyEffects.NullOrEmpty();
     }
 
     // 子弹头发射属性定义类
@@ -56,6 +63,26 @@ namespace SRA
         public List<BulletLaunchProperties> bulletLaunches = new List<BulletLaunchProperties>();
     }
 
+    /// <summary>
+    /// 无副作用的原版 forcedMissRadius 爆炸识别标记。
+    /// 仅在某个 projectile Def 被带 forcedMissRadius 的 verb 使用时添加；不要给精确直射爆炸弹添加。
+    /// </summary>
+    public class CompProperties_ForcedMissExplosionMarker : CompProperties_Explosive
+    {
+        public CompProperties_ForcedMissExplosionMarker()
+        {
+            compClass = typeof(Comp_ForcedMissExplosionMarker);
+        }
+
+        public override IEnumerable<string> ConfigErrors(ThingDef parentDef)
+        {
+            yield break;
+        }
+    }
+
+    public class Comp_ForcedMissExplosionMarker : ThingComp
+    {
+    }
 
     public class Projectile_MultiExplosive : Projectile
     {
@@ -65,6 +92,7 @@ namespace SRA
         private TailBulletDef tailBulletDefInt;
         protected List<int> tailFleckTicks = new List<int>();
         private Vector3 lastTickPosition;
+        private int ticksToMultiExplosion;
 
         public TailBulletDef TailDef
         {
@@ -81,13 +109,10 @@ namespace SRA
                 return tailBulletDefInt;
             }
         }
-        private int ticksToDetonation = 1;
-        private bool projIsLanded = false;
         public override void ExposeData()
         {
             base.ExposeData();
-            Scribe_Values.Look<int>(ref this.ticksToDetonation, "ticksToDetonation", 1, false);
-            Scribe_Values.Look<bool>(ref this.projIsLanded, "projIsLanded", false, false);
+            Scribe_Values.Look(ref ticksToMultiExplosion, "sraTicksToMultiExplosion", 0);
             Scribe_Collections.Look(ref this.tailFleckTicks, "tailFleckTicks", LookMode.Value);
             if (this.tailFleckTicks == null)
             {
@@ -102,11 +127,22 @@ namespace SRA
             {
                 TickTailFlecks(base.ExactPosition, lastTickPosition);
             }
-            if (projIsLanded)
-            {
-                --ticksToDetonation;
-            }
             lastTickPosition = base.ExactPosition;
+        }
+
+        protected override void TickInterval(int delta)
+        {
+            base.TickInterval(delta);
+            if (ticksToMultiExplosion <= 0)
+            {
+                return;
+            }
+
+            ticksToMultiExplosion -= delta;
+            if (ticksToMultiExplosion <= 0)
+            {
+                Explode();
+            }
         }
 
         protected void TickTailFlecks(Vector3 currentPosition, Vector3 previousPosition)
@@ -196,15 +232,71 @@ namespace SRA
         }
         protected override void Impact(Thing hitThing, bool blockedByShield = false)
         {
-            if (this.def.projectile.explosionDelay > 0 && ticksToDetonation > 0)
+            if (Destroyed)
             {
-                if (!projIsLanded)
-                {
-                    projIsLanded = true;
-                    ticksToDetonation = this.def.projectile.explosionDelay;
-                }
                 return;
             }
+
+            if (blockedByShield || def.projectile.explosionDelay <= 0)
+            {
+                Explode();
+                return;
+            }
+
+            if (landed)
+            {
+                return;
+            }
+
+            landed = true;
+            ticksToMultiExplosion = def.projectile.explosionDelay;
+            NotifyPawnsOfDelayedExplosion();
+        }
+
+        private void NotifyPawnsOfDelayedExplosion()
+        {
+            DamageDef dangerDamage = DamageDef ?? FirstExplosionDamageDef();
+            if (dangerDamage == null || launcher == null)
+            {
+                return;
+            }
+
+            GenExplosion.NotifyNearbyPawnsOfDangerousExplosive(this, dangerDamage, launcher.Faction, launcher);
+        }
+
+        private DamageDef FirstExplosionDamageDef()
+        {
+            List<MultiExplosionProperties> explosions = def.GetModExtension<MultiExplosiveExtension>()?.multiexplosions;
+            if (explosions.NullOrEmpty())
+            {
+                return null;
+            }
+
+            for (int i = 0; i < explosions.Count; i++)
+            {
+                DamageDef damageDef = explosions[i]?.damageDef;
+                if (damageDef != null)
+                {
+                    return damageDef;
+                }
+            }
+
+            return null;
+        }
+
+        protected virtual void Explode()
+        {
+            if (Destroyed)
+            {
+                return;
+            }
+
+            if (Map == null)
+            {
+                Destroy(DestroyMode.Vanish);
+                return;
+            }
+
             var extension = this.def.GetModExtension<MultiExplosiveExtension>();
             if (extension != null)
             {
@@ -226,21 +318,28 @@ namespace SRA
                     }
                 }
             }
-            base.Impact(hitThing);
+
+            if (!Destroyed)
+            {
+                Destroy(DestroyMode.Vanish);
+            }
         }
         private void ExecuteExplosion(MultiExplosionProperties properties)
         {
 
             if (properties.explosionEffect != null)
             {
-                Effecter effecter = properties.explosionEffect.Spawn().Trigger(new TargetInfo(Position, launcher.Map, false), this.launcher, -1);
+                // The launcher can be on a different map for remote artillery payloads. Effects must
+                // use the projectile's map and impact position, otherwise they are maintained on one
+                // map while their targets point to another and cannot render correctly.
+                TargetInfo impactTarget = new TargetInfo(Position, Map, false);
+                Effecter effecter = properties.explosionEffect.Spawn().Trigger(impactTarget, impactTarget, -1);
                 if (properties.explosionEffectLifetimeTicks != 0)
                 {
                     Map.effecterMaintainer.AddEffecterToMaintain(effecter, Position.ToVector3().ToIntVec3(), properties.explosionEffectLifetimeTicks);
                 }
                 else
                 {
-                    effecter.Trigger(new TargetInfo(Position, Map, false), new TargetInfo(Position, Map, false), -1);
                     effecter.Cleanup();
                 }
             }
@@ -270,9 +369,47 @@ namespace SRA
                 List<IntVec3> miningCells = affectedCellsOverride ?? GetStandardExplosionCells(properties);
                 ApplyMiningExplosionToMineables(properties, miningCells, thingsIgnoredByExplosion);
             }
+            DoExplosion(properties, Position, thingsIgnoredByExplosion, affectedCellsOverride);
+        }
+
+        private void DoExplosion(MultiExplosionProperties properties, IntVec3 center, List<Thing> ignoredThings, List<IntVec3> affectedCellsOverride)
+        {
+            if (properties.HasExplosionProcessing)
+            {
+                ExplosionWithProcessingUtility.DoExplosion(
+                    center: center,
+                    map: Map,
+                    radius: properties.radius,
+                    damType: properties.damageDef,
+                    instigator: launcher,
+                    damAmount: properties.damageAmount,
+                    armorPenetration: properties.armorPenetration,
+                    explosionSound: properties.explosionSound,
+                    weapon: equipmentDef,
+                    projectile: def,
+                    intendedTarget: intendedTarget.Thing,
+                    damageFalloff: properties.explosionDamageFalloff,
+                    preExplosionSpawnThingDef: properties.preExplosionSpawnThingDef,
+                    preExplosionSpawnChance: properties.preExplosionSpawnChance,
+                    preExplosionSpawnThingCount: properties.preExplosionSpawnThingCount,
+                    postExplosionSpawnThingDef: properties.postExplosionSpawnThingDef,
+                    postExplosionSpawnChance: properties.postExplosionSpawnChance,
+                    postExplosionSpawnThingCount: properties.postExplosionSpawnThingCount,
+                    postExplosionGasType: properties.postExplosionGasType,
+                    postExplosionGasRadiusOverride: properties.postExplosionGasRadiusOverride,
+                    postExplosionGasAmount: properties.postExplosionGasAmount,
+                    ignoredThings: ignoredThings,
+                    overrideCells: affectedCellsOverride,
+                    preExplosionSpawnSingleThingDef: properties.preExplosionSpawnSingleThingDef,
+                    postExplosionSpawnSingleThingDef: properties.postExplosionSpawnSingleThingDef,
+                    preNotifyEffects: properties.preNotifyEffects,
+                    postNotifyEffects: properties.postNotifyEffects);
+                return;
+            }
+
             GenExplosion.DoExplosion(
-                center: Position,
-                map: Map, 
+                center: center,
+                map: Map,
                 radius: properties.radius,
                 damType: properties.damageDef,
                 instigator: launcher,
@@ -292,11 +429,10 @@ namespace SRA
                 postExplosionGasType: properties.postExplosionGasType,
                 postExplosionGasRadiusOverride: properties.postExplosionGasRadiusOverride,
                 postExplosionGasAmount: properties.postExplosionGasAmount,
-                ignoredThings: thingsIgnoredByExplosion,
+                ignoredThings: ignoredThings,
                 overrideCells: affectedCellsOverride,
                 preExplosionSpawnSingleThingDef: properties.preExplosionSpawnSingleThingDef,
-                postExplosionSpawnSingleThingDef: properties.postExplosionSpawnSingleThingDef
-            );
+                postExplosionSpawnSingleThingDef: properties.postExplosionSpawnSingleThingDef);
         }
 
         private static List<IntVec3> GetPenetratingExplosionCells(IntVec3 center, Map map, float radius)

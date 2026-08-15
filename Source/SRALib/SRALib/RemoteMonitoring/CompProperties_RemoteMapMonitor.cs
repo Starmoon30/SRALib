@@ -28,6 +28,7 @@ namespace SRA
         public bool requirePower = true;
         public bool allowWorldTargetSelection = true;
         public bool allowDisconnect = true;
+        public bool allowRemoteArtilleryCommands = true;
         public bool jumpToMapAfterOpen = true;
         public bool keepMapAliveWhenLinked = true;
 

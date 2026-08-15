@@ -14,6 +14,27 @@ namespace SRA
 
     public class MultiExplosive_BeamExtension : DefModExtension
     {
+        // 落点额外判定半径；0 时不额外扫描落点格，保留原版 Beam 只命中一个目标的行为。
+        public float hitRadius = 0f;
+
+        // 目标过滤策略；语义与 Verb_SRAShootBeam.targetignore 相同。
+        public SRABeamTargetIgnore targetignore = SRABeamTargetIgnore.ignoreNothing;
+
+        // 是否让发射源到落点之间的路径单位也受到光束本体伤害。
+        public bool damageBeamPath = false;
+
+        // 路径伤害粗细；0 表示只处理中心线格。
+        public float pathHitRadius = 0f;
+
+        // 路径伤害倍率；落点额外判定半径内的伤害不受此倍率影响。
+        public float pathDamageFactor = 1f;
+
+        // 光束本体的落点/路径伤害是否忽略 LOS 和墙体截断。
+        public bool penetrateObstacles = false;
+
+        // 是否在 hitRadius 和 pathDamage 产生的额外判定格上也执行 MultiExplosive_Beams；默认只在主落点爆炸。
+        public bool applyExplosionToExtraHitCells = false;
+
         public List<MultiExplosive_BeamProperties> MultiExplosive_Beams = new List<MultiExplosive_BeamProperties>();
     }
     public class Projectile_MultiExplosive_Beam : Beam
@@ -21,34 +42,346 @@ namespace SRA
         private const int MiningYieldApplications = 2;
 
         private IntVec3 center = IntVec3.Invalid;
+        private readonly HashSet<Thing> damagedThingsThisImpact = new HashSet<Thing>();
+        private readonly HashSet<IntVec3> extraHitCellsThisImpact = new HashSet<IntVec3>();
+        private readonly HashSet<IntVec3> hitRadiusCellsThisImpact = new HashSet<IntVec3>();
+        private readonly HashSet<IntVec3> pathHitCellsThisImpact = new HashSet<IntVec3>();
 
         public override void Launch(Thing launcher, Vector3 origin, LocalTargetInfo usedTarget, LocalTargetInfo intendedTarget, ProjectileHitFlags hitFlags, bool preventFriendlyFire = false, Thing equipment = null, ThingDef targetCoverDef = null)
         {
-            if (this.usedTarget != null)
+            if (usedTarget.IsValid)
             {
-                center = usedTarget.ToTargetInfo(base.Map).Cell;
+                center = usedTarget.Cell;
             }
             base.Launch(launcher, origin, usedTarget, intendedTarget, hitFlags, preventFriendlyFire, equipment, targetCoverDef);
         }
         protected override void Impact(Thing hitThing, bool blockedByShield = false)
         {
-            var extension = this.def.GetModExtension<MultiExplosive_BeamExtension>();
-            if (center != IntVec3.Invalid && extension != null && extension.MultiExplosive_Beams != null && extension.MultiExplosive_Beams.Count > 0)
+            MultiExplosive_BeamExtension extension = def.GetModExtension<MultiExplosive_BeamExtension>();
+            Thing baseHitThing = hitThing;
+            if (extension != null && baseHitThing != null && IsIgnoredByTargetIgnore(baseHitThing, extension.targetignore))
             {
-                foreach (var explosion in extension.MultiExplosive_Beams)
+                baseHitThing = null;
+            }
+
+            if (center.IsValid && extension != null && Map != null)
+            {
+                damagedThingsThisImpact.Clear();
+                extraHitCellsThisImpact.Clear();
+                hitRadiusCellsThisImpact.Clear();
+                pathHitCellsThisImpact.Clear();
+                if (baseHitThing != null)
                 {
-                    ExecuteExplosion(explosion, center);
+                    damagedThingsThisImpact.Add(baseHitThing);
+                }
+
+                AddExtraHitCells(extension);
+                if (!extension.MultiExplosive_Beams.NullOrEmpty())
+                {
+                    for (int i = 0; i < extension.MultiExplosive_Beams.Count; i++)
+                    {
+                        ExecuteExplosion(extension.MultiExplosive_Beams[i], center);
+                    }
+
+                    if (extension.applyExplosionToExtraHitCells)
+                    {
+                        ApplyExplosionsToExtraHitCells(extension);
+                    }
+                }
+
+                ApplyBeamDamageToExtraHitCells(extension);
+                damagedThingsThisImpact.Clear();
+                extraHitCellsThisImpact.Clear();
+                hitRadiusCellsThisImpact.Clear();
+                pathHitCellsThisImpact.Clear();
+            }
+
+            base.Impact(baseHitThing, blockedByShield);
+        }
+
+        private void AddExtraHitCells(MultiExplosive_BeamExtension extension)
+        {
+            if (extension.hitRadius > 0f)
+            {
+                foreach (IntVec3 cell in CellsInRadius(center, extension.hitRadius))
+                {
+                    hitRadiusCellsThisImpact.Add(cell);
+                    extraHitCellsThisImpact.Add(cell);
                 }
             }
-            base.Impact(hitThing, blockedByShield);
+
+            if (!extension.damageBeamPath)
+            {
+                return;
+            }
+
+            IntVec3 sourceCell = origin.Yto0().ToIntVec3();
+            foreach (IntVec3 cell in GetBeamPathCells(sourceCell, center, extension.pathHitRadius, extension.penetrateObstacles))
+            {
+                pathHitCellsThisImpact.Add(cell);
+                extraHitCellsThisImpact.Add(cell);
+            }
+        }
+
+        private void ApplyExplosionsToExtraHitCells(MultiExplosive_BeamExtension extension)
+        {
+            if (extension.MultiExplosive_Beams.NullOrEmpty())
+            {
+                return;
+            }
+
+            foreach (IntVec3 cell in extraHitCellsThisImpact)
+            {
+                if (!cell.InBounds(Map) || cell == center)
+                {
+                    continue;
+                }
+
+                for (int i = 0; i < extension.MultiExplosive_Beams.Count; i++)
+                {
+                    ExecuteExplosion(extension.MultiExplosive_Beams[i], cell);
+                }
+            }
+        }
+
+        private void ApplyBeamDamageToExtraHitCells(MultiExplosive_BeamExtension extension)
+        {
+            if (DamageDef == null || extraHitCellsThisImpact.Count == 0)
+            {
+                return;
+            }
+
+            IntVec3 sourceCell = origin.Yto0().ToIntVec3();
+            foreach (IntVec3 cell in extraHitCellsThisImpact)
+            {
+                float damageFactor = !hitRadiusCellsThisImpact.Contains(cell) && pathHitCellsThisImpact.Contains(cell) ? extension.pathDamageFactor : 1f;
+                HitCellWithBeamDamage(cell, sourceCell, damageFactor, extension);
+            }
+        }
+
+        private void HitCellWithBeamDamage(IntVec3 cell, IntVec3 sourceCell, float damageFactor, MultiExplosive_BeamExtension extension)
+        {
+            if (!cell.InBounds(Map))
+            {
+                return;
+            }
+
+            List<Thing> things = cell.GetThingList(Map);
+            for (int i = things.Count - 1; i >= 0; i--)
+            {
+                Thing thing = things[i];
+                if (CanDamageThingWithBeam(thing, extension) && damagedThingsThisImpact.Add(thing))
+                {
+                    ApplyBeamDamage(thing, sourceCell, damageFactor);
+                }
+            }
+        }
+
+        private bool CanDamageThingWithBeam(Thing thing, MultiExplosive_BeamExtension extension)
+        {
+            if (thing == null || !thing.Spawned || thing == this || thing == launcher)
+            {
+                return false;
+            }
+
+            if (thing.Map != Map)
+            {
+                return false;
+            }
+
+            if (!thing.def.useHitPoints && !(thing is Pawn))
+            {
+                return false;
+            }
+
+            if (thing is Pawn && thing != intendedTarget.Thing && thing != usedTarget.Thing && (HitFlags & ProjectileHitFlags.NonTargetPawns) == 0)
+            {
+                return false;
+            }
+
+            if (IsIgnoredByTargetIgnore(thing, extension.targetignore))
+            {
+                return false;
+            }
+
+            return extension.penetrateObstacles || !CoverUtility.ThingCovered(thing, Map);
+        }
+
+        private bool IsIgnoredByTargetIgnore(Thing thing, SRABeamTargetIgnore targetIgnore)
+        {
+            switch (targetIgnore)
+            {
+                case SRABeamTargetIgnore.ignoreNonHostile:
+                    return !GenHostility.HostileTo(thing, launcher);
+                case SRABeamTargetIgnore.ignoreNonLOSBlockingNonHostile:
+                    return IsFriendlyToLauncher(thing) || (!GenHostility.HostileTo(thing, launcher) && !BlocksLineOfSight(thing));
+                case SRABeamTargetIgnore.ignoreFriendly:
+                    return IsFriendlyToLauncher(thing);
+                case SRABeamTargetIgnore.ignoreNothing:
+                default:
+                    return false;
+            }
+        }
+
+        private bool IsFriendlyToLauncher(Thing thing)
+        {
+            Faction launcherFaction = launcher?.Faction;
+            Faction thingFaction = thing?.Faction;
+            if (launcherFaction == null || thingFaction == null)
+            {
+                return false;
+            }
+
+            return thingFaction == launcherFaction || thingFaction.RelationKindWith(launcherFaction) == FactionRelationKind.Ally;
+        }
+
+        private static bool BlocksLineOfSight(Thing thing)
+        {
+            if (thing is Building building)
+            {
+                return !building.CanBeSeenOver();
+            }
+
+            return thing?.def.Fillage == FillCategory.Full;
+        }
+
+        private IEnumerable<IntVec3> GetBeamPathCells(IntVec3 source, IntVec3 target, float radius, bool penetrateObstacles)
+        {
+            bool hasEnteredMap = false;
+            HashSet<IntVec3> yieldedCells = new HashSet<IntVec3>();
+            foreach (IntVec3 lineCell in CellsOnLine(source, target))
+            {
+                if (lineCell == source)
+                {
+                    continue;
+                }
+
+                if (!lineCell.InBounds(Map))
+                {
+                    if (hasEnteredMap)
+                    {
+                        yield break;
+                    }
+
+                    continue;
+                }
+
+                hasEnteredMap = true;
+                if (!penetrateObstacles && !lineCell.CanBeSeenOverFast(Map))
+                {
+                    yield break;
+                }
+
+                if (radius > 0f)
+                {
+                    foreach (IntVec3 cell in CellsInRadius(lineCell, radius))
+                    {
+                        if (yieldedCells.Add(cell))
+                        {
+                            yield return cell;
+                        }
+                    }
+                }
+                else if (yieldedCells.Add(lineCell))
+                {
+                    yield return lineCell;
+                }
+            }
+        }
+
+        private IEnumerable<IntVec3> CellsOnLine(IntVec3 source, IntVec3 target)
+        {
+            ShootLine line = new ShootLine(source, target);
+            foreach (IntVec3 cell in line.Points())
+            {
+                yield return cell;
+            }
+
+            yield return target;
+        }
+
+        private IEnumerable<IntVec3> CellsInRadius(IntVec3 cell, float radius)
+        {
+            if (radius <= 0f)
+            {
+                if (cell.InBounds(Map))
+                {
+                    yield return cell;
+                }
+
+                yield break;
+            }
+
+            foreach (IntVec3 radialCell in GenRadial.RadialCellsAround(cell, radius, true))
+            {
+                if (radialCell.InBounds(Map))
+                {
+                    yield return radialCell;
+                }
+            }
+        }
+
+        private void ApplyBeamDamage(Thing thing, IntVec3 sourceCell, float damageFactor)
+        {
+            float amount = DamageAmount * Mathf.Max(0f, damageFactor);
+            if (thing == null || DamageDef == null || amount <= 0f)
+            {
+                return;
+            }
+
+            BattleLogEntry_RangedImpact log = new BattleLogEntry_RangedImpact(launcher, thing, intendedTarget.Thing, equipmentDef, def, targetCoverDef);
+            bool instigatorGuilty = !(launcher is Pawn pawn) || !pawn.Drafted;
+            float angle = (thing.Position - sourceCell).AngleFlat;
+            DamageInfo dinfo = new DamageInfo(DamageDef, amount, ArmorPenetration, angle, launcher, null, equipmentDef, DamageInfo.SourceCategory.ThingOrUnknown, intendedTarget.Thing, instigatorGuilty, true, QualityCategory.Normal, true, false);
+            dinfo.SetWeaponQuality(equipmentQuality);
+            thing.TakeDamage(dinfo).AssociateWithLog(log);
+
+            if (thing is Pawn hitPawn)
+            {
+                hitPawn.stances?.stagger.Notify_BulletImpact(this);
+            }
+
+            ApplyBeamExtraDamages(thing, log, damageFactor, instigatorGuilty, angle);
+        }
+
+        private void ApplyBeamExtraDamages(Thing thing, BattleLogEntry_RangedImpact log, float damageFactor, bool instigatorGuilty, float angle)
+        {
+            ApplyBeamExtraDamageList(thing, log, extraDamages, damageFactor, instigatorGuilty, angle);
+            ApplyBeamExtraDamageList(thing, log, def.projectile.extraDamages, damageFactor, instigatorGuilty, angle);
+        }
+
+        private void ApplyBeamExtraDamageList(Thing thing, BattleLogEntry_RangedImpact log, List<ExtraDamage> extraDamageList, float damageFactor, bool instigatorGuilty, float angle)
+        {
+            if (extraDamageList.NullOrEmpty())
+            {
+                return;
+            }
+
+            for (int i = 0; i < extraDamageList.Count; i++)
+            {
+                ExtraDamage extraDamage = extraDamageList[i];
+                float amount = extraDamage.amount * Mathf.Max(0f, damageFactor);
+                if (amount <= 0f || !Rand.Chance(extraDamage.chance))
+                {
+                    continue;
+                }
+
+                DamageInfo dinfo = new DamageInfo(extraDamage.def, amount, extraDamage.AdjustedArmorPenetration(), angle, launcher, null, equipmentDef, DamageInfo.SourceCategory.ThingOrUnknown, intendedTarget.Thing, instigatorGuilty, true, QualityCategory.Normal, true, false);
+                dinfo.SetWeaponQuality(equipmentQuality);
+                thing.TakeDamage(dinfo).AssociateWithLog(log);
+            }
         }
 
         private void ExecuteExplosion(MultiExplosive_BeamProperties properties, IntVec3 center)
         {
+            if (properties == null || Map == null)
+            {
+                return;
+            }
 
             if (properties.explosionEffect != null)
             {
-                Effecter effecter = properties.explosionEffect.Spawn().Trigger(new TargetInfo(center, launcher.Map, false), this.launcher, -1);
+                Effecter effecter = properties.explosionEffect.Spawn().Trigger(new TargetInfo(center, Map, false), this.launcher, -1);
                 if (properties.explosionEffectLifetimeTicks != 0)
                 {
                     Map.effecterMaintainer.AddEffecterToMaintain(effecter, center.ToVector3().ToIntVec3(), properties.explosionEffectLifetimeTicks);
@@ -85,9 +418,46 @@ namespace SRA
                 List<IntVec3> miningCells = affectedCellsOverride ?? GetStandardExplosionCells(properties, center);
                 ApplyMiningExplosionToMineables(properties, miningCells, center, thingsIgnoredByExplosion);
             }
+            DoExplosion(properties, center, thingsIgnoredByExplosion, affectedCellsOverride);
+        }
+
+        private void DoExplosion(MultiExplosive_BeamProperties properties, IntVec3 center, List<Thing> ignoredThings, List<IntVec3> affectedCellsOverride)
+        {
+            if (properties.HasExplosionProcessing)
+            {
+                ExplosionWithProcessingUtility.DoExplosion(
+                    center: center,
+                    map: Map,
+                    radius: properties.radius,
+                    damType: properties.damageDef,
+                    instigator: launcher,
+                    damAmount: properties.damageAmount,
+                    armorPenetration: properties.armorPenetration,
+                    explosionSound: properties.explosionSound,
+                    weapon: equipmentDef,
+                    damageFalloff: properties.explosionDamageFalloff,
+                    intendedTarget: intendedTarget.Thing,
+                    preExplosionSpawnThingDef: properties.preExplosionSpawnThingDef,
+                    preExplosionSpawnChance: properties.preExplosionSpawnChance,
+                    preExplosionSpawnThingCount: properties.preExplosionSpawnThingCount,
+                    postExplosionSpawnThingDef: properties.postExplosionSpawnThingDef,
+                    postExplosionSpawnChance: properties.postExplosionSpawnChance,
+                    postExplosionSpawnThingCount: properties.postExplosionSpawnThingCount,
+                    postExplosionGasType: properties.postExplosionGasType,
+                    postExplosionGasRadiusOverride: properties.postExplosionGasRadiusOverride,
+                    postExplosionGasAmount: properties.postExplosionGasAmount,
+                    ignoredThings: ignoredThings,
+                    overrideCells: affectedCellsOverride,
+                    preExplosionSpawnSingleThingDef: properties.preExplosionSpawnSingleThingDef,
+                    postExplosionSpawnSingleThingDef: properties.postExplosionSpawnSingleThingDef,
+                    preNotifyEffects: properties.preNotifyEffects,
+                    postNotifyEffects: properties.postNotifyEffects);
+                return;
+            }
+
             GenExplosion.DoExplosion(
                 center: center,
-                map: Map, 
+                map: Map,
                 radius: properties.radius,
                 damType: properties.damageDef,
                 instigator: launcher,
@@ -106,11 +476,10 @@ namespace SRA
                 postExplosionGasType: properties.postExplosionGasType,
                 postExplosionGasRadiusOverride: properties.postExplosionGasRadiusOverride,
                 postExplosionGasAmount: properties.postExplosionGasAmount,
-                ignoredThings: thingsIgnoredByExplosion,
+                ignoredThings: ignoredThings,
                 overrideCells: affectedCellsOverride,
                 preExplosionSpawnSingleThingDef: properties.preExplosionSpawnSingleThingDef,
-                postExplosionSpawnSingleThingDef: properties.postExplosionSpawnSingleThingDef
-            );
+                postExplosionSpawnSingleThingDef: properties.postExplosionSpawnSingleThingDef);
         }
 
         private static List<IntVec3> GetPenetratingExplosionCells(IntVec3 center, Map map, float radius)
