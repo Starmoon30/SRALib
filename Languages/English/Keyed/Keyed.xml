@@ -77,6 +77,26 @@
 	<SRA_ClearTimedGameConditions_NoTargetMessage>There are no removable timed weather conditions on the current map.</SRA_ClearTimedGameConditions_NoTargetMessage>
 	<SRA_ClearTimedGameConditions_ClearedMessage>Cleared {0} timed weather condition(s): {1}</SRA_ClearTimedGameConditions_ClearedMessage>
 	<SRA_ClearTimedGameConditions_PowerRequiredMessage>Power is required to clear timed weather conditions.</SRA_ClearTimedGameConditions_PowerRequiredMessage>
+	<SRA_HediffDetector_ToggleLabel>Hediff detector</SRA_HediffDetector_ToggleLabel>
+	<SRA_HediffDetector_ToggleDesc>Toggle Hediff detection, target markers, and invisibility disruption.</SRA_HediffDetector_ToggleDesc>
+	<SRA_CasketResearch_InvalidHost>The research casket component can only be used on a casket building.</SRA_CasketResearch_InvalidHost>
+	<SRA_CasketResearch_NoSubject>Research subject: None</SRA_CasketResearch_NoSubject>
+	<SRA_CasketResearch_InvalidSubject>Invalid research subject: {0}</SRA_CasketResearch_InvalidSubject>
+	<SRA_CasketResearch_NoPower>Power is required to perform research.</SRA_CasketResearch_NoPower>
+	<SRA_CasketResearch_NoProject>There is no available current research project.</SRA_CasketResearch_NoProject>
+	<SRA_CasketResearch_Working>Research subject: {0}\nCurrent project: {1}</SRA_CasketResearch_Working>
+	<SRA_CasketResearch_Speed>Research speed: {0}/second</SRA_CasketResearch_Speed>
+	<SRA_CasketResearch_LoadSubject>Load research subject</SRA_CasketResearch_LoadSubject>
+	<SRA_CasketResearch_LoadSubjectDesc>Select any pawn to load into this cryptosleep research casket. Colony prisoners can be carried directly; other pawns outside the player faction must be downed first.</SRA_CasketResearch_LoadSubjectDesc>
+	<SRA_CasketResearch_LoadOccupied>The cryptosleep research casket is occupied.</SRA_CasketResearch_LoadOccupied>
+	<SRA_CasketResearch_LoadSubjectMustBeDowned>This pawn is not a colony prisoner and must be downed before being carried into the casket.</SRA_CasketResearch_LoadSubjectMustBeDowned>
+	<SRA_CasketResearch_LoadNoCarrier>There is no colony colonist who can carry this subject.</SRA_CasketResearch_LoadNoCarrier>
+	<SRA_CasketResearch_LoadUnreachable>The cryptosleep research casket cannot be reached.</SRA_CasketResearch_LoadUnreachable>
+	<SRA_CasketResearch_IncapableSpeed>Insufficient research ability: calculated at {0} of base research speed.</SRA_CasketResearch_IncapableSpeed>
+	<SRA_CasketResearch_ConfigRequiresCryptosleepCasket>{0}: CompProperties_CasketResearch can only be used on Building_CryptosleepCasket or its subclasses.</SRA_CasketResearch_ConfigRequiresCryptosleepCasket>
+	<SRA_CasketResearch_ConfigInvalidInterval>{0}: researchIntervalTicks must be at least 1.</SRA_CasketResearch_ConfigInvalidInterval>
+	<SRA_CasketResearch_ConfigInvalidSpeedFactor>{0}: researchSpeedFactor cannot be below 0.</SRA_CasketResearch_ConfigInvalidSpeedFactor>
+	<SRA_CasketResearch_ConfigInvalidIncapableSpeed>{0}: incapableResearchSpeed cannot be below 0.</SRA_CasketResearch_ConfigInvalidIncapableSpeed>
 	<SRA_BuildingDamageAdjusterLabel>Damage Resistance</SRA_BuildingDamageAdjusterLabel>
 	<SRA_BuildingDamageAdjusterDesc>This building can resist incoming damage.\n-Damage efficiency: Incoming damage is multiplied by damage efficiency before it is used to calculate durability loss.\n-Damage cap: Incoming damage cannot exceed this limit. This only takes effect when the value is greater than 0.\n-Damage reduction: Incoming damage is reduced by this amount. This only takes effect when the value is greater than 0.</SRA_BuildingDamageAdjusterDesc>
 	<SRA_BuildingDamageAdjusterValueMult>Damage efficiency: {0}</SRA_BuildingDamageAdjusterValueMult>

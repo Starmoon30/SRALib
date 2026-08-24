@@ -36,6 +36,7 @@ namespace SRA
         public int maxSegments = 96;
     }
 
+    [StaticConstructorOnStartup]
     public class Mote_TiledBeamSheath : MoteDualAttached
     {
         private static readonly MaterialPropertyBlock PropertyBlock = new MaterialPropertyBlock();

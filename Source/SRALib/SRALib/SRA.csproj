@@ -90,6 +90,7 @@
     <Compile Include="CompAbilityEffect_ExcaliburBeam.cs" />
     <Compile Include="CompBuildingDamageAdjuster.cs" />
     <Compile Include="CompClearTimedGameConditions.cs" />
+    <Compile Include="CompCasketResearch.cs" />
     <Compile Include="CompDamageFactors.cs" />
     <Compile Include="CompGlobalMechCommand.cs" />
     <Compile Include="CompOpenCustomUI.cs" />
@@ -129,6 +130,7 @@
     <Compile Include="EventSystem\QuestNode\QuestNode_Root_EventLetter.cs" />
     <Compile Include="EventSystem\QuestNode\QuestNode_WriteToEventVariablesWithAdd.cs" />
     <Compile Include="CompAbilityEffect_Skip.cs" />
+    <Compile Include="HediffDetector.cs" />
     <Compile Include="NoFoodPoisoningUtility.cs" />
     <Compile Include="KTLaserADS\KTPulseElectrode_Comp.cs" />
     <Compile Include="KTLaserADS\KTPulseElectrode_Core.cs" />

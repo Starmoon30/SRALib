@@ -76,6 +76,29 @@
 	<SRA_ClearTimedGameConditions_NoTargetMessage>当前地图上没有可解除的限时天气状况。</SRA_ClearTimedGameConditions_NoTargetMessage>
 	<SRA_ClearTimedGameConditions_ClearedMessage>已解除 {0} 个限时天气状况：{1}</SRA_ClearTimedGameConditions_ClearedMessage>
 	<SRA_ClearTimedGameConditions_PowerRequiredMessage>需要供电才能解除限时天气状况。</SRA_ClearTimedGameConditions_PowerRequiredMessage>
+
+	<SRA_HediffDetector_ToggleLabel>Hediff探测器</SRA_HediffDetector_ToggleLabel>
+	<SRA_HediffDetector_ToggleDesc>切换Hediff探测、目标标记和反隐压制功能。</SRA_HediffDetector_ToggleDesc>
+	
+	<SRA_CasketResearch_InvalidHost>研究舱组件只能挂载在低温舱建筑上。</SRA_CasketResearch_InvalidHost>
+	<SRA_CasketResearch_NoSubject>研究单元：无</SRA_CasketResearch_NoSubject>
+	<SRA_CasketResearch_InvalidSubject>研究单元无效：{0}</SRA_CasketResearch_InvalidSubject>
+	<SRA_CasketResearch_NoPower>需要供电才能进行研究。</SRA_CasketResearch_NoPower>
+	<SRA_CasketResearch_NoProject>没有可进行的当前科技。</SRA_CasketResearch_NoProject>
+	<SRA_CasketResearch_Working>研究单元：{0}\n当前科技：{1}</SRA_CasketResearch_Working>
+	<SRA_CasketResearch_Speed>研究速度：{0}/秒</SRA_CasketResearch_Speed>
+	<SRA_CasketResearch_LoadSubject>装入研究单元</SRA_CasketResearch_LoadSubject>
+	<SRA_CasketResearch_LoadSubjectDesc>选择一名 Pawn 装入此低温研究舱。殖民地囚犯可由殖民者直接搬入；其他不属于玩家派系的目标必须倒地后才能搬运。</SRA_CasketResearch_LoadSubjectDesc>
+	<SRA_CasketResearch_LoadOccupied>低温研究舱已被占用。</SRA_CasketResearch_LoadOccupied>
+	<SRA_CasketResearch_LoadSubjectMustBeDowned>此 Pawn 不是殖民地囚犯，必须倒地后才能搬入。</SRA_CasketResearch_LoadSubjectMustBeDowned>
+	<SRA_CasketResearch_LoadNoCarrier>没有能够搬运此目标的己方植民者。</SRA_CasketResearch_LoadNoCarrier>
+	<SRA_CasketResearch_LoadUnreachable>无法到达低温研究舱。</SRA_CasketResearch_LoadUnreachable>
+	<SRA_CasketResearch_IncapableSpeed>研究能力不足：按基础研究速度的 {0} 计算。</SRA_CasketResearch_IncapableSpeed>
+	<SRA_CasketResearch_ConfigRequiresCryptosleepCasket>{0}：CompProperties_CasketResearch 只能挂载在 Building_CryptosleepCasket 或其子类上。</SRA_CasketResearch_ConfigRequiresCryptosleepCasket>
+	<SRA_CasketResearch_ConfigInvalidInterval>{0}：researchIntervalTicks 必须大于等于 1。</SRA_CasketResearch_ConfigInvalidInterval>
+	<SRA_CasketResearch_ConfigInvalidSpeedFactor>{0}：researchSpeedFactor 不能小于 0。</SRA_CasketResearch_ConfigInvalidSpeedFactor>
+	<SRA_CasketResearch_ConfigInvalidIncapableSpeed>{0}：incapableResearchSpeed 不能小于 0。</SRA_CasketResearch_ConfigInvalidIncapableSpeed>
+
 	<SRA_BuildingDamageAdjusterLabel>损伤抵抗</SRA_BuildingDamageAdjusterLabel>
 	<SRA_BuildingDamageAdjusterDesc>这个建筑能抵抗受到的伤害。\n-损伤效率：所受到的伤害会在与损伤效率相乘后再用于计算损失的耐久度。\n-损伤上限：受到的伤害不会高于这个上限。仅当此值大于0时才生效。\n-损伤降低：受到的伤害会降低对应的值。仅当此值大于0时才生效。</SRA_BuildingDamageAdjusterDesc>
 	<SRA_BuildingDamageAdjusterValueMult>损伤效率：{0}</SRA_BuildingDamageAdjusterValueMult>

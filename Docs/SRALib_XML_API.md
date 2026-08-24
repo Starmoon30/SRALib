@@ -133,6 +133,161 @@
 </li>
 ```
 
+### Hediff 探测器
+
+入口：
+
+```xml
+<li Class="SRA.CompProperties_HediffDetector">
+  ...
+</li>
+```
+
+实现：
+
+- 按设定间隔扫描范围内 Pawn；`detectRadius<=0` 时扫描整张地图，大于 0 时仅扫描圆形范围。
+- `detectionList` 可配置任意 HediffDef，并在带有该 Hediff 的 Pawn 头顶绘制图标。不存在的 HediffDef 会静默跳过，因此可直接填写可选 DLC 或其他模组的 Hediff。条目还可通过 `matchAllInvisibilityHediffs=true` 匹配所有使用原版 `HediffComp_Invisibility` 的 Hediff，无需穷举具体 Def。
+- 头顶标记的贴图和材质缓存仅在主线程解析，以满足 Unity 的渲染资源约束。非主线调用会跳过当次解析，并由后续主线程扫描安全建立缓存。
+- 可选揭露迷雾。`detectRadius>0` 时揭露圆形范围内的连通迷雾；`detectRadius<=0` 时清除整张地图的所有迷雾。两种模式都使用分帧任务，每 tick 的处理格数受全图共享预算限制。
+- 可选压制敌对 Pawn 的原版隐形，包括皇权的灵能隐身与异常的隐形效果。不依赖特定 DLC 开关；游戏未加载原版隐形组件时，仅反隐功能自动不执行。
+- 反隐通过原版 `HediffComp_Invisibility.ForcedVisible` 的兼容补丁和短时缓存生效，不会移除 Hediff；缓存到期后恢复原版隐形行为。
+- 同地图的扫描请求由 `MapComponent_HediffDetectorManager` 排队处理，每 tick 最多执行一轮 Pawn 扫描和一轮迷雾扫描，避免多个建筑集中遍历 Pawn 或扩散迷雾。
+- `requirePower=true` 且建筑有 `CompPowerTrader` 时，断电期间会停止扫描并隐藏已有标记；没有电力 Comp 的建筑不受影响。
+
+字段：
+
+| 字段 | 默认值 | 作用 |
+| --- | --- | --- |
+| `detectRadius` | 0 | 探测半径；小于等于 0 扫描整张地图，并在 `revealFog=true` 时清除全图迷雾；正数仅扫描圆形范围 |
+| `scanIntervalTicks` | 250 | 扫描间隔，单位为 tick；小于 1 时按 1 处理 |
+| `revealFog` | false | 是否揭露迷雾；全图模式下清除整张地图的迷雾 |
+| `detectionList` | 空 | Hediff 探测图标列表；每项包含 `iconPath`、可选 `hediffDef`和可选 `matchAllInvisibilityHediffs` |
+| `disruptEnemyInvisibility` | true | 是否压制范围内敌对 Pawn 的原版隐形；无需为任何 DLC 开关单独配置 |
+| `disruptionDurationTicks` | 0 | 强制可见持续时间；小于等于 0 时自动使用扫描间隔加缓冲，确保两次扫描之间不会失效 |
+| `requirePower` | true | 是否要求通电；仅当建筑具有 `CompPowerTrader` 时生效 |
+| `startEnabled` | false | 建筑生成时是否默认开启；可由 gizmo 手动切换 |
+| `gizmoLabelKey` | `SRA_HediffDetector_ToggleLabel` | 开关 gizmo 标题的 Keyed 本地化键 |
+| `gizmoDescKey` | `SRA_HediffDetector_ToggleDesc` | 开关 gizmo 说明的 Keyed 本地化键 |
+| `uiIconPathEnabled` | `UI/Commands/Attack` | 开启状态的 gizmo 图标路径 |
+| `uiIconPathDisabled` | `UI/Commands/Attack` | 关闭状态的 gizmo 图标路径 |
+| `markScale` | 2.5 | 头顶标记缩放 |
+| `markHeightOffset` | 1.5 | 头顶标记 Z 轴偏移 |
+| `markBobbingFrequency` | 0.3 | 标记浮动频率；小于等于 0 时不浮动 |
+| `markBobbingAmplitude` | 0.3 | 标记浮动幅度；小于等于 0 时不浮动 |
+
+示例：
+
+```xml
+<li Class="SRA.CompProperties_HediffDetector">
+  <!-- 半径 35 格；填 0 则扫描并清除整张地图的迷雾。 -->
+  <detectRadius>35</detectRadius>
+  <scanIntervalTicks>120</scanIntervalTicks>
+  <revealFog>true</revealFog>
+
+  <!-- 隐形通配标记：不需穷举 PsychicInvisibility 等具体 HediffDef。 -->
+  <detectionList>
+    <li>
+      <matchAllInvisibilityHediffs>true</matchAllInvisibilityHediffs>
+      <iconPath>UI/Commands/Attack</iconPath>
+    </li>
+  </detectionList>
+
+  <disruptEnemyInvisibility>true</disruptEnemyInvisibility>
+  <disruptionDurationTicks>180</disruptionDurationTicks>
+  <requirePower>true</requirePower>
+  <startEnabled>false</startEnabled>
+  <gizmoLabelKey>SRA_HediffDetector_ToggleLabel</gizmoLabelKey>
+  <gizmoDescKey>SRA_HediffDetector_ToggleDesc</gizmoDescKey>
+  <uiIconPathEnabled>UI/Commands/Attack</uiIconPathEnabled>
+  <uiIconPathDisabled>UI/Commands/Attack</uiIconPathDisabled>
+  <markScale>2.5</markScale>
+  <markHeightOffset>1.5</markHeightOffset>
+  <markBobbingFrequency>0.3</markBobbingFrequency>
+  <markBobbingAmplitude>0.3</markBobbingAmplitude>
+</li>
+```
+
+### 低温研究舱
+
+入口：
+
+```xml
+<li Class="SRA.CompProperties_CasketResearch">
+  ...
+</li>
+```
+
+实现：
+
+- 此 Comp 必须挂载在 `Building_CryptosleepCasket` 或其子类上，以使用原版低温舱的收纳、搬运与弹出逻辑。Pawn 处于低温舱内时，其状态、需求和任务会被冻结。
+- 建筑提供“装入研究单元”按钮，点击后在地图上选取任意存活 Pawn，不再生成全地图列表。属于玩家派系且不是囚犯的清醒 Pawn（包括驯养动物）会自行进入；殖民地囚犯与倒地目标则由可用的己方植民者搬入。囚犯的搬运遵循原版裂解扫描仪的规则，无需先将其击倒；其他清醒 Pawn 不会被强制搬运，必须先倒地。
+- 已被收容的任意存活 Pawn 都可提供研究，包括动物、敌人和客人。
+- 研究能力正常时，研究工作量每秒等于 Pawn 的 `ResearchSpeed` × 60 × 建筑的 `ResearchSpeedFactor` × `researchSpeedFactor`。没有研究能力时，改用 `incapableResearchSpeed` （默认 `6`，即基础研究速度的 10%）。内部仅在调用原版 `ResearchManager.ResearchPerformed` 前换算为每 tick 工作量，因此仍会正常受难度、科技等级成本系数、完成信件和研究统计影响。
+- 仅研究玩家当前选定的常规科技，并使用原版 `CanStartNow` 判定。未选择科技、科技已完成、前置不足、科技图纸/分析/机械师/研究设施条件未满足，或选中异常知识项目时不会产生进度。
+- 已断电或不具备研究能力的收容对象不会提供进度；详细原因会显示在检查面板中。
+
+字段：
+
+| 字段 | 默认值 | 作用 |
+| --- | --- | --- |
+| `researchIntervalTicks` | 250 | 研究结算间隔，单位为 tick；必须大于等于 1 |
+| `researchSpeedFactor` | 1.0 | 额外研究乘数；与 Pawn 的 `ResearchSpeed` 和建筑的 `ResearchSpeedFactor` 相乘 |
+| `incapableResearchSpeed` | 6 | 没有研究能力的 Pawn 每秒使用的研究工作量；`6` 等同于基础研究速度的 10% |
+| `requirePower` | true | 是否要求建筑具有已通电的 `CompPowerTrader`；关闭后可用于无需供电的建筑 |
+| `localization` | 见下文 | 研究舱全部 Keyed 本地化键；可替换为所属模组提供的键名，字段不接受直接显示文本 |
+
+`localization` 整段可省略，此时使用 SRALib 默认键。若配置该段，应在所属模组的各语言 `Keyed.xml` 中定义下列所有被替换的键，并保留与默认键相同的参数数量。
+
+示例：
+
+```xml
+<ThingDef ParentName="BuildingBase">
+  <defName>Example_ResearchCasket</defName>
+  <label>研究低温舱</label>
+  <!-- 原版低温舱负责收容 Pawn，并在收容期间冻结其状态。 -->
+  <thingClass>Building_CryptosleepCasket</thingClass>
+  <containedPawnsSelectable>true</containedPawnsSelectable>
+  <tickerType>Normal</tickerType>
+  <comps>
+    <li Class="SRA.CompProperties_CasketResearch">
+      <researchIntervalTicks>250</researchIntervalTicks>
+      <researchSpeedFactor>1.0</researchSpeedFactor>
+      <!-- 研究速度的单位为每秒；6 等同于基础研究速度的 10%。 -->
+      <incapableResearchSpeed>6</incapableResearchSpeed>
+      <requirePower>true</requirePower>
+      <!-- 所有文本均填写 Keyed 本地化键，可按需替换为本模组的键。 -->
+      <localization>
+        <loadSubjectLabelKey>Example_ResearchCasket_LoadSubject</loadSubjectLabelKey>
+        <loadSubjectDescKey>Example_ResearchCasket_LoadSubjectDesc</loadSubjectDescKey>
+        <loadOccupiedKey>Example_ResearchCasket_LoadOccupied</loadOccupiedKey>
+        <invalidSubjectKey>Example_ResearchCasket_InvalidSubject</invalidSubjectKey>
+        <loadSubjectMustBeDownedKey>Example_ResearchCasket_LoadSubjectMustBeDowned</loadSubjectMustBeDownedKey>
+        <loadNoCarrierKey>Example_ResearchCasket_LoadNoCarrier</loadNoCarrierKey>
+        <loadUnreachableKey>Example_ResearchCasket_LoadUnreachable</loadUnreachableKey>
+        <invalidHostKey>Example_ResearchCasket_InvalidHost</invalidHostKey>
+        <noSubjectKey>Example_ResearchCasket_NoSubject</noSubjectKey>
+        <noPowerKey>Example_ResearchCasket_NoPower</noPowerKey>
+        <noProjectKey>Example_ResearchCasket_NoProject</noProjectKey>
+        <workingKey>Example_ResearchCasket_Working</workingKey>
+        <speedKey>Example_ResearchCasket_Speed</speedKey>
+        <incapableSpeedKey>Example_ResearchCasket_IncapableSpeed</incapableSpeedKey>
+        <configRequiresCryptosleepCasketKey>Example_ResearchCasket_ConfigRequiresCryptosleepCasket</configRequiresCryptosleepCasketKey>
+        <configInvalidIntervalKey>Example_ResearchCasket_ConfigInvalidInterval</configInvalidIntervalKey>
+        <configInvalidSpeedFactorKey>Example_ResearchCasket_ConfigInvalidSpeedFactor</configInvalidSpeedFactorKey>
+        <configInvalidIncapableSpeedKey>Example_ResearchCasket_ConfigInvalidIncapableSpeed</configInvalidIncapableSpeedKey>
+      </localization>
+    </li>
+    <li Class="CompProperties_Power">
+      <compClass>CompPowerTrader</compClass>
+      <basePowerConsumption>400</basePowerConsumption>
+    </li>
+  </comps>
+  <inspectorTabs>
+    <li>ITab_ContentsCasket</li>
+  </inspectorTabs>
+</ThingDef>
+```
+
 ### 气密门
 
 入口：

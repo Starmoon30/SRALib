@@ -1,9 +1,4 @@
 ﻿using RimWorld;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Verse;
 
 namespace SRA
@@ -17,50 +12,36 @@ namespace SRA
     }
     public class Comp_BodyshapeAjuster : ThingComp
     {
-        public CompProperties_BodyShapeAjuster Props
-        {
-            get
-            {
-                return (CompProperties_BodyShapeAjuster)this.props;
-            }
-        }
+        private BodyTypeDef originalBodyType;
+        private bool bodyTypeChanged;
 
         public override void Notify_Equipped(Pawn pawn)
         {
             base.Notify_Equipped(pawn);
-            if (pawn.story.bodyType == BodyTypeDefOf.Hulk || pawn.story.bodyType == BodyTypeDefOf.Fat)
+            if (pawn.story != null && pawn.story.bodyType != BodyTypeDefOf.Thin)
             {
-                this.BodyShape = pawn.story.bodyType;
-                this.ChangedBS = true;
-                if (pawn.gender == Gender.Male)
-                {
-                    pawn.story.bodyType = BodyTypeDefOf.Male;
-                }
-                else
-                {
-                    pawn.story.bodyType = BodyTypeDefOf.Female;
-                }
+                originalBodyType = pawn.story.bodyType;
+                bodyTypeChanged = true;
+                pawn.story.bodyType = BodyTypeDefOf.Thin;
             }
         }
 
         public override void Notify_Unequipped(Pawn pawn)
         {
             base.Notify_Unequipped(pawn);
-            if (this.ChangedBS)
+            if (bodyTypeChanged && originalBodyType != null)
             {
-                pawn.story.bodyType = this.BodyShape;
-                this.ChangedBS = false;
+                pawn.story.bodyType = originalBodyType;
+                bodyTypeChanged = false;
+                originalBodyType = null;
             }
         }
 
-        public void ExposeData()
+        public override void PostExposeData()
         {
-            Scribe_Values.Look<BodyTypeDef>(ref this.BodyShape, "original bodytype", BodyTypeDefOf.Thin, false);
-            Scribe_Values.Look<bool>(ref this.ChangedBS, "if bodytype changed", false, false);
+            base.PostExposeData();
+            Scribe_Defs.Look(ref originalBodyType, "originalBodyType");
+            Scribe_Values.Look(ref bodyTypeChanged, "bodyTypeChanged", false);
         }
-
-        private BodyTypeDef BodyShape;
-
-        private bool ChangedBS = false;
     }
 }
