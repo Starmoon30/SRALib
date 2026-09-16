@@ -423,6 +423,9 @@ namespace SRA
 
         private void DoExplosion(MultiExplosive_BeamProperties properties, IntVec3 center, List<Thing> ignoredThings, List<IntVec3> affectedCellsOverride)
         {
+            // 与普通 MultiExplosive 共用安全音效选择，避免缺少 DamageDef 默认音效时落入原版空调用。
+            SoundDef explosionSound = MultiExplosionSoundUtility.GetExplicitSound(properties);
+            bool doSoundEffects = MultiExplosionSoundUtility.ShouldPlaySound(properties);
             if (properties.HasExplosionProcessing)
             {
                 ExplosionWithProcessingUtility.DoExplosion(
@@ -433,16 +436,20 @@ namespace SRA
                     instigator: launcher,
                     damAmount: properties.damageAmount,
                     armorPenetration: properties.armorPenetration,
-                    explosionSound: properties.explosionSound,
+                    explosionSound: explosionSound,
                     weapon: equipmentDef,
                     damageFalloff: properties.explosionDamageFalloff,
                     intendedTarget: intendedTarget.Thing,
                     preExplosionSpawnThingDef: properties.preExplosionSpawnThingDef,
                     preExplosionSpawnChance: properties.preExplosionSpawnChance,
                     preExplosionSpawnThingCount: properties.preExplosionSpawnThingCount,
+                    preExplosionSpawnInheritLauncherFaction: properties.preExplosionSpawnInheritLauncherFaction,
+                    preExplosionSpawnMakeHomeArea: properties.preExplosionSpawnMakeHomeArea,
                     postExplosionSpawnThingDef: properties.postExplosionSpawnThingDef,
                     postExplosionSpawnChance: properties.postExplosionSpawnChance,
                     postExplosionSpawnThingCount: properties.postExplosionSpawnThingCount,
+                    postExplosionSpawnInheritLauncherFaction: properties.postExplosionSpawnInheritLauncherFaction,
+                    postExplosionSpawnMakeHomeArea: properties.postExplosionSpawnMakeHomeArea,
                     postExplosionGasType: properties.postExplosionGasType,
                     postExplosionGasRadiusOverride: properties.postExplosionGasRadiusOverride,
                     postExplosionGasAmount: properties.postExplosionGasAmount,
@@ -451,7 +458,9 @@ namespace SRA
                     preExplosionSpawnSingleThingDef: properties.preExplosionSpawnSingleThingDef,
                     postExplosionSpawnSingleThingDef: properties.postExplosionSpawnSingleThingDef,
                     preNotifyEffects: properties.preNotifyEffects,
-                    postNotifyEffects: properties.postNotifyEffects);
+                    postNotifyEffects: properties.postNotifyEffects,
+                    doVisualEffects: properties.doVisualEffects,
+                    doSoundEffects: doSoundEffects);
                 return;
             }
 
@@ -463,7 +472,7 @@ namespace SRA
                 instigator: launcher,
                 damAmount: properties.damageAmount,
                 armorPenetration: properties.armorPenetration,
-                explosionSound: properties.explosionSound,
+                explosionSound: explosionSound,
                 weapon: equipmentDef,
                 damageFalloff: properties.explosionDamageFalloff,
                 intendedTarget: intendedTarget.Thing,
@@ -479,7 +488,9 @@ namespace SRA
                 ignoredThings: ignoredThings,
                 overrideCells: affectedCellsOverride,
                 preExplosionSpawnSingleThingDef: properties.preExplosionSpawnSingleThingDef,
-                postExplosionSpawnSingleThingDef: properties.postExplosionSpawnSingleThingDef);
+                postExplosionSpawnSingleThingDef: properties.postExplosionSpawnSingleThingDef,
+                doVisualEffects: properties.doVisualEffects,
+                doSoundEffects: doSoundEffects);
         }
 
         private static List<IntVec3> GetPenetratingExplosionCells(IntVec3 center, Map map, float radius)

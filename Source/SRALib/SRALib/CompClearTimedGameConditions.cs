@@ -67,21 +67,12 @@ namespace SRA
         private bool HasAnyRemovableTarget()
         {
             Map map = parent.Map;
-            List<GameCondition> activeConditions = map?.gameConditionManager?.ActiveConditions;
-            if (activeConditions == null)
+            if (map == null || map.gameConditionManager == null)
             {
                 return false;
             }
 
-            for (int i = 0; i < activeConditions.Count; i++)
-            {
-                if (ShouldClearCondition(activeConditions[i]))
-                {
-                    return true;
-                }
-            }
-
-            return HasCurrentRemovableWeather(map, activeConditions);
+            return HasRemovableConditionAffectingMap(map) || HasCurrentRemovableWeather(map);
         }
 
         private void ClearTimedConditions()
@@ -92,22 +83,15 @@ namespace SRA
                 return;
             }
 
-            List<GameCondition> activeConditions = parent.Map?.gameConditionManager?.ActiveConditions;
-            if (activeConditions == null)
+            Map map = parent.Map;
+            if (map == null || map.gameConditionManager == null)
             {
                 Messages.Message(Props.noTargetMessageKey.Translate(), MessageTypeDefOf.RejectInput, false);
                 return;
             }
 
             List<GameCondition> toClear = new List<GameCondition>();
-            for (int i = 0; i < activeConditions.Count; i++)
-            {
-                GameCondition condition = activeConditions[i];
-                if (ShouldClearCondition(condition))
-                {
-                    toClear.Add(condition);
-                }
-            }
+            CollectRemovableConditionsAffectingMap(map, toClear);
 
             List<string> clearedLabels = new List<string>(toClear.Count);
             for (int i = 0; i < toClear.Count; i++)
@@ -117,7 +101,7 @@ namespace SRA
                 condition.End();
             }
 
-            if (TryClearCurrentWeather(parent.Map, activeConditions, out string clearedWeatherLabel))
+            if (TryClearCurrentWeather(map, out string clearedWeatherLabel))
             {
                 clearedLabels.Add(clearedWeatherLabel);
             }
@@ -133,17 +117,7 @@ namespace SRA
 
         private bool ShouldClearCondition(GameCondition condition)
         {
-            if (!HasTimedConditionEnd(condition))
-            {
-                return false;
-            }
-
-            if (!HasAnyWhitelist())
-            {
-                return true;
-            }
-
-            return !IsWhitelistedCondition(condition);
+            return HasTimedConditionEnd(condition) && !IsWhitelistedCondition(condition);
         }
 
         private bool HasTimedConditionEnd(GameCondition condition)
@@ -151,15 +125,53 @@ namespace SRA
             return condition != null && !condition.Permanent && condition.TicksLeft > 0;
         }
 
-        private bool HasCurrentRemovableWeather(Map map, List<GameCondition> activeConditions)
+        /// <summary>
+        /// 地图条件管理器只保存本地图条件；太阳耀斑、日食和极光等世界事件保存在 Parent 中。
+        /// 只处理 CanApplyOnMap 为真的条件，避免结束其他地图或不适用地图层的世界级效果。
+        /// </summary>
+        private bool HasRemovableConditionAffectingMap(Map map)
         {
-            return TryGetRemovableWeather(map, activeConditions, out _, out _);
+            for (GameConditionManager manager = map?.gameConditionManager; manager != null; manager = manager.Parent)
+            {
+                List<GameCondition> conditions = manager.ActiveConditions;
+                for (int i = 0; i < conditions.Count; i++)
+                {
+                    GameCondition condition = conditions[i];
+                    if (condition != null && condition.CanApplyOnMap(map) && ShouldClearCondition(condition))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         }
 
-        private bool TryClearCurrentWeather(Map map, List<GameCondition> activeConditions, out string clearedWeatherLabel)
+        private void CollectRemovableConditionsAffectingMap(Map map, List<GameCondition> toClear)
+        {
+            for (GameConditionManager manager = map?.gameConditionManager; manager != null; manager = manager.Parent)
+            {
+                List<GameCondition> conditions = manager.ActiveConditions;
+                for (int i = 0; i < conditions.Count; i++)
+                {
+                    GameCondition condition = conditions[i];
+                    if (condition != null && condition.CanApplyOnMap(map) && ShouldClearCondition(condition))
+                    {
+                        toClear.Add(condition);
+                    }
+                }
+            }
+        }
+
+        private bool HasCurrentRemovableWeather(Map map)
+        {
+            return TryGetRemovableWeather(map, out _, out _);
+        }
+
+        private bool TryClearCurrentWeather(Map map, out string clearedWeatherLabel)
         {
             clearedWeatherLabel = null;
-            if (!TryGetRemovableWeather(map, activeConditions, out WeatherDef currentWeather, out WeatherDef replacementWeather))
+            if (!TryGetRemovableWeather(map, out WeatherDef currentWeather, out WeatherDef replacementWeather))
             {
                 return false;
             }
@@ -169,7 +181,7 @@ namespace SRA
             return true;
         }
 
-        private bool TryGetRemovableWeather(Map map, List<GameCondition> activeConditions, out WeatherDef currentWeather, out WeatherDef replacementWeather)
+        private bool TryGetRemovableWeather(Map map, out WeatherDef currentWeather, out WeatherDef replacementWeather)
         {
             currentWeather = null;
             replacementWeather = null;
@@ -185,7 +197,7 @@ namespace SRA
                 return false;
             }
 
-            if (GetCurrentWeatherTicksLeft(map) <= 0 || map.weatherDecider.ForcedWeather != null || IsWeatherControlledByCondition(currentWeather, activeConditions))
+            if (GetCurrentWeatherTicksLeft(map) <= 0 || map.weatherDecider.ForcedWeather != null || IsWeatherControlledByCondition(currentWeather, map))
             {
                 return false;
             }
@@ -194,17 +206,17 @@ namespace SRA
             return replacementWeather != null && replacementWeather != currentWeather;
         }
 
-        private bool HasAnyWhitelist()
-        {
-            return (Props.gameConditionWhitelist != null && Props.gameConditionWhitelist.Count > 0) ||
-                   (Props.weatherWhitelist != null && Props.weatherWhitelist.Count > 0);
-        }
-
         private bool IsWhitelistedCondition(GameCondition condition)
         {
             if (condition == null)
             {
                 return false;
+            }
+
+            // Planetkiller 是剧本/任务的世界毁灭倒计时。即使它带有 TicksLeft，也绝不能被通用清除按钮绕过。
+            if (condition.def?.defName == "Planetkiller")
+            {
+                return true;
             }
 
             if (Props.gameConditionWhitelist != null && Props.gameConditionWhitelist.Contains(condition.def))
@@ -223,33 +235,32 @@ namespace SRA
                 return false;
             }
 
-            if (!HasAnyWhitelist())
-            {
-                return true;
-            }
-
             return Props.weatherWhitelist == null || !Props.weatherWhitelist.Contains(weather);
         }
 
-        private bool IsWeatherControlledByCondition(WeatherDef weather, List<GameCondition> activeConditions)
+        private bool IsWeatherControlledByCondition(WeatherDef weather, Map map)
         {
-            if (weather == null || activeConditions == null)
+            if (weather == null || map == null)
             {
                 return false;
             }
 
-            for (int i = 0; i < activeConditions.Count; i++)
+            for (GameConditionManager manager = map.gameConditionManager; manager != null; manager = manager.Parent)
             {
-                GameCondition condition = activeConditions[i];
-                if (condition == null)
+                List<GameCondition> conditions = manager.ActiveConditions;
+                for (int i = 0; i < conditions.Count; i++)
                 {
-                    continue;
-                }
+                    GameCondition condition = conditions[i];
+                    if (condition == null || !condition.CanApplyOnMap(map))
+                    {
+                        continue;
+                    }
 
-                WeatherDef forcedWeather = condition.ForcedWeather() ?? condition.def?.weatherDef;
-                if (forcedWeather == weather)
-                {
-                    return true;
+                    WeatherDef forcedWeather = condition.ForcedWeather() ?? condition.def?.weatherDef;
+                    if (forcedWeather == weather)
+                    {
+                        return true;
+                    }
                 }
             }
 

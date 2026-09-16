@@ -14,7 +14,13 @@ namespace SRA
         public DamageDef damageDef;
         public int damageAmount = 1;
         public float armorPenetration = 1f;
+        // 此条爆炸优先播放的音效。留空或引用未定义 SoundDef 时回退到 damageDef.soundExplosion。
         public SoundDef explosionSound;
+        // 是否允许播放爆炸音效。即使开启，显式音效和 DamageDef 默认音效都缺失时也会自动静音。
+        public bool doSoundEffects = true;
+        // 是否渲染原版爆炸视觉，包括中心闪光、屏幕震动和伤害类型的逐格 fleck/mote。
+        // 不影响此条定义的 explosionEffect，也不改变伤害、眩晕和爆炸传播结算。
+        public bool doVisualEffects = true;
         public bool explosionDamageFalloff = true;
         public EffecterDef explosionEffect;
         public int explosionEffectLifetimeTicks;
@@ -32,11 +38,23 @@ namespace SRA
         public int preExplosionSpawnThingCount = 1;
         // 爆炸开始时在爆炸中心尝试生成的单个物体。
         public ThingDef preExplosionSpawnSingleThingDef = null;
+        // 前置生成物是否继承射弹发射者的派系；不支持派系的物体会自动跳过。
+        // 同时作用于逐格生成物和中心单体生成物。
+        public bool preExplosionSpawnInheritLauncherFaction = false;
+        // 前置生成的友方建筑是否允许原版自动创建居住区；默认禁止。
+        // 启用时会在生成前写入派系，并依照原版的派系、Def 和玩家设置条件决定是否创建。
+        public bool preExplosionSpawnMakeHomeArea = false;
         public ThingDef postExplosionSpawnThingDef = null;
         public float postExplosionSpawnChance = 0f;
         public int postExplosionSpawnThingCount = 1;
         // 爆炸结束时在爆炸中心尝试生成的单个物体。
         public ThingDef postExplosionSpawnSingleThingDef = null;
+        // 后置生成物是否继承射弹发射者的派系；不支持派系的物体会自动跳过。
+        // 同时作用于逐格生成物和中心单体生成物。
+        public bool postExplosionSpawnInheritLauncherFaction = false;
+        // 后置生成的友方建筑是否允许原版自动创建居住区；默认禁止。
+        // 启用时会在生成前写入派系，并依照原版的派系、Def 和玩家设置条件决定是否创建。
+        public bool postExplosionSpawnMakeHomeArea = false;
         public GasType ? postExplosionGasType = null;
         public float ? postExplosionGasRadiusOverride = null;
         public int postExplosionGasAmount = 255;
@@ -46,7 +64,45 @@ namespace SRA
         // Notify_Explosion 后执行的额外处理；存在任意处理器时会改用 ExplosionWithProcessing。
         public List<ExplosionNotifyEffect> postNotifyEffects = new List<ExplosionNotifyEffect>();
 
-        public bool HasExplosionProcessing => !preNotifyEffects.NullOrEmpty() || !postNotifyEffects.NullOrEmpty();
+        // 归属和居住区需要在物体成功生成后处理，因此也需要使用自定义爆炸路径。
+        public bool HasExplosionProcessing =>
+            !preNotifyEffects.NullOrEmpty() ||
+            !postNotifyEffects.NullOrEmpty() ||
+            ((preExplosionSpawnInheritLauncherFaction || preExplosionSpawnMakeHomeArea) &&
+             (preExplosionSpawnThingDef != null || preExplosionSpawnSingleThingDef != null)) ||
+            ((postExplosionSpawnInheritLauncherFaction || postExplosionSpawnMakeHomeArea) &&
+             (postExplosionSpawnThingDef != null || postExplosionSpawnSingleThingDef != null));
+    }
+
+    /// <summary>
+    /// 集中处理多重爆炸的音效选择，避免原版 Explosion 在缺失默认音效时直接调用空引用。
+    /// </summary>
+    public static class MultiExplosionSoundUtility
+    {
+        /// <summary>
+        /// 返回可安全传给原版 Explosion 的显式音效。
+        /// 未定义的 SoundDef 必须转换为 null，否则开发者模式下原版会仍尝试播放它。
+        /// </summary>
+        public static SoundDef GetExplicitSound(MultiExplosionProperties properties)
+        {
+            return properties != null && !properties.explosionSound.NullOrUndefined()
+                ? properties.explosionSound
+                : null;
+        }
+
+        /// <summary>
+        /// 仅在声音开关开启且显式音效或 DamageDef 的回退音效有效时，才允许原版播放音效。
+        /// </summary>
+        public static bool ShouldPlaySound(MultiExplosionProperties properties)
+        {
+            if (properties == null || !properties.doSoundEffects)
+            {
+                return false;
+            }
+
+            SoundDef fallbackSound = properties.damageDef?.soundExplosion;
+            return GetExplicitSound(properties) != null || !fallbackSound.NullOrUndefined();
+        }
     }
 
     // 子弹头发射属性定义类
@@ -374,6 +430,10 @@ namespace SRA
 
         private void DoExplosion(MultiExplosionProperties properties, IntVec3 center, List<Thing> ignoredThings, List<IntVec3> affectedCellsOverride)
         {
+            // GenExplosion 会在未提供显式声音时无条件调用 damageDef.soundExplosion。
+            // 因此先过滤未定义的显式 SoundDef，并在两者均不存在时关闭声音路径。
+            SoundDef explosionSound = MultiExplosionSoundUtility.GetExplicitSound(properties);
+            bool doSoundEffects = MultiExplosionSoundUtility.ShouldPlaySound(properties);
             if (properties.HasExplosionProcessing)
             {
                 ExplosionWithProcessingUtility.DoExplosion(
@@ -384,7 +444,7 @@ namespace SRA
                     instigator: launcher,
                     damAmount: properties.damageAmount,
                     armorPenetration: properties.armorPenetration,
-                    explosionSound: properties.explosionSound,
+                    explosionSound: explosionSound,
                     weapon: equipmentDef,
                     projectile: def,
                     intendedTarget: intendedTarget.Thing,
@@ -392,9 +452,13 @@ namespace SRA
                     preExplosionSpawnThingDef: properties.preExplosionSpawnThingDef,
                     preExplosionSpawnChance: properties.preExplosionSpawnChance,
                     preExplosionSpawnThingCount: properties.preExplosionSpawnThingCount,
+                    preExplosionSpawnInheritLauncherFaction: properties.preExplosionSpawnInheritLauncherFaction,
+                    preExplosionSpawnMakeHomeArea: properties.preExplosionSpawnMakeHomeArea,
                     postExplosionSpawnThingDef: properties.postExplosionSpawnThingDef,
                     postExplosionSpawnChance: properties.postExplosionSpawnChance,
                     postExplosionSpawnThingCount: properties.postExplosionSpawnThingCount,
+                    postExplosionSpawnInheritLauncherFaction: properties.postExplosionSpawnInheritLauncherFaction,
+                    postExplosionSpawnMakeHomeArea: properties.postExplosionSpawnMakeHomeArea,
                     postExplosionGasType: properties.postExplosionGasType,
                     postExplosionGasRadiusOverride: properties.postExplosionGasRadiusOverride,
                     postExplosionGasAmount: properties.postExplosionGasAmount,
@@ -403,7 +467,9 @@ namespace SRA
                     preExplosionSpawnSingleThingDef: properties.preExplosionSpawnSingleThingDef,
                     postExplosionSpawnSingleThingDef: properties.postExplosionSpawnSingleThingDef,
                     preNotifyEffects: properties.preNotifyEffects,
-                    postNotifyEffects: properties.postNotifyEffects);
+                    postNotifyEffects: properties.postNotifyEffects,
+                    doVisualEffects: properties.doVisualEffects,
+                    doSoundEffects: doSoundEffects);
                 return;
             }
 
@@ -415,7 +481,7 @@ namespace SRA
                 instigator: launcher,
                 damAmount: properties.damageAmount,
                 armorPenetration: properties.armorPenetration,
-                explosionSound: properties.explosionSound,
+                explosionSound: explosionSound,
                 weapon: equipmentDef,
                 projectile: def,
                 intendedTarget: intendedTarget.Thing,
@@ -432,7 +498,9 @@ namespace SRA
                 ignoredThings: ignoredThings,
                 overrideCells: affectedCellsOverride,
                 preExplosionSpawnSingleThingDef: properties.preExplosionSpawnSingleThingDef,
-                postExplosionSpawnSingleThingDef: properties.postExplosionSpawnSingleThingDef);
+                postExplosionSpawnSingleThingDef: properties.postExplosionSpawnSingleThingDef,
+                doVisualEffects: properties.doVisualEffects,
+                doSoundEffects: doSoundEffects);
         }
 
         private static List<IntVec3> GetPenetratingExplosionCells(IntVec3 center, Map map, float radius)

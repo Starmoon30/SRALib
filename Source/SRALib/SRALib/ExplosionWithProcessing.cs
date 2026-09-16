@@ -199,7 +199,15 @@ namespace SRA
         public List<ExplosionNotifyEffect> preNotifyEffects = new List<ExplosionNotifyEffect>();
         public List<ExplosionNotifyEffect> postNotifyEffects = new List<ExplosionNotifyEffect>();
 
+        // 前后置生成物均可独立继承发射者派系，并选择是否允许原版自动居住区。
+        public bool preExplosionSpawnInheritLauncherFaction;
+        public bool preExplosionSpawnMakeHomeArea;
+        public bool postExplosionSpawnInheritLauncherFaction;
+        public bool postExplosionSpawnMakeHomeArea;
+
         private int processingStartTick;
+        // 在爆炸开始时缓存，避免发射者随后被销毁或改变派系时影响生成物归属。
+        private Faction spawnedThingFaction;
         private List<IntVec3> processingCellsToAffect;
         private List<Thing> processingDamagedThings;
         private List<Thing> processingIgnoredThings;
@@ -220,6 +228,11 @@ namespace SRA
         public bool IsIgnoredForProcessing(Thing thing)
         {
             return processingIgnoredThings != null && processingIgnoredThings.Contains(thing);
+        }
+
+        internal void SetSpawnedThingFaction(Faction faction)
+        {
+            spawnedThingFaction = faction;
         }
 
         public override void SpawnSetup(Map map, bool respawningAfterLoad)
@@ -294,7 +307,10 @@ namespace SRA
 
             processingCellsToAffect.Sort((IntVec3 a, IntVec3 b) => GetCellAffectTick(b).CompareTo(GetCellAffectTick(a)));
             NotifyNearbyThingsWithProcessing();
-            TrySpawnSingleThing(preExplosionSpawnSingleThingDef);
+            TrySpawnSingleThing(
+                preExplosionSpawnSingleThingDef,
+                preExplosionSpawnInheritLauncherFaction,
+                preExplosionSpawnMakeHomeArea);
         }
 
         protected override void Tick()
@@ -325,7 +341,10 @@ namespace SRA
 
         protected override void ExplosionEnded()
         {
-            TrySpawnSingleThing(postExplosionSpawnSingleThingDef);
+            TrySpawnSingleThing(
+                postExplosionSpawnSingleThingDef,
+                postExplosionSpawnInheritLauncherFaction,
+                postExplosionSpawnMakeHomeArea);
         }
 
         public override void ExposeData()
@@ -333,6 +352,11 @@ namespace SRA
             base.ExposeData();
             Scribe_Collections.Look(ref preNotifyEffects, "preNotifyEffects", LookMode.Deep);
             Scribe_Collections.Look(ref postNotifyEffects, "postNotifyEffects", LookMode.Deep);
+            Scribe_Values.Look(ref preExplosionSpawnInheritLauncherFaction, "preExplosionSpawnInheritLauncherFaction", false);
+            Scribe_Values.Look(ref preExplosionSpawnMakeHomeArea, "preExplosionSpawnMakeHomeArea", false);
+            Scribe_Values.Look(ref postExplosionSpawnInheritLauncherFaction, "postExplosionSpawnInheritLauncherFaction", false);
+            Scribe_Values.Look(ref postExplosionSpawnMakeHomeArea, "postExplosionSpawnMakeHomeArea", false);
+            Scribe_References.Look(ref spawnedThingFaction, "spawnedThingFaction");
             Scribe_Values.Look(ref processingStartTick, "processingStartTick");
             Scribe_Collections.Look(ref processingCellsToAffect, "processingCellsToAffect", LookMode.Value);
             Scribe_Collections.Look(ref processingDamagedThings, "processingDamagedThings", LookMode.Reference);
@@ -589,7 +613,12 @@ namespace SRA
             bool onlyDamage = ShouldCellBeAffectedOnlyByDamage(cell);
             if (!onlyDamage && Rand.Chance(preExplosionSpawnChance) && cell.Walkable(base.Map))
             {
-                TrySpawnExplosionThing(preExplosionSpawnThingDef, cell, preExplosionSpawnThingCount);
+                TrySpawnExplosionThing(
+                    preExplosionSpawnThingDef,
+                    cell,
+                    preExplosionSpawnThingCount,
+                    preExplosionSpawnInheritLauncherFaction,
+                    preExplosionSpawnMakeHomeArea);
             }
 
             ApplyPreEffectsToCell(cell);
@@ -601,7 +630,12 @@ namespace SRA
                 if (Rand.Chance(postExplosionSpawnChance) && cell.Walkable(base.Map))
                 {
                     ThingDef thingDef = terrain.IsWater ? postExplosionSpawnThingDefWater ?? postExplosionSpawnThingDef : postExplosionSpawnThingDef;
-                    TrySpawnExplosionThing(thingDef, cell, postExplosionSpawnThingCount);
+                    TrySpawnExplosionThing(
+                        thingDef,
+                        cell,
+                        postExplosionSpawnThingCount,
+                        postExplosionSpawnInheritLauncherFaction,
+                        postExplosionSpawnMakeHomeArea);
                 }
 
                 if (postExplosionGasType != null)
@@ -631,7 +665,7 @@ namespace SRA
             }
         }
 
-        private void TrySpawnSingleThing(ThingDef thingDef)
+        private void TrySpawnSingleThing(ThingDef thingDef, bool inheritLauncherFaction, bool makeHomeArea)
         {
             if (thingDef == null)
             {
@@ -654,11 +688,11 @@ namespace SRA
 
             if (!invalidTerrain)
             {
-                TrySpawnExplosionThing(thingDef, base.Position, 1);
+                TrySpawnExplosionThing(thingDef, base.Position, 1, inheritLauncherFaction, makeHomeArea);
             }
         }
 
-        private void TrySpawnExplosionThing(ThingDef thingDef, IntVec3 cell, int count)
+        private void TrySpawnExplosionThing(ThingDef thingDef, IntVec3 cell, int count, bool inheritLauncherFaction, bool makeHomeArea)
         {
             if (thingDef == null)
             {
@@ -667,14 +701,56 @@ namespace SRA
 
             if (thingDef.IsFilth)
             {
-                FilthMaker.TryMakeFilth(cell, base.Map, thingDef, count, FilthSourceFlags.None, true);
+                if (FilthMaker.TryMakeFilth(cell, base.Map, thingDef, out Filth filth, count, FilthSourceFlags.None, true))
+                {
+                    PostProcessSpawnedThing(filth, inheritLauncherFaction);
+                }
                 return;
             }
 
-            if (GenSpawn.TrySpawn(thingDef, cell, base.Map, out Thing thing, WipeMode.Vanish, true))
+            // Building.SpawnSetup 会调用原版 AutoHomeAreaMaker。只有明确允许时，才在该调用前写入派系。
+            bool setFactionBeforeSpawn = makeHomeArea &&
+                                          inheritLauncherFaction &&
+                                          spawnedThingFaction != null &&
+                                          thingDef.CanHaveFaction;
+            Thing thing;
+            if (setFactionBeforeSpawn)
             {
-                thing.stackCount = count;
-                thing.TryGetComp<CompReleaseGas>()?.StartRelease();
+                if (!GenSpawn.CanSpawnAt(thingDef, cell, base.Map, null, true))
+                {
+                    return;
+                }
+
+                thing = ThingMaker.MakeThing(thingDef);
+                thing.SetFaction(spawnedThingFaction);
+                thing = GenSpawn.Spawn(thing, cell, base.Map, WipeMode.Vanish);
+            }
+            else if (!GenSpawn.TrySpawn(thingDef, cell, base.Map, out thing, WipeMode.Vanish, true))
+            {
+                return;
+            }
+
+            if (thing == null || !thing.Spawned)
+            {
+                return;
+            }
+
+            thing.stackCount = count;
+            thing.TryGetComp<CompReleaseGas>()?.StartRelease();
+            // 默认在 SpawnSetup 后才赋予派系，阻止原版自动居住区流程。
+            PostProcessSpawnedThing(thing, inheritLauncherFaction && !setFactionBeforeSpawn);
+        }
+
+        private void PostProcessSpawnedThing(Thing thing, bool inheritLauncherFaction)
+        {
+            if (thing == null || !thing.Spawned)
+            {
+                return;
+            }
+
+            if (inheritLauncherFaction && spawnedThingFaction != null && thing.def.CanHaveFaction)
+            {
+                thing.SetFaction(spawnedThingFaction);
             }
         }
 
@@ -752,6 +828,8 @@ namespace SRA
             ThingDef postExplosionSpawnThingDef = null,
             float postExplosionSpawnChance = 0f,
             int postExplosionSpawnThingCount = 1,
+            bool postExplosionSpawnInheritLauncherFaction = false,
+            bool postExplosionSpawnMakeHomeArea = false,
             GasType? postExplosionGasType = null,
             float? postExplosionGasRadiusOverride = null,
             int postExplosionGasAmount = 255,
@@ -759,6 +837,8 @@ namespace SRA
             ThingDef preExplosionSpawnThingDef = null,
             float preExplosionSpawnChance = 0f,
             int preExplosionSpawnThingCount = 1,
+            bool preExplosionSpawnInheritLauncherFaction = false,
+            bool preExplosionSpawnMakeHomeArea = false,
             float chanceToStartFire = 0f,
             bool damageFalloff = false,
             float? direction = null,
@@ -824,10 +904,14 @@ namespace SRA
             explosion.preExplosionSpawnThingDef = preExplosionSpawnThingDef;
             explosion.preExplosionSpawnChance = preExplosionSpawnChance;
             explosion.preExplosionSpawnThingCount = preExplosionSpawnThingCount;
+            explosion.preExplosionSpawnInheritLauncherFaction = preExplosionSpawnInheritLauncherFaction;
+            explosion.preExplosionSpawnMakeHomeArea = preExplosionSpawnMakeHomeArea;
             explosion.postExplosionSpawnThingDef = postExplosionSpawnThingDef;
             explosion.postExplosionSpawnThingDefWater = postExplosionSpawnThingDefWater;
             explosion.postExplosionSpawnChance = postExplosionSpawnChance;
             explosion.postExplosionSpawnThingCount = postExplosionSpawnThingCount;
+            explosion.postExplosionSpawnInheritLauncherFaction = postExplosionSpawnInheritLauncherFaction;
+            explosion.postExplosionSpawnMakeHomeArea = postExplosionSpawnMakeHomeArea;
             explosion.postExplosionGasType = postExplosionGasType;
             explosion.postExplosionGasRadiusOverride = postExplosionGasRadiusOverride;
             explosion.postExplosionGasAmount = postExplosionGasAmount;
@@ -846,6 +930,7 @@ namespace SRA
             explosion.overrideCells = overrideCells;
             explosion.postExplosionSpawnSingleThingDef = postExplosionSpawnSingleThingDef;
             explosion.preExplosionSpawnSingleThingDef = preExplosionSpawnSingleThingDef;
+            explosion.SetSpawnedThingFaction(instigator?.Faction);
             explosion.preNotifyEffects = preNotifyEffects ?? new List<ExplosionNotifyEffect>();
             explosion.postNotifyEffects = postNotifyEffects ?? new List<ExplosionNotifyEffect>();
             explosion.StartExplosion(explosionSound, ignoredThings);

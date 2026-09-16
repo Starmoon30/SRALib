@@ -12,8 +12,21 @@ namespace SRA
 {
     public class ModExt_HasSpeedTurret : DefModExtension
     {
+        /// <summary>
+        /// 炮塔每 tick 最大转动角度，单位为度。
+        /// </summary>
         public float speed = 1f;
+
+        /// <summary>
+        /// 是否完全禁止炮塔自动索敌；不影响玩家强制指定目标。
+        /// </summary>
         public bool noautoattack = false;
+
+        /// <summary>
+        /// 是否允许自动攻击已被原版判定为敌对的本方越狱囚犯、叛乱奴隶和逃逸异常实体。
+        /// 仅在这些单位实际进入对应逃逸/叛乱状态时生效，普通囚犯、奴隶和被收容实体仍不会成为目标。
+        /// </summary>
+        public bool autoTargetEscapingCaptives = false;
     }
 
     public class TauntAttackTargetExtension : DefModExtension
@@ -71,6 +84,38 @@ namespace SRA
         private Material barrelMaterial;
 
         private Material muzzleFlashMaterial;
+
+        // 同轴副武器的定义和运行时状态。副武器不使用主炮的 CompChangeableProjectile，
+        // 独立弹仓直接保存到炮塔本体，以便随建筑正常存档和跨地图移动。
+        private ModExtension_CoaxialWeapon coaxialWeaponExt;
+
+        private int coaxialCooldownTicksLeft;
+
+        private int coaxialBurstShotsLeft;
+
+        private int coaxialTicksToNextBurstShot;
+
+        private LocalTargetInfo coaxialBurstTarget = LocalTargetInfo.Invalid;
+
+        private int coaxialAmmoCount;
+
+        private bool coaxialAmmoInitialized;
+
+        // 同轴副武器独立于主炮的停火状态。开启后只中止副武器 burst，
+        // 不会重置主炮的强制目标、warmup 或冷却。
+        private bool coaxialHoldFire;
+
+        private int coaxialNextBarrelIndex;
+
+        private List<float> coaxialBarrelRecoilStates;
+
+        private List<int> coaxialBarrelRecoilTimers;
+
+        private List<int> coaxialMuzzleFlashTimers;
+
+        private Material coaxialBarrelMaterial;
+
+        private Material coaxialMuzzleFlashMaterial;
 
         private const int TryStartShootSomethingIntervalTicks = 15;
 
@@ -146,6 +191,11 @@ namespace SRA
 
         private bool CanToggleHoldFire => PlayerControlled;
 
+        /// <summary>
+        /// 仅玩家可控制且实际配置副武器的炮塔显示独立的副武器停火按钮。
+        /// </summary>
+        private bool CanToggleCoaxialHoldFire => CanToggleHoldFire && coaxialWeaponExt?.projectile != null;
+
         private bool IsMortar => def.building.IsMortar;
 
         private bool CanAcquireTargetsThroughBlockedLOS
@@ -169,6 +219,74 @@ namespace SRA
         public float rotateSpeed => speedTurretExt?.speed ?? 1f;
 
         public bool noautoattack => speedTurretExt?.noautoattack ?? false;
+
+        /// <summary>
+        /// 是否允许自动攻击越狱囚犯、叛乱奴隶和逃逸异常实体。
+        /// </summary>
+        private bool AutoTargetEscapingCaptives => speedTurretExt?.autoTargetEscapingCaptives ?? false;
+
+        /// <summary>
+        /// 当前炮塔是否配置了需要物品装填的独立同轴弹仓。
+        /// 该属性供地图缓存和 WorkGiver 使用，不读取主炮 CompChangeableProjectile。
+        /// </summary>
+        public bool UsesIndependentCoaxialAmmo => coaxialWeaponExt?.ammoThingDef != null;
+
+        /// <summary>
+        /// 独立同轴弹仓是否达到自动补给阈值。与原版 CompRefuelable 一致，
+        /// 阈值只决定是否派发工作；实际装填会尽量补满弹仓。
+        /// </summary>
+        public bool NeedsCoaxialAmmoReload => UsesIndependentCoaxialAmmo
+            && CoaxialMaxAmmo > 0
+            && coaxialAmmoCount < CoaxialMaxAmmo
+            && CoaxialAmmoPercent <= CoaxialAutoReloadPercent;
+
+        /// <summary>
+        /// 独立同轴弹仓当前储存的可射击次数。
+        /// 供原版样式的库存条 Gizmo 读取，始终限制在当前定义的容量范围内。
+        /// </summary>
+        public int CoaxialAmmoCount => Mathf.Clamp(coaxialAmmoCount, 0, CoaxialMaxAmmo);
+
+        /// <summary>
+        /// 独立同轴弹仓的最大可射击次数。
+        /// </summary>
+        public int CoaxialAmmoCapacity => CoaxialMaxAmmo;
+
+        /// <summary>
+        /// 独立同轴弹仓当前库存比例。容量为零时返回零，避免配置不完整时除以零。
+        /// </summary>
+        private float CoaxialAmmoPercent => CoaxialMaxAmmo > 0 ? (float)CoaxialAmmoCount / CoaxialMaxAmmo : 0f;
+
+        /// <summary>
+        /// 独立同轴弹仓消耗的物品定义。
+        /// </summary>
+        public ThingDef CoaxialAmmoThingDef => coaxialWeaponExt?.ammoThingDef;
+
+        /// <summary>
+        /// 使 WorkGiver 可按弹仓空余量决定一次需要搬运多少个弹药物品。
+        /// </summary>
+        public int CoaxialAmmoItemsNeeded
+        {
+            get
+            {
+                if (!NeedsCoaxialAmmoReload)
+                {
+                    return 0;
+                }
+
+                return Mathf.CeilToInt((float)(CoaxialMaxAmmo - coaxialAmmoCount) / CoaxialShotsPerAmmoItem);
+            }
+        }
+
+        /// <summary>
+        /// 供装填 JobDriver 使用的工作时长，始终至少等待一个 tick。
+        /// </summary>
+        public int CoaxialReloadTicks => Mathf.Max(1, coaxialWeaponExt?.reloadTicks ?? 1);
+
+        private int CoaxialMaxAmmo => Mathf.Max(0, coaxialWeaponExt?.maxAmmo ?? 0);
+
+        private int CoaxialShotsPerAmmoItem => Mathf.Max(1, coaxialWeaponExt?.shotsPerAmmoItem ?? 1);
+
+        private float CoaxialAutoReloadPercent => Mathf.Clamp01(coaxialWeaponExt?.autoReloadPercent ?? 0.3f);
 
         public Vector3 turretOrientation => Vector3.forward.RotatedBy(curAngle);
 
@@ -247,7 +365,22 @@ namespace SRA
             refuelableComp = GetComp<CompRefuelable>();
             powerCellComp = GetComp<CompMechPowerCell>();
             hackableComp = GetComp<CompHackable>();
+
+            // DeSpawn 会重置内置枪械的全部 Verb。重力飞船飞行复用同一炮塔实例，
+            // 不会经过 ExposeData 的读档重绑流程，因此每次生成时都要恢复施法者与完成回调。
+            // 否则炮塔飞行一次后将不再调用 BurstComplete，导致外层冷却永远不会重新开始。
+            if (gun == null)
+            {
+                MakeGun();
+            }
+            else
+            {
+                UpdateGunVerbs();
+            }
+
             RecacheShootWithOffsetAnimationData();
+            RecacheCoaxialWeaponData();
+            map.GetComponent<MapComponent_CoaxialWeaponTurrets>().Register(this);
             if (!respawningAfterLoad)
             {
                 top.SetRotationFromOrientation();
@@ -257,6 +390,7 @@ namespace SRA
 
         public override void DeSpawn(DestroyMode mode = DestroyMode.Vanish)
         {
+            Map?.GetComponent<MapComponent_CoaxialWeaponTurrets>()?.Deregister(this);
             ResetGunVerbs();
             base.DeSpawn(mode);
             ResetCurrentTarget();
@@ -276,6 +410,17 @@ namespace SRA
             Scribe_Collections.Look(ref barrelRecoilStates, "barrelRecoilStates", LookMode.Value);
             Scribe_Collections.Look(ref barrelRecoilTimers, "barrelRecoilTimers", LookMode.Value);
             Scribe_Collections.Look(ref muzzleFlashTimers, "muzzleFlashTimers", LookMode.Value);
+            Scribe_Values.Look(ref coaxialCooldownTicksLeft, "coaxialCooldownTicksLeft", 0);
+            Scribe_Values.Look(ref coaxialBurstShotsLeft, "coaxialBurstShotsLeft", 0);
+            Scribe_Values.Look(ref coaxialTicksToNextBurstShot, "coaxialTicksToNextBurstShot", 0);
+            Scribe_TargetInfo.Look(ref coaxialBurstTarget, "coaxialBurstTarget");
+            Scribe_Values.Look(ref coaxialAmmoCount, "coaxialAmmoCount", 0);
+            Scribe_Values.Look(ref coaxialAmmoInitialized, "coaxialAmmoInitialized", false);
+            Scribe_Values.Look(ref coaxialHoldFire, "coaxialHoldFire", false);
+            Scribe_Values.Look(ref coaxialNextBarrelIndex, "coaxialNextBarrelIndex", 0);
+            Scribe_Collections.Look(ref coaxialBarrelRecoilStates, "coaxialBarrelRecoilStates", LookMode.Value);
+            Scribe_Collections.Look(ref coaxialBarrelRecoilTimers, "coaxialBarrelRecoilTimers", LookMode.Value);
+            Scribe_Collections.Look(ref coaxialMuzzleFlashTimers, "coaxialMuzzleFlashTimers", LookMode.Value);
             Scribe_Deep.Look(ref gun, "gun");
             BackCompatibility.PostExposeData(this);
             if (Scribe.mode == LoadSaveMode.PostLoadInit)
@@ -290,6 +435,7 @@ namespace SRA
                     UpdateGunVerbs();
                 }
                 RecacheShootWithOffsetAnimationData();
+                RecacheCoaxialWeaponData();
             }
         }
 
@@ -376,6 +522,7 @@ namespace SRA
             base.Tick();
             curAngle = TrimAngle(curAngle);
             UpdateShootWithOffsetAnimations();
+            UpdateCoaxialWeaponAnimations();
             if (CanExtractShell && MannedByColonist)
             {
                 CompChangeableProjectile compChangeableProjectile = gun.TryGetComp<CompChangeableProjectile>();
@@ -393,6 +540,7 @@ namespace SRA
             if (!CanToggleHoldFire)
             {
                 holdFire = false;
+                coaxialHoldFire = false;
             }
 
             if (forcedTarget.ThingDestroyed)
@@ -404,6 +552,7 @@ namespace SRA
             {
                 if (remoteArtilleryActive)
                 {
+                    CancelCoaxialBurst();
                     GunCompEq.verbTracker.VerbsTick();
                     if (burstCooldownTicksLeft > 0)
                     {
@@ -423,6 +572,10 @@ namespace SRA
                     GunCompEq.verbTracker.VerbsTick();
                     sustainedShootActive = TickGunSustainedShootComp(compSustainedShoot, out sustainedShootStarted);
                 }
+
+                // 副武器拥有独立冷却和独立弹药，但严格使用主炮当前锁定的目标与转向。
+                // 因此即使主炮正在 burst 或转火，副武器也能按自己的射速持续射击。
+                TickCoaxialWeapon();
 
                 if (AttackVerb.state == VerbState.Bursting || sustainedShootActive || sustainedShootStarted)
                 {
@@ -467,6 +620,7 @@ namespace SRA
             }
             else
             {
+                CancelCoaxialBurst();
                 ResetCurrentTarget();
             }
         }
@@ -485,7 +639,9 @@ namespace SRA
                 progressBarEffecter = null;
             }
 
-            if (!base.Spawned || (holdFire && CanToggleHoldFire) || !AttackVerb.Available())
+            // 主炮弹尽时，已装填的独立副武器仍应能借用主炮的索敌规则取得目标。
+            // 这不会让副武器拥有第二套索敌逻辑，只是避免主炮不可用时过早返回。
+            if (!base.Spawned || (holdFire && CanToggleHoldFire) || (!AttackVerb.Available() && !CanAcquireTargetForCoaxialWeapon()))
             {
                 ResetCurrentTarget();
                 return;
@@ -582,7 +738,8 @@ namespace SRA
         {
             if (t is Pawn pawn)
             {
-                if (base.Faction == Faction.OfPlayer && pawn.IsPrisoner)
+                bool isEscapingCaptive = IsEscapingCaptiveOrRebel(pawn);
+                if (base.Faction == Faction.OfPlayer && pawn.IsPrisoner && !isEscapingCaptive)
                 {
                     return false;
                 }
@@ -598,7 +755,9 @@ namespace SRA
 
                 if (mannableComp == null)
                 {
-                    return !GenAI.MachinesLike(base.Faction, pawn);
+                    // 原版 GenAI.MachinesLike 会将本方奴隶视为友方。叛乱时它们已由原版
+                    // GenHostility 标记为敌对，开启扩展后应允许无人炮塔正常选择该目标。
+                    return isEscapingCaptive || !GenAI.MachinesLike(base.Faction, pawn);
                 }
 
                 if (pawn.RaceProps.Animal && pawn.Faction == Faction.OfPlayer)
@@ -608,6 +767,32 @@ namespace SRA
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// 只识别原版已经进入敌对状态的被收容单位。实际敌对性、射程、视线、威胁状态
+        /// 与可自动瞄准性仍由 AttackTargetFinderAngle 的标准筛选处理。
+        /// </summary>
+        private bool IsEscapingCaptiveOrRebel(Pawn pawn)
+        {
+            if (!AutoTargetEscapingCaptives || base.Faction != Faction.OfPlayer || pawn == null)
+            {
+                return false;
+            }
+
+            if (PrisonBreakUtility.IsPrisonBreaking(pawn) || SlaveRebellionUtility.IsRebelling(pawn))
+            {
+                return true;
+            }
+
+            // 收容实体逃逸时会由 CompHoldingPlatformTarget 标记。仅在 Anomaly 启用时访问，
+            // 避免未启用 DLC 的游戏为普通 Pawn 进行额外组件查找。
+            if (ModsConfig.AnomalyActive && pawn.RaceProps.IsAnomalyEntity)
+            {
+                return pawn.TryGetComp<CompHoldingPlatformTarget>()?.isEscaping ?? false;
+            }
+
+            return false;
         }
 
         protected virtual void BeginBurst()
@@ -672,6 +857,71 @@ namespace SRA
             EnsureListSize(ref barrelRecoilStates, count, 0f);
             EnsureListSize(ref barrelRecoilTimers, count, 0);
             EnsureListSize(ref muzzleFlashTimers, count, 0);
+        }
+
+        /// <summary>
+        /// 读取挂在 turretGunDef 上的同轴武器扩展并恢复其绘制缓存。
+        /// 建筑 Def 上的同名扩展仅作为旧式炮塔定义的兜底，优先级低于内置武器 Def。
+        /// </summary>
+        private void RecacheCoaxialWeaponData()
+        {
+            coaxialWeaponExt = gun?.def.GetModExtension<ModExtension_CoaxialWeapon>() ?? def.GetModExtension<ModExtension_CoaxialWeapon>();
+            coaxialBarrelMaterial = null;
+            coaxialMuzzleFlashMaterial = null;
+
+            if (!coaxialAmmoInitialized && coaxialWeaponExt != null)
+            {
+                // 原版 CompRefuelable 同样仅在实例创建时按 initialFuelPercent 写入库存。
+                // 弹仓以整数射击次数保存，因此在乘以容量后四舍五入到最近的可射击次数。
+                coaxialAmmoCount = Mathf.Clamp(Mathf.RoundToInt(CoaxialMaxAmmo * Mathf.Clamp01(coaxialWeaponExt.initialAmmoPercent)), 0, CoaxialMaxAmmo);
+                coaxialAmmoInitialized = true;
+            }
+            else if (coaxialWeaponExt != null)
+            {
+                // XML 更新后的弹仓上限可能缩小；读档时将旧库存安全夹紧。
+                coaxialAmmoCount = Mathf.Clamp(coaxialAmmoCount, 0, CoaxialMaxAmmo);
+            }
+
+            EnsureCoaxialAnimationListSizes();
+            ModExtension_ShootWithOffset visuals = coaxialWeaponExt?.visuals;
+            if (visuals == null)
+            {
+                return;
+            }
+
+            if (!visuals.barrelTexturePath.NullOrEmpty())
+            {
+                ModExtension_CoaxialWeapon ext = coaxialWeaponExt;
+                LongEventHandler.ExecuteWhenFinished(delegate
+                {
+                    if (coaxialWeaponExt == ext)
+                    {
+                        Shader shader = ext.visuals.barrelUseGlowShader ? ShaderDatabase.MoteGlow : ShaderDatabase.DefaultShader;
+                        coaxialBarrelMaterial = MaterialPool.MatFrom(ext.visuals.barrelTexturePath, shader, ext.visuals.barrelColor);
+                    }
+                });
+            }
+
+            if (!visuals.muzzleFlashTexturePath.NullOrEmpty())
+            {
+                ModExtension_CoaxialWeapon ext = coaxialWeaponExt;
+                LongEventHandler.ExecuteWhenFinished(delegate
+                {
+                    if (coaxialWeaponExt == ext)
+                    {
+                        Shader shader = ext.visuals.muzzleFlashUseGlowShader ? ShaderDatabase.MoteGlow : ShaderDatabase.DefaultShader;
+                        coaxialMuzzleFlashMaterial = MaterialPool.MatFrom(ext.visuals.muzzleFlashTexturePath, shader, ext.visuals.muzzleFlashColor);
+                    }
+                });
+            }
+        }
+
+        private void EnsureCoaxialAnimationListSizes()
+        {
+            int count = coaxialWeaponExt?.visuals?.SlotCount ?? 1;
+            EnsureListSize(ref coaxialBarrelRecoilStates, count, 0f);
+            EnsureListSize(ref coaxialBarrelRecoilTimers, count, 0);
+            EnsureListSize(ref coaxialMuzzleFlashTimers, count, 0);
         }
 
         private static void EnsureListSize<T>(ref List<T> list, int count, T value)
@@ -976,6 +1226,100 @@ namespace SRA
             }
         }
 
+        /// <summary>
+        /// 使用与主炮 offset 完全相同的坐标约定绘制同轴副炮。
+        /// visuals.offsets 的每一项同时决定副炮射弹出口、炮管中心和炮口火焰基准点，
+        /// 因而多根同轴炮管的开火动画不会与实际射击出口脱节。
+        /// </summary>
+        private void DrawCoaxialWeaponAnimations(Vector3 drawLoc, Vector3 turretRecoilDrawOffset, float turretRecoilAngleOffset, bool drawBelowTurretTop)
+        {
+            ModExtension_ShootWithOffset visuals = coaxialWeaponExt?.visuals;
+            if (visuals == null || (!visuals.HasBarrelRecoil && !visuals.HasMuzzleFlash))
+            {
+                return;
+            }
+
+            if (!visuals.HasBarrelRecoil && !AnyCoaxialMuzzleFlashActive())
+            {
+                return;
+            }
+
+            EnsureCoaxialAnimationListSizes();
+            Vector3 origin = SRA_ShootWithOffsetUtility.TurretTopCenter(this, drawLoc, turretRecoilDrawOffset, turretRecoilAngleOffset);
+            origin.y = TurretPartAltitudeFor(drawLoc.y + Altitudes.AltInc, 0f);
+            float aimAngle = ShootWithOffsetDrawAngle();
+            Quaternion graphicRotation = SRA_ShootWithOffsetUtility.TurretGraphicRotation(aimAngle);
+            Quaternion inverseGraphicRotation = Quaternion.Inverse(graphicRotation);
+
+            for (int i = 0; i < visuals.SlotCount; i++)
+            {
+                Vector2 offset = visuals.GetOffsetFor(i);
+                float recoil = coaxialBarrelRecoilStates != null && i < coaxialBarrelRecoilStates.Count
+                    ? coaxialBarrelRecoilStates[i] * visuals.recoilAmount
+                    : 0f;
+                Vector2 barrelCenterOffset = new Vector2(offset.x, offset.y - recoil);
+                Vector2 flashOffset = offset + visuals.MuzzleFlashLocalOffset;
+                Vector3 barrelCenter = SRA_ShootWithOffsetUtility.LocalOffsetToWorld(origin, aimAngle, barrelCenterOffset);
+                Vector3 flashCenter = SRA_ShootWithOffsetUtility.LocalOffsetToWorld(origin, aimAngle, flashOffset);
+
+                DrawCoaxialBarrel(origin, barrelCenter, graphicRotation, inverseGraphicRotation, visuals, drawBelowTurretTop);
+                DrawCoaxialMuzzleFlash(i, origin, flashCenter, graphicRotation, inverseGraphicRotation, visuals, drawBelowTurretTop);
+            }
+        }
+
+        private bool AnyCoaxialMuzzleFlashActive()
+        {
+            if (coaxialMuzzleFlashTimers == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < coaxialMuzzleFlashTimers.Count; i++)
+            {
+                if (coaxialMuzzleFlashTimers[i] > 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private void DrawCoaxialBarrel(Vector3 sortOrigin, Vector3 barrelCenter, Quaternion graphicRotation, Quaternion inverseGraphicRotation, ModExtension_ShootWithOffset visuals, bool drawBelowTurretTop)
+        {
+            if (coaxialBarrelMaterial == null || !visuals.HasBarrelRecoil || PartDrawsBelowTurretTop(visuals.barrelAltitudeOffset) != drawBelowTurretTop)
+            {
+                return;
+            }
+
+            float turretTopAltitude = sortOrigin.y;
+            float visualAltitude = TurretPartAltitudeFor(turretTopAltitude, visuals.barrelAltitudeOffset);
+            sortOrigin.y = SortAltitudeForPart(turretTopAltitude, visualAltitude);
+            barrelCenter.y = visualAltitude;
+            Vector3 localVisualCenter = inverseGraphicRotation * (barrelCenter - sortOrigin);
+            Mesh mesh = SRA_FrameMeshPool.GetAnchoredMesh(localVisualCenter, visuals.barrelTextureSize);
+            Graphics.DrawMesh(mesh, Matrix4x4.TRS(sortOrigin, graphicRotation, Vector3.one), coaxialBarrelMaterial, 0);
+        }
+
+        private void DrawCoaxialMuzzleFlash(int index, Vector3 sortOrigin, Vector3 flashCenter, Quaternion graphicRotation, Quaternion inverseGraphicRotation, ModExtension_ShootWithOffset visuals, bool drawBelowTurretTop)
+        {
+            if (coaxialMuzzleFlashMaterial == null || !visuals.HasMuzzleFlash || coaxialMuzzleFlashTimers == null || index >= coaxialMuzzleFlashTimers.Count || coaxialMuzzleFlashTimers[index] <= 0 || PartDrawsBelowTurretTop(visuals.muzzleFlashAltitudeOffset) != drawBelowTurretTop)
+            {
+                return;
+            }
+
+            int totalTicks = visuals.MuzzleFlashDurationTicks;
+            int elapsedTicks = Mathf.Clamp(totalTicks - coaxialMuzzleFlashTimers[index], 0, totalTicks - 1);
+            int frame = Mathf.Clamp(elapsedTicks / Mathf.Max(1, visuals.muzzleFlashTicksPerFrame), 0, Mathf.Max(1, visuals.muzzleFlashFrameCount) - 1);
+            float turretTopAltitude = sortOrigin.y;
+            float visualAltitude = TurretPartAltitudeFor(turretTopAltitude, visuals.muzzleFlashAltitudeOffset);
+            sortOrigin.y = SortAltitudeForPart(turretTopAltitude, visualAltitude);
+            flashCenter.y = visualAltitude;
+            Vector3 localVisualCenter = inverseGraphicRotation * (flashCenter - sortOrigin);
+            Mesh mesh = SRA_FrameMeshPool.GetAnchoredFrameMesh(localVisualCenter, visuals.muzzleFlashDrawSize, frame, visuals.muzzleFlashFrameCount, visuals.muzzleFlashFrameColumns);
+            Graphics.DrawMesh(mesh, Matrix4x4.TRS(sortOrigin, graphicRotation, Vector3.one), coaxialMuzzleFlashMaterial, 0);
+        }
+
         private float ShootWithOffsetDrawAngle()
         {
             float? aimAngleOverride = AttackVerb?.AimAngleOverride;
@@ -1107,6 +1451,25 @@ namespace SRA
                 }
             }
 
+            if (UsesIndependentCoaxialAmmo)
+            {
+                // 与原版 CompChangeableProjectile 的炮塔检查信息保持一致：
+                // ShellLoaded 的第二个参数必须是可解析 label 的弹药 Def；
+                // 射击次数由原版样式库存条单独显示，不能作为该参数传入。
+                if (coaxialAmmoCount > 0)
+                {
+                    stringBuilder.AppendLine("ShellLoaded".Translate(coaxialWeaponExt.ammoThingDef.LabelCap, coaxialWeaponExt.ammoThingDef));
+                }
+                else
+                {
+                    stringBuilder.AppendLine("ShellNotLoaded".Translate());
+                }
+            }
+            else if (coaxialWeaponExt?.projectile != null)
+            {
+                stringBuilder.AppendLine("SRA_CoaxialWeapon_InfiniteAmmo".Translate());
+            }
+
             return stringBuilder.ToString().TrimEndNewlines();
         }
 
@@ -1121,8 +1484,10 @@ namespace SRA
             }
 
             DrawShootWithOffsetAnimations(drawLoc, drawOffset, angleOffset, drawBelowTurretTop: true);
+            DrawCoaxialWeaponAnimations(drawLoc, drawOffset, angleOffset, drawBelowTurretTop: true);
             top.DrawTurret(drawLoc, drawOffset, angleOffset);
             DrawShootWithOffsetAnimations(drawLoc, drawOffset, angleOffset, drawBelowTurretTop: false);
+            DrawCoaxialWeaponAnimations(drawLoc, drawOffset, angleOffset, drawBelowTurretTop: false);
             base.DrawAt(drawLoc, flip);
         }
 
@@ -1154,6 +1519,69 @@ namespace SRA
             foreach (Gizmo gizmo in base.GetGizmos())
             {
                 yield return gizmo;
+            }
+
+            // 炮塔内置 gun 不是地图可选实体，无法走 Pawn 装备栏的 Gizmo 路径，
+            // 因此这里主动转发弹种选择按钮。
+            if (AttackVerb is Verb_ShootWithOffset shootVerb)
+            {
+                foreach (Gizmo gizmo in shootVerb.GetMultiProjectileGizmos())
+                {
+                    yield return gizmo;
+                }
+            }
+
+            // 与原版 CompRefuelable 相同，单选玩家建筑时显示只读库存条。
+            // 独立副炮弹仓没有可配置的目标库存，因此不允许拖动。
+            if (UsesIndependentCoaxialAmmo && base.Faction == Faction.OfPlayer && Find.Selector.SelectedObjects.Count == 1)
+            {
+                yield return new Gizmo_CoaxialAmmoLevel(this);
+            }
+
+            if (DebugSettings.ShowDevGizmos && UsesIndependentCoaxialAmmo)
+            {
+                // 开发者按钮不指定 icon，直接使用原版 Gizmo 的默认空图标表现，
+                // 不需要为调试操作额外注册任何贴图资源。
+                yield return new Command_Action
+                {
+                    defaultLabel = "SRA_CoaxialWeapon_DevFill".Translate(coaxialWeaponExt.ammoThingDef.LabelCap),
+                    defaultDesc = "SRA_CoaxialWeapon_DevFillDesc".Translate(),
+                    action = delegate
+                    {
+                        SetCoaxialAmmoCount(CoaxialMaxAmmo);
+                    }
+                };
+
+                yield return new Command_Action
+                {
+                    defaultLabel = "SRA_CoaxialWeapon_DevEmpty".Translate(coaxialWeaponExt.ammoThingDef.LabelCap),
+                    defaultDesc = "SRA_CoaxialWeapon_DevEmptyDesc".Translate(),
+                    action = delegate
+                    {
+                        SetCoaxialAmmoCount(0);
+                    }
+                };
+            }
+
+            if (CanToggleCoaxialHoldFire)
+            {
+                // 复用原版停火按钮的图标与开关表现，但状态只属于同轴副武器。
+                // 不设置热键，避免与主炮的 Misc6 停火快捷键冲突。
+                yield return new Command_Toggle
+                {
+                    defaultLabel = "SRA_CoaxialWeapon_HoldFire".Translate(),
+                    defaultDesc = "SRA_CoaxialWeapon_HoldFireDesc".Translate(),
+                    icon = ContentFinder<Texture2D>.Get("UI/Commands/HoldFire"),
+                    toggleAction = delegate
+                    {
+                        coaxialHoldFire = !coaxialHoldFire;
+                        if (coaxialHoldFire)
+                        {
+                            CancelCoaxialBurst();
+                        }
+                    },
+                    isActive = () => coaxialHoldFire
+                };
             }
 
             if (CanExtractShell)
@@ -1303,11 +1731,363 @@ namespace SRA
             }
         }
 
+        /// <summary>
+        /// 副武器装填 WorkGiver 的入口。该方法只在 Pawn 寻找搬运工作、并已从缓存中选中
+        /// 此炮塔时调用。取弹流程对齐原版 RefuelWorkGiverUtility.FindBestFuel：
+        /// 以 Pawn 为起点，在配置半径内寻找最近的可达弹药。
+        /// </summary>
+        public bool TryFindCoaxialReloadAmmo(Pawn pawn, bool forced, out Thing ammo)
+        {
+            ammo = null;
+            if (!NeedsCoaxialAmmoReload || pawn == null || pawn.Map != Map || pawn.Faction != Faction)
+            {
+                return false;
+            }
+
+            // 原版在选工阶段只预检能否预留目标建筑；到达性由 JobDriver 的 Goto Toil
+            // 处理。这样不会因 Pawn 当前的普通危险度限制而遗漏可装填的弹药。
+            if (!pawn.CanReserve(this, 1, -1, null, forced))
+            {
+                return false;
+            }
+
+            ThingDef ammoDef = coaxialWeaponExt.ammoThingDef;
+            ammo = GenClosest.ClosestThingReachable(
+                pawn.Position,
+                pawn.Map,
+                ThingRequest.ForDef(ammoDef),
+                PathEndMode.ClosestTouch,
+                TraverseParms.For(pawn, Danger.Deadly),
+                Mathf.Max(0f, coaxialWeaponExt.reloadSearchRadius),
+                delegate(Thing candidate)
+                {
+                    return candidate.stackCount > 0
+                        && !candidate.IsForbidden(pawn)
+                        && !candidate.IsBurning()
+                        && pawn.CanReserveAndReach(candidate, PathEndMode.ClosestTouch, Danger.Deadly, 1, -1, null, forced);
+                });
+            return ammo != null;
+        }
+
+        /// <summary>
+        /// 把 Pawn 手持的独立副武器弹药转换为射击次数。若弹仓只剩部分空间，
+        /// 仅消耗需要的物品数量，剩余物品继续留在 Pawn 的搬运容器内。
+        /// </summary>
+        public int LoadCoaxialAmmo(Thing ammo)
+        {
+            if (!NeedsCoaxialAmmoReload || ammo == null || ammo.def != coaxialWeaponExt.ammoThingDef)
+            {
+                return 0;
+            }
+
+            int itemCount = Mathf.Min(ammo.stackCount, CoaxialAmmoItemsNeeded);
+            if (itemCount <= 0)
+            {
+                return 0;
+            }
+
+            int loadedShots = Mathf.Min(CoaxialAmmoSpace(), itemCount * CoaxialShotsPerAmmoItem);
+            int itemsConsumed = Mathf.CeilToInt((float)loadedShots / CoaxialShotsPerAmmoItem);
+            if (itemsConsumed <= 0)
+            {
+                return 0;
+            }
+
+            coaxialAmmoCount = Mathf.Min(CoaxialAmmoSpace() + coaxialAmmoCount, coaxialAmmoCount + itemsConsumed * CoaxialShotsPerAmmoItem);
+            if (itemsConsumed >= ammo.stackCount)
+            {
+                ammo.Destroy(DestroyMode.Vanish);
+            }
+            else
+            {
+                ammo.stackCount -= itemsConsumed;
+            }
+
+            BroadcastCompSignal("Refueled");
+            return itemsConsumed;
+        }
+
+        /// <summary>
+        /// 原版 CompRefuelable 的开发者操作同样直接写入库存值并广播 Refueled 信号。
+        /// 该方法只操作副武器自己的库存，绝不会影响主炮 CompChangeableProjectile。
+        /// </summary>
+        private void SetCoaxialAmmoCount(int value)
+        {
+            coaxialAmmoCount = Mathf.Clamp(value, 0, CoaxialMaxAmmo);
+            if (coaxialAmmoCount <= 0)
+            {
+                CancelCoaxialBurst();
+            }
+
+            BroadcastCompSignal("Refueled");
+        }
+
+        private int CoaxialAmmoSpace()
+        {
+            return Mathf.Max(0, CoaxialMaxAmmo - coaxialAmmoCount);
+        }
+
+        private void UpdateCoaxialWeaponAnimations()
+        {
+            if (coaxialCooldownTicksLeft > 0)
+            {
+                coaxialCooldownTicksLeft--;
+            }
+
+            if (coaxialTicksToNextBurstShot > 0)
+            {
+                coaxialTicksToNextBurstShot--;
+            }
+
+            ModExtension_ShootWithOffset visuals = coaxialWeaponExt?.visuals;
+            if (visuals == null)
+            {
+                return;
+            }
+
+            EnsureCoaxialAnimationListSizes();
+            UpdateCoaxialBarrelRecoil(visuals);
+            if (coaxialMuzzleFlashTimers != null)
+            {
+                for (int i = 0; i < coaxialMuzzleFlashTimers.Count; i++)
+                {
+                    if (coaxialMuzzleFlashTimers[i] > 0)
+                    {
+                        coaxialMuzzleFlashTimers[i]--;
+                    }
+                }
+            }
+        }
+
+        private void UpdateCoaxialBarrelRecoil(ModExtension_ShootWithOffset visuals)
+        {
+            if (!visuals.HasBarrelRecoil || coaxialBarrelRecoilTimers == null || coaxialBarrelRecoilStates == null)
+            {
+                return;
+            }
+
+            int duration = Mathf.Max(1, visuals.recoilDurationTicks);
+            int kickTicks = Mathf.Clamp(visuals.recoilKickTicks, 1, duration);
+            int returnTicks = Mathf.Max(1, duration - kickTicks);
+            for (int i = 0; i < coaxialBarrelRecoilTimers.Count; i++)
+            {
+                if (coaxialBarrelRecoilTimers[i] <= 0)
+                {
+                    coaxialBarrelRecoilStates[i] = 0f;
+                    continue;
+                }
+
+                int elapsed = duration - coaxialBarrelRecoilTimers[i];
+                if (elapsed < kickTicks)
+                {
+                    float progress = Mathf.Clamp01((float)(elapsed + 1) / kickTicks);
+                    coaxialBarrelRecoilStates[i] = progress * progress;
+                }
+                else
+                {
+                    float progress = Mathf.Clamp01((float)(elapsed - kickTicks + 1) / returnTicks);
+                    coaxialBarrelRecoilStates[i] = 1f - progress * progress;
+                }
+
+                coaxialBarrelRecoilTimers[i]--;
+            }
+        }
+
+        private void TickCoaxialWeapon()
+        {
+            if (coaxialHoldFire)
+            {
+                // 立即结束同轴 burst，避免停火后仍在下个 burst 间隔发射一枚。
+                CancelCoaxialBurst();
+                return;
+            }
+
+            if (coaxialBurstShotsLeft <= 0)
+            {
+                if (!CanFireCoaxialWeapon(currentTargetInt, requireReadyCooldown: true))
+                {
+                    return;
+                }
+
+                coaxialBurstShotsLeft = Mathf.Max(1, coaxialWeaponExt.burstShotCount);
+                coaxialBurstTarget = currentTargetInt;
+            }
+
+            if (coaxialTicksToNextBurstShot > 0)
+            {
+                return;
+            }
+
+            if (!CanFireCoaxialWeapon(coaxialBurstTarget, requireReadyCooldown: false))
+            {
+                CancelCoaxialBurst();
+                return;
+            }
+
+            FireCoaxialBurstShot(coaxialBurstTarget);
+            coaxialBurstShotsLeft--;
+            if (coaxialBurstShotsLeft <= 0)
+            {
+                FinishCoaxialBurst();
+            }
+            else
+            {
+                coaxialTicksToNextBurstShot = Mathf.Max(0, coaxialWeaponExt.ticksBetweenBurstShots);
+            }
+        }
+
+        /// <summary>
+        /// 发射当前 burst 的单发。轮内目标由 coaxialBurstTarget 固定，
+        /// 不会因主炮下一次索敌更新而让同一轮射击突然转向其他目标。
+        /// </summary>
+        private void FireCoaxialBurstShot(LocalTargetInfo intendedTarget)
+        {
+            int slotCount = coaxialWeaponExt.visuals?.SlotCount ?? 1;
+            int barrelIndex = GenMath.PositiveMod(coaxialNextBarrelIndex, Mathf.Max(1, slotCount));
+            Vector2 localOffset = coaxialWeaponExt.visuals?.GetOffsetFor(barrelIndex) ?? Vector2.zero;
+            Vector3 turretCenter = SRA_ShootWithOffsetUtility.TurretTopCenter(this, DrawPos);
+            Vector3 launchOrigin = SRA_ShootWithOffsetUtility.LocalOffsetToWorld(turretCenter, curAngle, localOffset);
+            IntVec3 spawnCell = launchOrigin.ToIntVec3();
+            if (!spawnCell.InBounds(Map) || spawnCell.Impassable(Map))
+            {
+                spawnCell = Position;
+                launchOrigin = spawnCell.ToVector3Shifted();
+                launchOrigin.y = DrawPos.y;
+            }
+
+            LocalTargetInfo usedTarget = GetCoaxialUsedTarget(intendedTarget);
+            Projectile projectile = GenSpawn.Spawn(coaxialWeaponExt.projectile, spawnCell, Map) as Projectile;
+            if (projectile == null)
+            {
+                return;
+            }
+
+            // 独立库存只在 projectile 成功生成后扣除，避免错误 Def 或生成失败时平白损失弹药。
+            if (UsesIndependentCoaxialAmmo && coaxialAmmoCount <= 0)
+            {
+                projectile.Destroy();
+                return;
+            }
+
+            if (UsesIndependentCoaxialAmmo)
+            {
+                coaxialAmmoCount--;
+            }
+
+            projectile.Launch(this, launchOrigin, usedTarget, intendedTarget, ProjectileHitFlags.All, false, gun);
+            coaxialWeaponExt.shootSound?.PlayOneShot(new TargetInfo(Position, Map));
+            Notify_CoaxialBarrelFired(barrelIndex);
+            coaxialNextBarrelIndex = GenMath.PositiveMod(barrelIndex + 1, Mathf.Max(1, slotCount));
+        }
+
+        private void FinishCoaxialBurst()
+        {
+            coaxialBurstShotsLeft = 0;
+            coaxialTicksToNextBurstShot = 0;
+            coaxialBurstTarget = LocalTargetInfo.Invalid;
+            coaxialCooldownTicksLeft = Mathf.Max(0, coaxialWeaponExt?.cooldownTicks ?? 0);
+        }
+
+        private void CancelCoaxialBurst()
+        {
+            coaxialBurstShotsLeft = 0;
+            coaxialTicksToNextBurstShot = 0;
+            coaxialBurstTarget = LocalTargetInfo.Invalid;
+        }
+
+        private bool CanFireCoaxialWeapon(LocalTargetInfo target, bool requireReadyCooldown)
+        {
+            if (coaxialWeaponExt?.projectile == null || (requireReadyCooldown && coaxialCooldownTicksLeft > 0) || holdFire || coaxialHoldFire || !target.IsValid)
+            {
+                return false;
+            }
+
+            if (UsesIndependentCoaxialAmmo && coaxialAmmoCount <= 0)
+            {
+                return false;
+            }
+
+            if (target.HasThing && target.Thing.Destroyed)
+            {
+                return false;
+            }
+
+            Vector3 turretCenter = SRA_ShootWithOffsetUtility.TurretTopCenter(this, DrawPos);
+            IntVec3 sourceCell = turretCenter.ToIntVec3();
+            float distance = sourceCell.DistanceTo(target.Cell);
+            float maxRange = coaxialWeaponExt.range > 0f ? coaxialWeaponExt.range : AttackVerb.EffectiveRange;
+            if (distance > maxRange || distance < Mathf.Max(0f, coaxialWeaponExt.minRange))
+            {
+                return false;
+            }
+
+            if (Mathf.Abs(CoaxialAngleDelta(target)) > Mathf.Max(0f, coaxialWeaponExt.aimTolerance))
+            {
+                return false;
+            }
+
+            return !coaxialWeaponExt.requireLineOfSight || GenSight.LineOfSight(sourceCell, target.Cell, Map, true);
+        }
+
+        private float CoaxialAngleDelta(LocalTargetInfo target)
+        {
+            Vector3 targetDirection = (target.CenterVector3 - DrawPos).Yto0();
+            return Vector3.SignedAngle(turretOrientation, targetDirection, Vector3.up);
+        }
+
+        private bool CanAcquireTargetForCoaxialWeapon()
+        {
+            return !coaxialHoldFire && coaxialWeaponExt?.projectile != null && (!UsesIndependentCoaxialAmmo || coaxialAmmoCount > 0);
+        }
+
+        private LocalTargetInfo GetCoaxialUsedTarget(LocalTargetInfo intendedTarget)
+        {
+            float radius = coaxialWeaponExt.forcedMissRadius;
+            if (radius <= 0f || radius >= GenRadial.MaxRadialPatternRadius)
+            {
+                return intendedTarget;
+            }
+
+            int cellCount = GenRadial.NumCellsInRadius(radius);
+            if (cellCount <= 0)
+            {
+                return intendedTarget;
+            }
+
+            IntVec3 targetCell = intendedTarget.Cell + GenRadial.RadialPattern[Rand.Range(0, cellCount)];
+            targetCell.x = Mathf.Clamp(targetCell.x, 0, Map.Size.x - 1);
+            targetCell.z = Mathf.Clamp(targetCell.z, 0, Map.Size.z - 1);
+            return new LocalTargetInfo(targetCell);
+        }
+
+        private void Notify_CoaxialBarrelFired(int barrelIndex)
+        {
+            ModExtension_ShootWithOffset visuals = coaxialWeaponExt?.visuals;
+            if (visuals == null)
+            {
+                return;
+            }
+
+            EnsureCoaxialAnimationListSizes();
+            int slotCount = visuals.SlotCount;
+            barrelIndex = GenMath.PositiveMod(barrelIndex, slotCount);
+            if (visuals.HasBarrelRecoil && coaxialBarrelRecoilTimers != null)
+            {
+                coaxialBarrelRecoilTimers[barrelIndex] = Mathf.Max(1, visuals.recoilDurationTicks);
+            }
+
+            if (visuals.HasMuzzleFlash && coaxialMuzzleFlashTimers != null)
+            {
+                coaxialMuzzleFlashTimers[barrelIndex] = visuals.MuzzleFlashDurationTicks;
+            }
+        }
+
         public void MakeGun()
         {
             gun = ThingMaker.MakeThing(def.building.turretGunDef);
             UpdateGunVerbs();
             RecacheShootWithOffsetAnimationData();
+            RecacheCoaxialWeaponData();
         }
 
         private void UpdateGunVerbs()

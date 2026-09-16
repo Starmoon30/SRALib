@@ -100,6 +100,7 @@
     <Compile Include="CompProperties_UseEffect_ActivateMech.cs" />
     <Compile Include="CompUseEffect_ActivateMech.cs" />
     <Compile Include="CompVehicleWeapon.cs" />
+    <Compile Include="CoaxialTurret\CoaxialWeapon.cs" />
     <Compile Include="CompWeaponHediffGiver.cs" />
     <Compile Include="Comp_BodyshapeAjuster.cs" />
     <Compile Include="Comp_MultiTurretGun.cs" />
@@ -159,6 +160,7 @@
     <Compile Include="HeavyNavalGunTurret\Projectile_CompoundExplosion.cs" />
     <Compile Include="HeavyNavalGunTurret\RemoteArtilleryUtility.cs" />
     <Compile Include="HeavyNavalGunTurret\WorldObject_GlobalAttackDevice.cs" />
+    <Compile Include="GizmoHarmonyPatches.cs" />
     <Compile Include="RemoteMonitoring\CompProperties_RemoteMapMonitor.cs" />
     <Compile Include="RemoteMonitoring\CompRemoteMapMonitor.cs" />
     <Compile Include="RemoteMonitoring\Patch_MapPawns_AnyPawnBlockingMapRemoval_RemoteMonitoring.cs" />

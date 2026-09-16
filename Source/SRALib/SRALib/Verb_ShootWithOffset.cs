@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
 using Verse;
+using Verse.Sound;
 
 namespace SRA
 {
@@ -81,6 +82,7 @@ namespace SRA
             return true;
         }
     }
+
     /// <summary>
     /// 炮塔多炮管开火扩展。
     /// offsets 是核心数据：同一个 barrelIndex 会同时驱动投射物出生点、炮管制退和炮口火焰。
@@ -532,9 +534,173 @@ namespace SRA
             }
         }
     }
+    /// <summary>
+    /// 同轮多射弹时的资源消耗策略。
+    /// </summary>
+    public enum SRAProjectileAmmoConsumptionMode
+    {
+        /// <summary>
+        /// 整轮齐射只消耗一次资源，适合一枚弹壳产生多枚散弹的武器。
+        /// </summary>
+        perVolley,
+
+        /// <summary>
+        /// 每个实际生成的 projectile 都消耗一次资源，适合多联导弹或多管齐射。
+        /// </summary>
+        perProjectile
+    }
+
+    /// <summary>
+    /// 射弹在弹种按钮、菜单和 tooltip 中使用的显示配置。
+    /// </summary>
+    public class SRAProjectileDisplay
+    {
+        /// <summary>
+        /// 可选的 Keyed 本地化名称。留空时使用 projectile 自身的本地化名称。
+        /// </summary>
+        public string labelKey;
+
+        /// <summary>
+        /// 可选的 Keyed 本地化描述。留空时使用 projectile 自身的本地化描述。
+        /// </summary>
+        public string descriptionKey;
+
+        /// <summary>
+        /// 可选的按钮贴图路径，不带文件扩展名。留空时使用 projectile.uiIcon。
+        /// </summary>
+        public string iconPath;
+
+        /// <summary>
+        /// 弹种选择按钮内图标的绘制缩放。默认 1，与原版 Command 的标准图标尺寸一致。
+        /// 仅影响本弹种选择 Gizmo，不会影响射弹在地图或物品栏中的显示。
+        /// </summary>
+        public float iconDrawScale = 1f;
+    }
+
+    /// <summary>
+    /// 可手动选择的替代射弹模式。
+    /// 默认射弹不需要写入这里，直接沿用 VerbProperties.defaultProjectile。
+    /// </summary>
+    public class SRAProjectileMode : SRAProjectileDisplay
+    {
+        /// <summary>
+        /// 选中该模式时实际发射的 projectile。
+        /// </summary>
+        public ThingDef projectile;
+    }
+
+    /// <summary>
+    /// 为 Verb_ShootWithOffset 提供弹种切换和同轮多射弹能力。
+    /// </summary>
+    public class VerbProperties_SRAMultiProjectile : VerbProperties
+    {
+        /// <summary>
+        /// 每次常规开火额外生成的 projectile 数。0 表示完全遵循原版单发行为。
+        /// 实际射弹总数始终为 1 + additionalProjectilesPerShot。
+        /// </summary>
+        public int additionalProjectilesPerShot = 0;
+
+        /// <summary>
+        /// 同轮多射弹时的资源消耗方式。默认每轮只消耗一次，适合霰弹等单发多弹头武器。
+        /// </summary>
+        public SRAProjectileAmmoConsumptionMode ammoConsumptionMode = SRAProjectileAmmoConsumptionMode.perVolley;
+
+        /// <summary>
+        /// 默认射弹在弹种按钮、菜单和 tooltip 中使用的可选显示覆盖。
+        /// 不包含 projectile 字段，实际默认射弹仍由继承的 defaultProjectile 决定。
+        /// </summary>
+        public SRAProjectileDisplay defaultProjectileDisplay;
+
+        /// <summary>
+        /// 除 defaultProjectile 外可供玩家切换的替代射弹列表。
+        /// </summary>
+        public List<SRAProjectileMode> alternativeProjectiles;
+    }
+
+    /// <summary>
+    /// 为带 VerbProperties_SRAMultiProjectile 的武器或炮塔 gun 添加特殊细则。
+    /// </summary>
+    public static class SRAMultiProjectileStatsUtility
+    {
+        private const int ProjectileCountDisplayPriority = 5550;
+
+        public static bool HasMultiProjectileVerb(ThingDef def)
+        {
+            List<VerbProperties> verbs = GetVerbs(def);
+            if (verbs == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < verbs.Count; i++)
+            {
+                if (verbs[i] is VerbProperties_SRAMultiProjectile)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public static IEnumerable<StatDrawEntry> AppendSpecialDisplayStats(IEnumerable<StatDrawEntry> source, ThingDef def)
+        {
+            if (source != null)
+            {
+                foreach (StatDrawEntry entry in source)
+                {
+                    yield return entry;
+                }
+            }
+
+            List<VerbProperties> verbs = GetVerbs(def);
+            if (verbs == null)
+            {
+                yield break;
+            }
+
+            StatCategoryDef category = def != null && def.category == ThingCategory.Pawn
+                ? StatCategoryDefOf.PawnCombat
+                : StatCategoryDefOf.Weapon_Ranged;
+            int multiProjectileVerbIndex = 0;
+            for (int i = 0; i < verbs.Count; i++)
+            {
+                VerbProperties_SRAMultiProjectile props = verbs[i] as VerbProperties_SRAMultiProjectile;
+                if (props == null)
+                {
+                    continue;
+                }
+
+                int projectileCount = Mathf.Max(1, props.additionalProjectilesPerShot + 1);
+                string value = "SRA_ProjectilesPerShotValue".Translate(projectileCount);
+                yield return new StatDrawEntry(
+                    category,
+                    "SRA_ProjectilesPerShotLabel".Translate(),
+                    value,
+                    "SRA_ProjectilesPerShotDesc".Translate(),
+                    ProjectileCountDisplayPriority - multiProjectileVerbIndex * 100);
+                multiProjectileVerbIndex++;
+            }
+        }
+
+        private static List<VerbProperties> GetVerbs(ThingDef def)
+        {
+            if (def?.Verbs != null && def.Verbs.Count > 0)
+            {
+                return def.Verbs;
+            }
+
+            return def?.building?.turretGunDef?.Verbs;
+        }
+    }
+
     public class Verb_ShootWithOffset : Verb_Shoot
     {
         public int offset = 0;
+
+        // null 表示沿用原版 Projectile 属性，也就是 defaultProjectile 或已装填的可换弹药。
+        // 只保存替代射弹 Def，而不保存列表下标，避免 XML 调整顺序后切换到错误的模式。
+        private ThingDef selectedAlternativeProjectile;
 
         public CompSustainedShoot CompSustainedShoot
         {
@@ -542,6 +708,253 @@ namespace SRA
             {
                 return base.EquipmentSource?.TryGetComp<CompSustainedShoot>();
             }
+        }
+
+        public VerbProperties_SRAMultiProjectile MultiProjectileProps => verbProps as VerbProperties_SRAMultiProjectile;
+
+        /// <summary>
+        /// 当前一轮开火实际生成的 projectile 数。additionalProjectilesPerShot 是额外数量，
+        /// 因此即使没有配置多射弹，也始终至少为 1。
+        /// </summary>
+        public int ProjectilesPerShot => Mathf.Max(1, (MultiProjectileProps?.additionalProjectilesPerShot ?? 0) + 1);
+
+        public bool HasProjectileSelection => HasAlternativeProjectileModes();
+
+        public ThingDef SelectedProjectile => ResolveSelectedProjectile();
+
+        /// <summary>
+        /// 生成当前选择射弹的按钮。Pawn 装备通过 CompEquippable 补丁调用，
+        /// Building_TurretGunHasSpeed 则直接转发该方法。
+        /// </summary>
+        public IEnumerable<Gizmo> GetMultiProjectileGizmos()
+        {
+            if (!HasAlternativeProjectileModes())
+            {
+                yield break;
+            }
+
+            ThingDef projectile = ResolveSelectedProjectile();
+            SRAProjectileDisplay display = GetSelectedProjectileDisplay(projectile);
+            Command_Action command = new Command_Action
+            {
+                defaultLabel = GetProjectileLabel(projectile, display),
+                defaultDesc = BuildProjectileTooltip(projectile, display),
+                icon = GetProjectileIcon(projectile, display),
+                iconAngle = projectile?.uiIconAngle ?? 0f,
+                iconOffset = projectile?.uiIconOffset ?? Vector2.zero,
+                // 原版 Command 的图标默认按 1.0 绘制。不能把射弹 Def 的 uiIconScale
+                // 套到 SRAProjectileDisplay 的自定义图标上，否则同一按钮会比原版 Gizmo 偏大或偏小。
+                iconDrawScale = Mathf.Max(0.01f, display?.iconDrawScale ?? 1f),
+                action = OpenProjectileSelectionMenu
+            };
+
+            // 弹种切换只影响下一轮射击，不能在同一 burst 中途改变已经开始的弹种。
+            if (state == VerbState.Bursting)
+            {
+                command.Disable("SRA_ProjectileSelectionUnavailableDuringBurst".Translate());
+            }
+
+            yield return command;
+        }
+
+        private bool HasAlternativeProjectileModes()
+        {
+            List<SRAProjectileMode> modes = MultiProjectileProps?.alternativeProjectiles;
+            if (modes == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < modes.Count; i++)
+            {
+                if (modes[i]?.projectile != null)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private ThingDef ResolveSelectedProjectile()
+        {
+            NormalizeSelectedAlternativeProjectile();
+            return selectedAlternativeProjectile ?? base.Projectile;
+        }
+
+        private void NormalizeSelectedAlternativeProjectile()
+        {
+            if (selectedAlternativeProjectile != null && !IsAlternativeProjectile(selectedAlternativeProjectile))
+            {
+                selectedAlternativeProjectile = null;
+            }
+        }
+
+        private bool IsAlternativeProjectile(ThingDef projectile)
+        {
+            if (projectile == null)
+            {
+                return false;
+            }
+
+            List<SRAProjectileMode> modes = MultiProjectileProps?.alternativeProjectiles;
+            if (modes == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < modes.Count; i++)
+            {
+                if (modes[i]?.projectile == projectile)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private SRAProjectileMode GetAlternativeProjectileMode(ThingDef projectile)
+        {
+            if (projectile == null || selectedAlternativeProjectile != projectile)
+            {
+                return null;
+            }
+
+            List<SRAProjectileMode> modes = MultiProjectileProps?.alternativeProjectiles;
+            if (modes == null)
+            {
+                return null;
+            }
+
+            for (int i = 0; i < modes.Count; i++)
+            {
+                SRAProjectileMode mode = modes[i];
+                if (mode?.projectile == projectile)
+                {
+                    return mode;
+                }
+            }
+
+            return null;
+        }
+
+        private SRAProjectileDisplay GetSelectedProjectileDisplay(ThingDef projectile)
+        {
+            SRAProjectileMode alternativeMode = GetAlternativeProjectileMode(projectile);
+            return alternativeMode ?? MultiProjectileProps?.defaultProjectileDisplay;
+        }
+
+        private void OpenProjectileSelectionMenu()
+        {
+            List<FloatMenuOption> options = new List<FloatMenuOption>();
+            ThingDef defaultProjectile = base.Projectile;
+            options.Add(CreateProjectileSelectionOption(defaultProjectile, MultiProjectileProps?.defaultProjectileDisplay));
+
+            List<SRAProjectileMode> modes = MultiProjectileProps?.alternativeProjectiles;
+            if (modes != null)
+            {
+                for (int i = 0; i < modes.Count; i++)
+                {
+                    SRAProjectileMode mode = modes[i];
+                    if (mode?.projectile != null)
+                    {
+                        options.Add(CreateProjectileSelectionOption(mode.projectile, mode));
+                    }
+                }
+            }
+
+            Find.WindowStack.Add(new FloatMenu(options));
+        }
+
+        private FloatMenuOption CreateProjectileSelectionOption(ThingDef projectile, SRAProjectileDisplay display)
+        {
+            SRAProjectileMode mode = display as SRAProjectileMode;
+            bool isCurrent = mode == null ? selectedAlternativeProjectile == null : selectedAlternativeProjectile == projectile;
+            string label = GetProjectileLabel(projectile, display);
+            if (isCurrent)
+            {
+                label = "SRA_ProjectileSelectionCurrent".Translate(label);
+            }
+
+            return new FloatMenuOption(label, delegate
+            {
+                selectedAlternativeProjectile = mode?.projectile;
+                SoundDefOf.Tick_Tiny.PlayOneShotOnCamera();
+            });
+        }
+
+        private string GetProjectileLabel(ThingDef projectile, SRAProjectileDisplay display)
+        {
+            if (display != null && !display.labelKey.NullOrEmpty())
+            {
+                return display.labelKey.Translate();
+            }
+
+            return projectile?.LabelCap.ToString() ?? "SRA_ProjectileSelectionNoProjectile".Translate();
+        }
+
+        private Texture2D GetProjectileIcon(ThingDef projectile, SRAProjectileDisplay display)
+        {
+            if (display != null && !display.iconPath.NullOrEmpty())
+            {
+                Texture2D customIcon = ContentFinder<Texture2D>.Get(display.iconPath, reportFailure: false);
+                if (customIcon != null)
+                {
+                    return customIcon;
+                }
+            }
+
+            return projectile?.uiIcon ?? BaseContent.BadTex;
+        }
+
+        private string BuildProjectileTooltip(ThingDef projectile, SRAProjectileDisplay display)
+        {
+            StringBuilder builder = new StringBuilder();
+            builder.AppendLine(GetProjectileLabel(projectile, display));
+
+            string description = display != null && !display.descriptionKey.NullOrEmpty()
+                ? display.descriptionKey.Translate()
+                : projectile?.description;
+            if (!description.NullOrEmpty())
+            {
+                builder.AppendLine();
+                builder.AppendLine(description);
+            }
+
+            ProjectileProperties projectileProperties = projectile?.projectile;
+            if (projectileProperties != null)
+            {
+                builder.AppendLine();
+                DamageDef damageDef = projectileProperties.damageDef;
+                if (damageDef != null)
+                {
+                    int damage = projectileProperties.GetDamageAmount(base.EquipmentSource);
+                    builder.AppendLine("SRA_ProjectileSelectionDamage".Translate(damageDef.LabelCap, damage));
+
+                    if (damageDef.armorCategory != null)
+                    {
+                        float armorPenetration = projectileProperties.GetArmorPenetration(base.EquipmentSource);
+                        builder.AppendLine("SRA_ProjectileSelectionArmorPenetration".Translate(armorPenetration.ToStringPercent()));
+                    }
+                }
+
+                builder.AppendLine("SRA_ProjectileSelectionSpeed".Translate(projectileProperties.speed.ToString("0.##")));
+                if (projectileProperties.explosionRadius > 0f)
+                {
+                    builder.AppendLine("SRA_ProjectileSelectionExplosionRadius".Translate(projectileProperties.explosionRadius.ToString("0.##")));
+                }
+            }
+
+            builder.AppendLine("SRA_ProjectilesPerShotTooltip".Translate(ProjectilesPerShot));
+            return builder.ToString().TrimEndNewlines();
+        }
+
+        private int GetAmmoConsumptionCount()
+        {
+            return MultiProjectileProps?.ammoConsumptionMode == SRAProjectileAmmoConsumptionMode.perProjectile
+                ? ProjectilesPerShot
+                : 1;
         }
 
         protected override int ShotsPerBurst
@@ -609,15 +1022,25 @@ namespace SRA
             compSustainedShoot.Notify_SustainedVerbStarted();
             this.burstShotsLeft = this.ShotsPerBurst;
             this.state = VerbState.Bursting;
+            // TryCastNextBurstShot 会在发射后递减 burstShotsLeft，不能再用
+            // “剩余发数等于初始发数”判断经验。持续射击每次重新进入 warmup
+            // 都代表一次实际射击周期，因此在发射前沿用原版经验计算。
+            LearnShootingExperience();
             base.TryCastNextBurstShot();
             compSustainedShoot.Notify_SustainedBurstProgress(this.burstShotsLeft);
+        }
+
+        private void LearnShootingExperience()
+        {
             Pawn pawn = this.currentTarget.Thing as Pawn;
-            if (pawn != null && !pawn.Downed && !pawn.IsColonyMech && this.CasterIsPawn && this.CasterPawn.skills != null && this.burstShotsLeft == base.BurstShotCount)
+            if (pawn == null || pawn.Downed || pawn.IsColonyMech || !this.CasterIsPawn || this.CasterPawn.skills == null)
             {
-                float baseExperience = pawn.HostileTo(this.caster) ? 170f : 20f;
-                float cycleTime = this.verbProps.AdjustedFullCycleTime(this, this.CasterPawn);
-                this.CasterPawn.skills.Learn(SkillDefOf.Shooting, baseExperience * cycleTime, false, false);
+                return;
             }
+
+            float baseExperience = pawn.HostileTo(this.caster) ? 170f : 20f;
+            float cycleTime = this.verbProps.AdjustedFullCycleTime(this, this.CasterPawn);
+            this.CasterPawn.skills.Learn(SkillDefOf.Shooting, baseExperience * cycleTime, false, false);
         }
 
         public override void BurstingTick()
@@ -642,27 +1065,48 @@ namespace SRA
         {
             base.ExposeData();
             Scribe_References.Look<Pawn>(ref this.forceTargetedDownedPawn, "forceTargetedDownedPawn", false);
+            Scribe_Defs.Look(ref selectedAlternativeProjectile, "sraSelectedAlternativeProjectile");
+            if (Scribe.mode == LoadSaveMode.PostLoadInit)
+            {
+                NormalizeSelectedAlternativeProjectile();
+            }
         }
 
         protected override bool TryCastShot()
         {
-            bool num = BaseTryCastShot();
+            int projectilesFired;
+            bool num = BaseTryCastShot(out projectilesFired);
             if (num && CasterIsPawn)
             {
-                CasterPawn.records.Increment(RecordDefOf.ShotsFired);
+                for (int i = 0; i < projectilesFired; i++)
+                {
+                    CasterPawn.records.Increment(RecordDefOf.ShotsFired);
+                }
             }
 
             return num;
         }
+
         protected bool BaseTryCastShot()
         {
+            int ignoredProjectilesFired;
+            return BaseTryCastShot(out ignoredProjectilesFired);
+        }
+
+        /// <summary>
+        /// 一轮射击只处理一次 LOS、资源消耗和开火位置；随后立即生成本轮全部 projectile。
+        /// 这样 multi projectile 不会被原版 burst 间隔拆开，也不会错误重复触发外层冷却。
+        /// </summary>
+        protected bool BaseTryCastShot(out int projectilesFired)
+        {
+            projectilesFired = 0;
 
             if (currentTarget.HasThing && currentTarget.Thing.Map != caster.Map)
             {
                 return false;
             }
 
-            ThingDef projectile = Projectile;
+            ThingDef projectile = ResolveSelectedProjectile();
             if (projectile == null)
             {
                 return false;
@@ -671,7 +1115,9 @@ namespace SRA
             Comp_HNGT_GlobalBallisticAttack remoteArtilleryComp = (caster as ThingWithComps)?.GetComp<Comp_HNGT_GlobalBallisticAttack>();
             if (remoteArtilleryComp != null && remoteArtilleryComp.IsFiringInterMap)
             {
-                return TryCastRemoteArtilleryFakeShot(projectile);
+                bool remoteShotFired = TryCastRemoteArtilleryFakeShot(projectile);
+                projectilesFired = remoteShotFired ? 1 : 0;
+                return remoteShotFired;
             }
 
             ShootLine resultingLine;
@@ -681,9 +1127,10 @@ namespace SRA
                 return false;
             }
 
-            if (base.EquipmentSource != null)
+            int ammoConsumptionCount = GetAmmoConsumptionCount();
+            if (!TryConsumeEquipmentShots(ammoConsumptionCount, requireLoadedAmmo: false))
             {
-                TryConsumeEquipmentShot(requireLoadedAmmo: false);
+                return false;
             }
 
             lastShotTick = Find.TickManager.TicksGame;
@@ -698,25 +1145,45 @@ namespace SRA
 
             Vector3 drawPos = caster.DrawPos;
             drawPos = ApplyProjectileOffset(drawPos, equipmentSource);
-            Projectile projectile2 = (Projectile)GenSpawn.Spawn(projectile, resultingLine.Source, caster.Map);
+
+            int projectileCount = ProjectilesPerShot;
+            for (int i = 0; i < projectileCount; i++)
+            {
+                if (TryLaunchProjectile(projectile, resultingLine, manningPawn, equipmentSource, drawPos))
+                {
+                    projectilesFired++;
+                }
+            }
+
+            return projectilesFired > 0;
+        }
+
+        /// <summary>
+        /// 只负责生成一枚 projectile 并执行原版的偏离、掩体和命中结算。
+        /// 参数中的 ShootLine 按值传递，确保每枚射弹独立进行随机偏离，
+        /// 而不会污染同一轮后续射弹的目标线。
+        /// </summary>
+        private bool TryLaunchProjectile(ThingDef projectileDef, ShootLine resultingLine, Thing manningPawn, Thing equipmentSource, Vector3 drawPos)
+        {
+            Projectile projectile = (Projectile)GenSpawn.Spawn(projectileDef, resultingLine.Source, caster.Map);
             if (equipmentSource != null && equipmentSource.TryGetComp(out CompUniqueWeapon comp))
             {
                 foreach (WeaponTraitDef item in comp.TraitsListForReading)
                 {
                     if (item.damageDefOverride != null)
                     {
-                        projectile2.damageDefOverride = item.damageDefOverride;
+                        projectile.damageDefOverride = item.damageDefOverride;
                     }
 
                     if (!item.extraDamages.NullOrEmpty())
                     {
-                        Projectile projectile3 = projectile2;
+                        Projectile projectile3 = projectile;
                         if (projectile3.extraDamages == null)
                         {
                             projectile3.extraDamages = new List<ExtraDamage>();
                         }
 
-                        projectile2.extraDamages.AddRange(item.extraDamages);
+                        projectile.extraDamages.AddRange(item.extraDamages);
                     }
                 }
             }
@@ -746,7 +1213,7 @@ namespace SRA
                             projectileHitFlags &= ~ProjectileHitFlags.NonTargetPawns;
                         }
 
-                        projectile2.Launch(manningPawn, drawPos, forcedMissTarget, currentTarget, projectileHitFlags, preventFriendlyFire, equipmentSource);
+                        projectile.Launch(manningPawn, drawPos, forcedMissTarget, currentTarget, projectileHitFlags, preventFriendlyFire, equipmentSource);
                         return true;
                     }
                 }
@@ -757,7 +1224,7 @@ namespace SRA
             ThingDef targetCoverDef = randomCoverToMissInto?.def;
             if (verbProps.canGoWild && !Rand.Chance(shotReport.AimOnTargetChance_IgnoringPosture))
             {
-                bool flyOverhead = projectile2?.def?.projectile != null && projectile2.def.projectile.flyOverhead;
+                bool flyOverhead = projectile.def?.projectile != null && projectile.def.projectile.flyOverhead;
                 resultingLine.ChangeDestToMissWild(shotReport.AimOnTargetChance_StandardTarget, flyOverhead, caster.Map);
                 ProjectileHitFlags projectileHitFlags2 = ProjectileHitFlags.NonTargetWorld;
                 if (Rand.Chance(0.5f) && canHitNonTargetPawnsNow)
@@ -765,7 +1232,7 @@ namespace SRA
                     projectileHitFlags2 |= ProjectileHitFlags.NonTargetPawns;
                 }
 
-                projectile2.Launch(manningPawn, drawPos, resultingLine.Dest, currentTarget, projectileHitFlags2, preventFriendlyFire, equipmentSource, targetCoverDef);
+                projectile.Launch(manningPawn, drawPos, resultingLine.Dest, currentTarget, projectileHitFlags2, preventFriendlyFire, equipmentSource, targetCoverDef);
                 return true;
             }
 
@@ -777,7 +1244,7 @@ namespace SRA
                     projectileHitFlags3 |= ProjectileHitFlags.NonTargetPawns;
                 }
 
-                projectile2.Launch(manningPawn, drawPos, randomCoverToMissInto, currentTarget, projectileHitFlags3, preventFriendlyFire, equipmentSource, targetCoverDef);
+                projectile.Launch(manningPawn, drawPos, randomCoverToMissInto, currentTarget, projectileHitFlags3, preventFriendlyFire, equipmentSource, targetCoverDef);
                 return true;
             }
 
@@ -793,11 +1260,11 @@ namespace SRA
             }
             if (currentTarget.Thing != null)
             {
-                projectile2.Launch(manningPawn, drawPos, currentTarget, currentTarget, projectileHitFlags4, preventFriendlyFire, equipmentSource, targetCoverDef);
+                projectile.Launch(manningPawn, drawPos, currentTarget, currentTarget, projectileHitFlags4, preventFriendlyFire, equipmentSource, targetCoverDef);
             }
             else
             {
-                projectile2.Launch(manningPawn, drawPos, resultingLine.Dest, currentTarget, projectileHitFlags4, preventFriendlyFire, equipmentSource, targetCoverDef);
+                projectile.Launch(manningPawn, drawPos, resultingLine.Dest, currentTarget, projectileHitFlags4, preventFriendlyFire, equipmentSource, targetCoverDef);
             }
             return true;
         }
@@ -809,7 +1276,7 @@ namespace SRA
                 return false;
             }
 
-            if (!TryConsumeEquipmentShot(requireLoadedAmmo: true))
+            if (!TryConsumeEquipmentShots(1, requireLoadedAmmo: true))
             {
                 return false;
             }
@@ -850,34 +1317,43 @@ namespace SRA
             return true;
         }
 
-        private bool TryConsumeEquipmentShot(bool requireLoadedAmmo)
+        /// <summary>
+        /// 处理一轮射击的资源消耗。perProjectile 先检查 CompChangeableProjectile 的
+        /// 已装填数量，确保不会出现只发出一部分齐射的情况。
+        /// </summary>
+        private bool TryConsumeEquipmentShots(int shotCount, bool requireLoadedAmmo)
         {
+            shotCount = Mathf.Max(1, shotCount);
             CompChangeableProjectile compChangeableProjectile = base.EquipmentSource?.GetComp<CompChangeableProjectile>();
             CompRefuelable refuelableAmmo = requireLoadedAmmo ? GetRemoteArtilleryFuelComp() : null;
+            // 替代射弹会绕过 base.Projectile 的空值检查，因此只要装备带有原版
+            // CompChangeableProjectile，就始终按本轮实际消耗量确认已装填弹药。
+            if (compChangeableProjectile != null && compChangeableProjectile.loadedCount < shotCount)
+            {
+                return false;
+            }
+
             if (requireLoadedAmmo)
             {
-                if (compChangeableProjectile != null && !compChangeableProjectile.Loaded)
-                {
-                    return false;
-                }
-
-                if (refuelableAmmo != null && refuelableAmmo.Fuel < Comp_HNGT_GlobalBallisticAttack.RemoteFuelPerFakeShot)
+                float requiredFuel = shotCount * Comp_HNGT_GlobalBallisticAttack.RemoteFuelPerFakeShot;
+                if (refuelableAmmo != null && refuelableAmmo.Fuel < requiredFuel)
                 {
                     return false;
                 }
             }
 
-            if (compChangeableProjectile != null)
+            for (int i = 0; i < shotCount; i++)
             {
-                compChangeableProjectile.Notify_ProjectileLaunched();
+                compChangeableProjectile?.Notify_ProjectileLaunched();
+
+                if (refuelableAmmo != null)
+                {
+                    refuelableAmmo.ConsumeFuel(Comp_HNGT_GlobalBallisticAttack.RemoteFuelPerFakeShot);
+                }
+
+                base.EquipmentSource?.GetComp<CompApparelVerbOwner_Charged>()?.UsedOnce();
             }
 
-            if (refuelableAmmo != null)
-            {
-                refuelableAmmo.ConsumeFuel(Comp_HNGT_GlobalBallisticAttack.RemoteFuelPerFakeShot);
-            }
-
-            base.EquipmentSource?.GetComp<CompApparelVerbOwner_Charged>()?.UsedOnce();
             return true;
         }
 

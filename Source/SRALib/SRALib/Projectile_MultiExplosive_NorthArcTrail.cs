@@ -364,7 +364,9 @@ public class NorthArcModExtension : DefModExtension
             {
                 if (!landed)
                 {
-                    Position = PositionWithHeight.ToIntVec3();
+                    // Position 决定 MultiExplosive 的伤害和生成物中心，不能使用仅供绘制的高度偏移。
+                    // PositionWithHeight 会沿地图 Z 轴移动视觉轨迹；写回 Position 会使爆炸和生成物偏离落点。
+                    Position = horizontalPosition.ToIntVec3();
                     Impact(null);
                 }
                 return;

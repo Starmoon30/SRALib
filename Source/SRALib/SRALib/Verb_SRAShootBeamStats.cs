@@ -13,12 +13,22 @@ namespace SRA
     {
         public static void Postfix(ThingDef __instance, StatRequest req, ref IEnumerable<StatDrawEntry> __result)
         {
-            if (!SRAShootBeamStatsUtility.HasSRAShootBeamVerb(__instance))
+            bool hasBeamVerb = SRAShootBeamStatsUtility.HasSRAShootBeamVerb(__instance);
+            bool hasMultiProjectileVerb = SRAMultiProjectileStatsUtility.HasMultiProjectileVerb(__instance);
+            if (!hasBeamVerb && !hasMultiProjectileVerb)
             {
                 return;
             }
 
-            __result = SRAShootBeamStatsUtility.AppendSpecialDisplayStats(__result, __instance, req);
+            if (hasBeamVerb)
+            {
+                __result = SRAShootBeamStatsUtility.AppendSpecialDisplayStats(__result, __instance, req);
+            }
+
+            if (hasMultiProjectileVerb)
+            {
+                __result = SRAMultiProjectileStatsUtility.AppendSpecialDisplayStats(__result, __instance);
+            }
         }
     }
 

@@ -79,7 +79,10 @@
 
 	<SRA_HediffDetector_ToggleLabel>Hediff探测器</SRA_HediffDetector_ToggleLabel>
 	<SRA_HediffDetector_ToggleDesc>切换Hediff探测、目标标记和反隐压制功能。</SRA_HediffDetector_ToggleDesc>
-	
+
+	<SRA_TempControler_OverclockLabel>超频模式</SRA_TempControler_OverclockLabel>
+	<SRA_TempControler_OverclockDesc>开启后，设备会将所在地图的室外温度维持为设定温度。开启另一台设备的超频会自动关闭本设备的超频。</SRA_TempControler_OverclockDesc>
+
 	<SRA_CasketResearch_InvalidHost>研究舱组件只能挂载在低温舱建筑上。</SRA_CasketResearch_InvalidHost>
 	<SRA_CasketResearch_NoSubject>研究单元：无</SRA_CasketResearch_NoSubject>
 	<SRA_CasketResearch_InvalidSubject>研究单元无效：{0}</SRA_CasketResearch_InvalidSubject>
@@ -119,6 +122,27 @@
 	<SRA_BeamAreaDesc>光束落点和路径的判定范围。</SRA_BeamAreaDesc>
 	<SRA_BeamHitRadiusValue>落点判定半径：{0}</SRA_BeamHitRadiusValue>
 	<SRA_BeamPathDamageValue>路径伤害：半径 {0}，伤害倍率 {1}</SRA_BeamPathDamageValue>
+
+	<SRA_ProjectileSelectionUnavailableDuringBurst>当前正在进行一轮射击，不能切换射弹。</SRA_ProjectileSelectionUnavailableDuringBurst>
+	<SRA_ProjectileSelectionCurrent>当前：{0}</SRA_ProjectileSelectionCurrent>
+	<SRA_ProjectileSelectionNoProjectile>未定义射弹</SRA_ProjectileSelectionNoProjectile>
+	<SRA_ProjectileSelectionDamage>伤害：{0} {1}</SRA_ProjectileSelectionDamage>
+	<SRA_ProjectileSelectionArmorPenetration>穿甲：{0}</SRA_ProjectileSelectionArmorPenetration>
+	<SRA_ProjectileSelectionSpeed>速度：{0}</SRA_ProjectileSelectionSpeed>
+	<SRA_ProjectileSelectionExplosionRadius>爆炸半径：{0}</SRA_ProjectileSelectionExplosionRadius>
+	<SRA_ProjectilesPerShotTooltip>每次开火射弹数：{0}</SRA_ProjectilesPerShotTooltip>
+	<SRA_ProjectilesPerShotLabel>每次开火射弹数</SRA_ProjectilesPerShotLabel>
+	<SRA_ProjectilesPerShotDesc>一次开火时立即发射的射弹数量。原版 burst 的射击间隔不受此值影响。</SRA_ProjectilesPerShotDesc>
+	<SRA_ProjectilesPerShotValue>{0}</SRA_ProjectilesPerShotValue>
+
+	<SRA_CoaxialWeapon_InfiniteAmmo>同轴副武器：无限弹药</SRA_CoaxialWeapon_InfiniteAmmo>
+	<SRA_CoaxialWeapon_AmmoGizmo>同轴副武器弹药：{0}</SRA_CoaxialWeapon_AmmoGizmo>
+	<SRA_CoaxialWeapon_DevFill>DEV：填满同轴副武器弹药（{0}）</SRA_CoaxialWeapon_DevFill>
+	<SRA_CoaxialWeapon_DevFillDesc>将此炮塔的独立同轴副武器弹仓填满。</SRA_CoaxialWeapon_DevFillDesc>
+	<SRA_CoaxialWeapon_DevEmpty>DEV：清空同轴副武器弹药（{0}）</SRA_CoaxialWeapon_DevEmpty>
+	<SRA_CoaxialWeapon_DevEmptyDesc>清空此炮塔的独立同轴副武器弹仓，并中止当前副武器 burst。</SRA_CoaxialWeapon_DevEmptyDesc>
+	<SRA_CoaxialWeapon_HoldFire>同轴副武器停火</SRA_CoaxialWeapon_HoldFire>
+	<SRA_CoaxialWeapon_HoldFireDesc>切换同轴副武器是否自动开火。开启后会中止该副武器当前的连射，但不影响主炮。</SRA_CoaxialWeapon_HoldFireDesc>
 
 	<SRA_ResurrectionBeacon_BindCommandLabel>绑定单位 ({0})</SRA_ResurrectionBeacon_BindCommandLabel>
 	<SRA_ResurrectionBeacon_BindCommandDesc>选择要绑定到此信标的单位。绑定单位即将死亡时会被传送回信标。</SRA_ResurrectionBeacon_BindCommandDesc>

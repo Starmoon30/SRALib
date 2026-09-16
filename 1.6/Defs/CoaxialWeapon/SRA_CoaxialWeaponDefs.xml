@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Defs>
+  <JobDef>
+    <defName>SRA_ReloadCoaxialWeapon</defName>
+    <driverClass>SRA.JobDriver_ReloadCoaxialWeapon</driverClass>
+    <reportString>reloading TargetA.</reportString>
+    <suspendable>false</suspendable>
+  </JobDef>
+
+  <WorkGiverDef>
+    <defName>SRA_ReloadCoaxialWeapon</defName>
+    <label>reload coaxial weapon ammunition</label>
+    <gerund>reloading coaxial weapon ammunition</gerund>
+    <giverClass>SRA.WorkGiver_ReloadCoaxialWeapon</giverClass>
+    <prioritizeSustains>true</prioritizeSustains>
+    <!-- 与原版 RearmTurrets 一致，作为优先级 150 的搬运工作处理。 -->
+    <priorityInType>150</priorityInType>
+    <requiredCapacities>
+      <li>Manipulation</li>
+    </requiredCapacities>
+    <verb>reload coaxial weapon ammunition</verb>
+    <workType>Hauling</workType>
+  </WorkGiverDef>
+</Defs>

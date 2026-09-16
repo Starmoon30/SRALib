@@ -61,10 +61,14 @@ namespace SRA
 
         public void ExecuteDeath()
         {
-            // 立即杀死携带者
-            if (Pawn != null && !Pawn.Dead)
+            // 先停止计时，避免 Destroy 触发的后续生命周期回调中重复执行。
+            activated = false;
+
+            // WarUnitSpawner 生成的限时单位需要真正消失而非留下尸体。Pawn.Kill 会进入
+            // 常规死亡流程，可能被其他死亡拦截机制处理；Vanish 则直接移除 Pawn 及其携带物。
+            if (Pawn != null && !Pawn.Destroyed)
             {
-                Pawn.Kill(null, null);
+                Pawn.Destroy(DestroyMode.Vanish);
             }
         }
 

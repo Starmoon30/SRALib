@@ -1,8 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection.Emit;
-using System.Threading;
 using HarmonyLib;
 using RimWorld;
 using Verse;
@@ -120,51 +116,4 @@ namespace SRA
         }
     }
 
-    [HarmonyPatch(typeof(Pawn), "GetGizmos")]
-    public static class Pawn_GetGizmos_Patch
-    {
-        static void Postfix(Pawn __instance, ref IEnumerable<Gizmo> __result)
-        {
-            if (Find.Selector.SingleSelectedThing != __instance)
-                return;
-
-            var alwaysShowGizmos = GetAlwaysShowGizmos(__instance);
-            if (alwaysShowGizmos != null)
-            {
-                __result = __result.Concat(alwaysShowGizmos);
-            }
-        }
-
-        public static IEnumerable<Gizmo> GetAlwaysShowGizmos(Pawn pawn)
-        {
-            if (Find.Selector.SingleSelectedThing != pawn || pawn.IsColonistPlayerControlled || pawn.IsColonyMech || pawn.IsPrisonerOfColony || (pawn.Dead && pawn.HasShowGizmosOnCorpseHediff))
-                yield break;
-            if (pawn.health?.hediffSet?.hediffs != null)
-            {
-                foreach (Hediff hediff in pawn.health.hediffSet.hediffs)
-                {
-                    if (hediff is IAlwaysShowGizmo alwaysShowHediff && alwaysShowHediff.AlwaysShowGizmo)
-                    {
-                        foreach (Gizmo gizmo in hediff.GetGizmos())
-                        {
-                            yield return gizmo;
-                        }
-                    }
-                    if (hediff is HediffWithComps hediffWithComps)
-                    {
-                        foreach (HediffComp comp in hediffWithComps.comps)
-                        {
-                            if (comp is IAlwaysShowGizmo alwaysShowComp && alwaysShowComp.AlwaysShowGizmo)
-                            {
-                                foreach (Gizmo gizmo in comp.CompGetGizmos())
-                                {
-                                    yield return gizmo;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
 }

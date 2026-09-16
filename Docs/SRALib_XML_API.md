@@ -100,8 +100,8 @@
 实现：
 
 - 给建筑添加一个按钮。
-- 点击后移除当前地图上所有“可判断剩余时间”的非永久 `GameCondition` 和限时天气。
-- 白名单是不解除的天气或环境效果。
+- 点击后移除当前地图上所有“可判断剩余时间”的非永久 `GameCondition` 和限时天气，同时处理实际影响当前地图的世界级 `GameCondition`。因此原版太阳耀斑、日食和极光也可被解除；结束世界级效果会同时影响其余受影响地图。
+- 白名单是不解除的天气或环境效果。`Planetkiller` 是任务/剧本世界毁灭倒计时，会被内建安全白名单永久保留。
 - 若 `requirePower=true` 且建筑有 `CompPowerTrader`，断电时按钮不可用。
 
 字段：
@@ -115,7 +115,7 @@
 | `powerRequiredMessageKey` | `SRA_ClearTimedGameConditions_PowerRequiredMessage` | 断电禁用消息 key |
 | `iconPath` | `SRA/UI/Commands/UI_SRA_ClearTimedGameConditions` | 按钮图标 |
 | `requirePower` | true | 是否需要供电 |
-| `gameConditionWhitelist` | null | 不解除的 `GameConditionDef` |
+| `gameConditionWhitelist` | null | 不解除的 `GameConditionDef`；`Planetkiller` 无论配置如何均不会被解除 |
 | `weatherWhitelist` | null | 不解除的 `WeatherDef` |
 
 示例：
@@ -205,6 +205,48 @@
   <markBobbingFrequency>0.3</markBobbingFrequency>
   <markBobbingAmplitude>0.3</markBobbingAmplitude>
 </li>
+```
+
+### 强制温控器
+
+入口：
+
+```xml
+<thingClass>SRA.Building_TempControler</thingClass>
+```
+
+实现：
+
+- 常规模式仅对设备所在的封闭房间生效，并在原有 `Rare` ticker 间隔内将房间温度设为 `CompTempControl.targetTemperature`。室外或露天房间不会被常规模式直接写入，避免原版温度均衡每 120 tick 重置后产生不稳定结果。
+- “超频模式”由建筑 gizmo 开关控制，默认关闭，并按建筑实例保存。开启且设备通电时，所在地图的 `MapTemperature.OutdoorTemp` 会覆写为该设备的目标温度；露天房间会立即同步，原版之后的温度均衡也会使用该覆写值。
+- 断电、关闭超频或拆除设备后，室外温度立即回退至原版计算结果。超频在同一张地图内互斥：开启一台设备会自动关闭其他设备的超频；旧存档或读档期间若检测到多个开启状态，也会按建筑生成顺序保留最后登记的一台并关闭其余设备。
+- 超频设备由地图组件统一维护。温度 getter 的高频路径仅查询弱引用缓存和已缓存的覆写值，不会遍历地图建筑；仅登记的超频设备会在每 tick 被检查。
+
+要求：
+
+- Def 必须具有原版 `CompProperties_TempControl`；若需要供电控制，还应具有 `CompProperties_Power`。
+- 维持旧实现的行为，Def 应使用 `<tickerType>Rare</tickerType>`。
+
+示例：
+
+```xml
+<ThingDef ParentName="BuildingBase">
+  <defName>Example_ForcedTempController</defName>
+  <label>强制温控器</label>
+  <thingClass>SRA.Building_TempControler</thingClass>
+  <tickerType>Rare</tickerType>
+  <comps>
+    <li Class="CompProperties_TempControl">
+      <defaultTargetTemperature>21</defaultTargetTemperature>
+      <minTargetTemperature>-50</minTargetTemperature>
+      <maxTargetTemperature>50</maxTargetTemperature>
+    </li>
+    <li Class="CompProperties_Power">
+      <compClass>CompPowerTrader</compClass>
+      <basePowerConsumption>500</basePowerConsumption>
+    </li>
+  </comps>
+</ThingDef>
 ```
 
 ### 低温研究舱
@@ -700,7 +742,7 @@ SRA_MyWarUnitSpawner_NoUnit
 实现：
 
 - hediff 创建后开始倒计时。
-- 到时调用 `Pawn.Kill`。
+- 到时调用 `Pawn.Destroy(DestroyMode.Vanish)`，单位及其装备会直接移除，不留下尸体，也不会进入可被其他系统拦截的常规死亡流程。
 - 玩家阵营 pawn 会显示立即自毁 gizmo。
 
 字段：
@@ -937,7 +979,7 @@ SRA_MyWarUnitSpawner_NoUnit
 
 - 基于 `Building_Turret` 的重写炮塔。
 - 炮塔顶需要旋转到目标方向后才开火。
-- 支持自定义转速、禁用自动攻击、自定义被 AI 选为攻击目标的嘲讽度。
+- 支持自定义转速、禁用自动攻击、自动攻击越狱/叛乱被收容单位，以及自定义被 AI 选为攻击目标的嘲讽度。
 - 当前主攻击 `Verb` 的 `<requireLineOfSight>false</requireLineOfSight>` 会像飞越弹一样允许自动索敌越过 LOS 阻挡；实际能否命中仍由该 `Verb` 自己的发射/命中逻辑决定。
 - 支持 `Verb_ShootWithOffset` 的多炮管位置、制退和炮口火焰动画。
 - 支持武器上的 `CompSustainedShoot` 转火逻辑。
@@ -948,6 +990,7 @@ SRA_MyWarUnitSpawner_NoUnit
 | --- | --- | --- |
 | `speed` | 1 | 每 tick 最大转动角度 |
 | `noautoattack` | false | 是否禁用自动索敌 |
+| `autoTargetEscapingCaptives` | false | 是否自动攻击已越狱的囚犯、叛乱奴隶和逃逸异常实体；普通囚犯、奴隶与被收容实体不受影响 |
 
 `TauntAttackTargetExtension` 字段：
 
@@ -970,6 +1013,7 @@ SRA_MyWarUnitSpawner_NoUnit
     <li Class="SRA.ModExt_HasSpeedTurret">
       <speed>2.5</speed>
       <noautoattack>false</noautoattack>
+      <autoTargetEscapingCaptives>true</autoTargetEscapingCaptives>
     </li>
     <li Class="SRA.TauntAttackTargetExtension">
       <targetPriorityFactor>3</targetPriorityFactor>
@@ -1065,6 +1109,177 @@ SRA_MyWarUnitSpawner_NoUnit
       <muzzleFlashTicksPerFrame>1</muzzleFlashTicksPerFrame>
     </li>
   </modExtensions>
+</ThingDef>
+```
+
+### 同轴副武器
+
+入口：将扩展挂在 `Building_TurretGunHasSpeed` 使用的 `turretGunDef` 上。
+
+```xml
+<ThingDef ParentName="BaseWeapon">
+  <defName>Example_CoaxialTurretGun</defName>
+  <modExtensions>
+    <li Class="SRA.ModExtension_CoaxialWeapon">
+      <!-- 实际发射的副武器射弹；留空则不启用副武器 -->
+      <projectile>Bullet_ChargeBlaster</projectile>
+      <range>32</range>
+      <minRange>0</minRange>
+      <cooldownTicks>6</cooldownTicks>
+      <burstShotCount>3</burstShotCount>
+      <ticksBetweenBurstShots>4</ticksBetweenBurstShots>
+      <aimTolerance>1</aimTolerance>
+      <requireLineOfSight>true</requireLineOfSight>
+      <forcedMissRadius>0</forcedMissRadius>
+      <shootSound>Shot_ChargeBlaster</shootSound>
+
+      <!-- 独立的副炮弹仓。 -->
+      <ammoThingDef>Steel</ammoThingDef>
+      <shotsPerAmmoItem>20</shotsPerAmmoItem>
+      <maxAmmo>200</maxAmmo>
+      <!-- 新建时装填 25%，剩余不高于 30% 时自动派发补给工作。 -->
+      <initialAmmoPercent>0.25</initialAmmoPercent>
+      <autoReloadPercent>0.3</autoReloadPercent>
+      <reloadTicks>240</reloadTicks>
+      <reloadSearchRadius>9999</reloadSearchRadius>
+
+      <!-- 复用主炮炮管系统的全部字段和 offset 坐标语义。 -->
+      <visuals>
+        <offsets>
+          <li>(-0.45,0.9)</li>
+          <li>(0.45,0.9)</li>
+        </offsets>
+        <barrelTexturePath>Things/Turret/Example_CoaxialBarrel</barrelTexturePath>
+        <barrelTextureSize>(1.2,0.45)</barrelTextureSize>
+        <recoilAmount>0.15</recoilAmount>
+        <recoilDurationTicks>8</recoilDurationTicks>
+        <recoilKickTicks>2</recoilKickTicks>
+        <muzzleFlashTexturePath>Things/Mote/Example_CoaxialFlash</muzzleFlashTexturePath>
+        <muzzleFlashDrawSize>(1.1,1.1)</muzzleFlashDrawSize>
+        <muzzleFlashForwardOffset>0.5</muzzleFlashForwardOffset>
+        <muzzleFlashFrameCount>6</muzzleFlashFrameCount>
+        <muzzleFlashTicksPerFrame>1</muzzleFlashTicksPerFrame>
+      </visuals>
+    </li>
+  </modExtensions>
+</ThingDef>
+```
+
+行为：
+
+- 副武器使用主炮当前锁定的目标和当前炮塔角度，不单独创建索敌循环或第二个 `VerbTracker`。
+- 副武器具有独立 burst 和整轮冷却，可在主炮 warmup、burst 或冷却期间按自身条件射击。
+- 每轮开始时副武器固定当前目标；`burstShotCount` 规定本轮发数，`ticksBetweenBurstShots` 规定轮内发射间隔，`cooldownTicks` 在整轮结束后开始计算。
+- `visuals.offsets` 的同一索引同时决定射弹出口、该炮管的制退动画和炮口火焰；多炮管会按副武器每发轮换。
+- `ammoThingDef` 留空时副武器无限弹药，不生成装填工作。
+- 配置 `ammoThingDef` 时弹药仅存于炮塔本体，使用 `SRA_ReloadCoaxialWeapon` 搬运工作装填；它绝不与主炮的 `CompChangeableProjectile` 共用或互相消耗。
+- 同轴装填沿用原版 `RearmTurrets` 的按需扫描模型：只有殖民者正常寻找搬运工作时才枚举需要补充的炮塔；地图缓存仅在炮塔生成或移除时维护，不存在逐 tick 的全图扫描。工作目标由原版 `JobGiver_Work` 在缓存中按可达距离选择。
+- `initialAmmoPercent` 仅决定新建炮塔的初始弹药比例；`autoReloadPercent` 仅决定何时派发自动补给工作。当前库存比例低于或等于阈值后，一次装填会尽量补满弹仓，避免每少一发都派发搬运任务。
+- 默认装填等待为 `240` tick，默认取弹半径为 `9999` 格，分别对齐原版 `JobDriver_Refuel` 和 `RefuelWorkGiverUtility.FindBestFuel`。`reloadSearchRadius` 可主动缩小来限制物流距离。
+- 配置独立弹药时，检查信息沿用原版炮塔的“已装填 / 未装填”显示；单选玩家炮塔时会显示与原版 `CompRefuelable` 相同的只读库存条，内容为当前射击次数/容量。开发者模式下会额外出现填满和清空独立副炮弹仓的按钮，二者不需要图标配置。
+- 配置副武器的玩家炮塔会额外显示“同轴副武器停火”开关，复用原版停火图标但不占用主炮停火的快捷键。开启后立即中止同轴副武器当前 burst，并阻止其继续自动开火；主炮的停火状态、瞄准和射击不受影响。该状态会随存档保存。
+
+字段：
+
+| 字段 | 默认值 | 作用 |
+| --- | --- | --- |
+| `projectile` | null | 副武器射弹；为空则系统不启用 |
+| `range` | 0 | 最大射程；小于等于 0 使用主炮射程 |
+| `minRange` | 0 | 最小射程 |
+| `cooldownTicks` | 10 | 一整轮 burst 结束后的冷却 tick；0 表示可立即开始下一轮 |
+| `burstShotCount` | 1 | 每轮 burst 的射击次数 |
+| `ticksBetweenBurstShots` | 15 | 同一轮相邻两发之间的 tick 间隔；0 仍最多每 tick 一发 |
+| `aimTolerance` | 1 | 炮塔对准目标允许的最大角度误差，单位为度 |
+| `requireLineOfSight` | true | 是否要求副武器具有无阻挡视线 |
+| `forcedMissRadius` | 0 | 强制散布半径；大于 0 时随机偏移落点 |
+| `shootSound` | null | 副武器每发播放的声音 |
+| `ammoThingDef` | null | 独立弹药物品；留空为无限弹药 |
+| `shotsPerAmmoItem` | 1 | 每个独立弹药物品提供的射击次数 |
+| `maxAmmo` | 100 | 独立弹仓容量，单位为射击次数 |
+| `initialAmmoPercent` | 0 | 新建炮塔的初始独立弹药比例；范围为 0 到 1，按容量换算为整数射击次数；读档不重置 |
+| `autoReloadPercent` | 0.3 | 自动补给阈值比例；当前库存比例低于或等于此值时才派发装填工作，范围为 0 到 1 |
+| `reloadTicks` | 240 | 一次装填工作等待的 tick 数；默认对齐原版补充动作 |
+| `reloadSearchRadius` | 9999 | 自动装填搜索弹药的最大距离；默认近似整张地图 |
+| `visuals` | null | 副炮视觉定义，类型为 `ModExtension_ShootWithOffset`；其全部炮管、制退和火焰字段均可使用 |
+
+### 弹种切换与同轮多射弹
+
+入口：
+
+```xml
+<li Class="SRA.VerbProperties_SRAMultiProjectile">
+  <verbClass>SRA.Verb_ShootWithOffset</verbClass>
+  ...
+</li>
+```
+
+实现：
+
+- Pawn 武器和转速炮塔均使用 `SRA.Verb_ShootWithOffset` 配合 `VerbProperties_SRAMultiProjectile`；发射位置、命中、强制偏离和原版 burst 结算完全共用。
+- `defaultProjectile` 始终是默认弹种，不要重复写入 `alternativeProjectiles`。其显示名称、描述和图标可通过 `defaultProjectileDisplay` 覆写。
+- 有至少一个有效替代弹种时，装备中的 Pawn 武器和 `Building_TurretGunHasSpeed` 都会显示弹种按钮。按钮显示当前弹种名称，默认使用 projectile 的 `uiIcon`；默认或替代弹种均可用 `iconPath` 覆写。
+- 按钮 tooltip 显示当前弹种描述、伤害、穿甲、飞行速度、爆炸半径及本轮射弹总数。点击按钮会打开弹种列表；正在 burst 时不能切换，避免同一 burst 中途更换射弹。
+- `additionalProjectilesPerShot` 是一轮内立即额外发射的数量，不会改写原版 `burstShotCount` 或 `ticksBetweenBurstShots`。例如填 `7` 代表同一轮立即生成共 `8` 枚 projectile。
+- 同轮多射弹共用一次射击线、炮管索引、制退和炮口火焰；每枚 projectile 仍单独结算强制偏离、野射和掩体命中。
+- 此功能会在武器/炮塔细则中显示“每次开火射弹数”。
+- 跨地图火炮的 `remoteBurstShotCount` 保持独0立：远程每一视觉轮只生成一枚 fake projectile，不应用本功能的额外射弹数。
+
+`VerbProperties_SRAMultiProjectile` 字段：
+
+| 字段 | 默认值 | 作用 |
+| --- | --- | --- |
+| `additionalProjectilesPerShot` | 0 | 每个常规射击轮额外生成的 projectile 数；实际总数为此值加 1 |
+| `ammoConsumptionMode` | `perVolley` | 齐射资源消耗策略：`perVolley` 每轮一次，`perProjectile` 每生成一枚 projectile 一次 |
+| `defaultProjectileDisplay` | null | 默认射弹的可选显示覆盖，包含 `labelKey`、`descriptionKey`、`iconPath`、`iconDrawScale`；实际 projectile 仍使用继承的 `defaultProjectile` |
+| `alternativeProjectiles` | null | 可由玩家手动选择的替代弹种列表；默认弹种不写入此列表 |
+
+`defaultProjectileDisplay` 和 `alternativeProjectiles` 内每个 `li` 均可使用以下显示字段：
+
+| 字段 | 默认值 | 作用 |
+| --- | --- | --- |
+| `labelKey` | null | 按钮和菜单显示的 Keyed 本地化名称；留空时使用 projectile 自身名称 |
+| `descriptionKey` | null | tooltip 使用的 Keyed 本地化描述；留空时使用 projectile 自身描述 |
+| `iconPath` | null | 按钮贴图路径，不含扩展名；留空时使用 projectile 的 `uiIcon` |
+| `iconDrawScale` | 1 | 弹种选择按钮内图标的绘制缩放；默认与原版 `Command` 图标尺寸一致 |
+
+`alternativeProjectiles` 内每个 `li` 额外字段：
+
+| 字段 | 默认值 | 作用 |
+| --- | --- | --- |
+| `projectile` | 必填 | 选中此模式后实际发射的 projectile Def |
+
+Pawn 武器示例：
+
+```xml
+<ThingDef ParentName="BaseGun">
+  <defName>SRA_ExampleScattergun</defName>
+  <verbs>
+    <li Class="SRA.VerbProperties_SRAMultiProjectile">
+      <verbClass>SRA.Verb_ShootWithOffset</verbClass>
+      <defaultProjectile>SRA_ExampleScatterSlug</defaultProjectile>
+      <defaultProjectileDisplay>
+        <labelKey>SRA_ExampleScatterSlug_Label</labelKey>
+        <descriptionKey>SRA_ExampleScatterSlug_Desc</descriptionKey>
+        <iconPath>SRA/UI/Commands/ExampleScatterSlug</iconPath>
+      </defaultProjectileDisplay>
+      <range>24</range>
+      <warmupTime>1.2</warmupTime>
+      <burstShotCount>1</burstShotCount>
+      <additionalProjectilesPerShot>7</additionalProjectilesPerShot>
+      <ammoConsumptionMode>perVolley</ammoConsumptionMode>
+      <alternativeProjectiles>
+        <li>
+          <projectile>SRA_ExampleScatterBuckshot</projectile>
+          <labelKey>SRA_ExampleScatterBuckshot_Label</labelKey>
+          <descriptionKey>SRA_ExampleScatterBuckshot_Desc</descriptionKey>
+          <iconPath>SRA/UI/Commands/ExampleScatterBuckshot</iconPath>
+        </li>
+        <li>
+          <projectile>SRA_ExampleScatterSabot</projectile>
+        </li>
+      </alternativeProjectiles>
+    </li>
+  </verbs>
 </ThingDef>
 ```
 
@@ -1579,7 +1794,9 @@ XML 示例：
 | `damageDef` | null | 伤害类型 |
 | `damageAmount` | 1 | 伤害 |
 | `armorPenetration` | 1 | 穿甲 |
-| `explosionSound` | null | 爆炸声音 |
+| `explosionSound` | null | 爆炸声音；留空或引用未定义音效时回退到 `damageDef.soundExplosion`，二者均无效时自动静音 |
+| `doSoundEffects` | true | 是否允许播放爆炸声音；`false` 时无条件静音 |
+| `doVisualEffects` | true | 是否渲染原版爆炸视觉，包括中心闪光、震动与伤害类型的逐格 fleck/mote；不影响 `explosionEffect` 和爆炸伤害结算 |
 | `explosionDamageFalloff` | true | 是否按距离衰减 |
 | `explosionEffect` | null | 额外 effecter |
 | `explosionEffectLifetimeTicks` | 0 | effecter 维持 tick |
@@ -1590,15 +1807,46 @@ XML 示例：
 | `preExplosionSpawnChance` | 0 | 每格前置生成概率 |
 | `preExplosionSpawnThingCount` | 1 | 每格前置生成数量 |
 | `preExplosionSpawnSingleThingDef` | null | 爆炸开始时在中心生成单个物体 |
+| `preExplosionSpawnInheritLauncherFaction` | false | 前置阶段的逐格和中心生成物继承射弹发射者派系；无发射者派系或生成物不支持派系时跳过 |
+| `preExplosionSpawnMakeHomeArea` | false | 是否允许前置阶段生成的玩家建筑走原版自动居住区流程；默认禁止，仍受 `expandHomeArea` 与玩家自动居住区设置约束 |
 | `postExplosionSpawnThingDef` | null | 每个爆炸格影响后概率生成物 |
 | `postExplosionSpawnChance` | 0 | 每格后置生成概率 |
 | `postExplosionSpawnThingCount` | 1 | 每格后置生成数量 |
 | `postExplosionSpawnSingleThingDef` | null | 爆炸结束时在中心生成单个物体 |
+| `postExplosionSpawnInheritLauncherFaction` | false | 后置阶段的逐格和中心生成物继承射弹发射者派系；无发射者派系或生成物不支持派系时跳过 |
+| `postExplosionSpawnMakeHomeArea` | false | 是否允许后置阶段生成的玩家建筑走原版自动居住区流程；默认禁止，仍受 `expandHomeArea` 与玩家自动居住区设置约束 |
 | `postExplosionGasType` | null | 爆炸后气体类型 |
 | `postExplosionGasRadiusOverride` | null | 气体半径覆写 |
 | `postExplosionGasAmount` | 255 | 气体量 |
 | `preNotifyEffects` | 空 | `Notify_Explosion` 前效果列表 |
 | `postNotifyEffects` | 空 | `Notify_Explosion` 后效果列表 |
+
+无爆炸格视觉的眩晕条目示例：
+
+```xml
+<li>
+  <radius>4.9</radius>
+  <damageDef>Stun</damageDef>
+  <damageAmount>30</damageAmount>
+  <!-- 保留 Stun 的伤害和眩晕结算，但不生成伤害类型的爆炸中心和逐格视觉。 -->
+  <doVisualEffects>false</doVisualEffects>
+  <!-- 可选：若同时不需要声音。未填写时会安全地使用 Stun 的默认音效。 -->
+  <doSoundEffects>false</doSoundEffects>
+</li>
+```
+
+生成可归属的建筑并允许原版自动创建居住区示例。`YourDeployableBuildingDef` 替换为实际的建筑 `ThingDef`。仅当发射者为玩家派系、建筑 Def 启用 `expandHomeArea`，且玩家打开原版自动居住区设置时，原版才会从建筑旋转后的占地向外扩展四格；不填写 `postExplosionSpawnMakeHomeArea` 时会默认阻止该流程：
+
+```xml
+<li>
+  <radius>1.9</radius>
+  <damageDef>Bomb</damageDef>
+  <damageAmount>20</damageAmount>
+  <postExplosionSpawnSingleThingDef>YourDeployableBuildingDef</postExplosionSpawnSingleThingDef>
+  <postExplosionSpawnInheritLauncherFaction>true</postExplosionSpawnInheritLauncherFaction>
+  <postExplosionSpawnMakeHomeArea>true</postExplosionSpawnMakeHomeArea>
+</li>
+```
 
 `BulletLaunchProperties` 字段：
 

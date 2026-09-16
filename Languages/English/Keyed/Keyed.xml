@@ -79,6 +79,8 @@
 	<SRA_ClearTimedGameConditions_PowerRequiredMessage>Power is required to clear timed weather conditions.</SRA_ClearTimedGameConditions_PowerRequiredMessage>
 	<SRA_HediffDetector_ToggleLabel>Hediff detector</SRA_HediffDetector_ToggleLabel>
 	<SRA_HediffDetector_ToggleDesc>Toggle Hediff detection, target markers, and invisibility disruption.</SRA_HediffDetector_ToggleDesc>
+	<SRA_TempControler_OverclockLabel>Overclock mode</SRA_TempControler_OverclockLabel>
+	<SRA_TempControler_OverclockDesc>When enabled, this device holds the map's outdoor temperature at its set temperature. Enabling overclock on another device automatically disables this one.</SRA_TempControler_OverclockDesc>
 	<SRA_CasketResearch_InvalidHost>The research casket component can only be used on a casket building.</SRA_CasketResearch_InvalidHost>
 	<SRA_CasketResearch_NoSubject>Research subject: None</SRA_CasketResearch_NoSubject>
 	<SRA_CasketResearch_InvalidSubject>Invalid research subject: {0}</SRA_CasketResearch_InvalidSubject>
@@ -117,6 +119,27 @@
 	<SRA_BeamAreaDesc>Hit area used by the beam impact point and path.</SRA_BeamAreaDesc>
 	<SRA_BeamHitRadiusValue>Impact hit radius: {0}</SRA_BeamHitRadiusValue>
 	<SRA_BeamPathDamageValue>Path damage: radius {0}, damage factor {1}</SRA_BeamPathDamageValue>
+
+	<SRA_ProjectileSelectionUnavailableDuringBurst>A firing burst is in progress; the projectile cannot be changed.</SRA_ProjectileSelectionUnavailableDuringBurst>
+	<SRA_ProjectileSelectionCurrent>Current: {0}</SRA_ProjectileSelectionCurrent>
+	<SRA_ProjectileSelectionNoProjectile>No projectile defined</SRA_ProjectileSelectionNoProjectile>
+	<SRA_ProjectileSelectionDamage>Damage: {0} {1}</SRA_ProjectileSelectionDamage>
+	<SRA_ProjectileSelectionArmorPenetration>Armor penetration: {0}</SRA_ProjectileSelectionArmorPenetration>
+	<SRA_ProjectileSelectionSpeed>Speed: {0}</SRA_ProjectileSelectionSpeed>
+	<SRA_ProjectileSelectionExplosionRadius>Explosion radius: {0}</SRA_ProjectileSelectionExplosionRadius>
+	<SRA_ProjectilesPerShotTooltip>Projectiles per shot: {0}</SRA_ProjectilesPerShotTooltip>
+	<SRA_ProjectilesPerShotLabel>Projectiles per shot</SRA_ProjectilesPerShotLabel>
+	<SRA_ProjectilesPerShotDesc>The number of projectiles fired immediately by one shot. This does not change vanilla burst intervals.</SRA_ProjectilesPerShotDesc>
+	<SRA_ProjectilesPerShotValue>{0}</SRA_ProjectilesPerShotValue>
+
+	<SRA_CoaxialWeapon_InfiniteAmmo>Coaxial weapon: infinite ammunition</SRA_CoaxialWeapon_InfiniteAmmo>
+	<SRA_CoaxialWeapon_AmmoGizmo>Coaxial ammo: {0}</SRA_CoaxialWeapon_AmmoGizmo>
+	<SRA_CoaxialWeapon_DevFill>DEV: Fill coaxial weapon ammo ({0})</SRA_CoaxialWeapon_DevFill>
+	<SRA_CoaxialWeapon_DevFillDesc>Fill this turret's independent coaxial weapon ammunition store.</SRA_CoaxialWeapon_DevFillDesc>
+	<SRA_CoaxialWeapon_DevEmpty>DEV: Empty coaxial weapon ammo ({0})</SRA_CoaxialWeapon_DevEmpty>
+	<SRA_CoaxialWeapon_DevEmptyDesc>Empty this turret's independent coaxial weapon ammunition store and cancel its current burst.</SRA_CoaxialWeapon_DevEmptyDesc>
+	<SRA_CoaxialWeapon_HoldFire>Hold coaxial weapon fire</SRA_CoaxialWeapon_HoldFire>
+	<SRA_CoaxialWeapon_HoldFireDesc>Toggle whether the coaxial weapon fires automatically. Enabling this stops its current burst without affecting the main gun.</SRA_CoaxialWeapon_HoldFireDesc>
 
 	<SRA_ResurrectionBeacon_BindCommandLabel>Bind pawns ({0})</SRA_ResurrectionBeacon_BindCommandLabel>
 	<SRA_ResurrectionBeacon_BindCommandDesc>Select pawns to bind to this beacon. Bound pawns are teleported back to the beacon when they would die.</SRA_ResurrectionBeacon_BindCommandDesc>
