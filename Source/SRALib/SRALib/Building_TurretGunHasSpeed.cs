@@ -71,6 +71,8 @@ namespace SRA
 
         public float curAngle;
 
+        private TurretIdlePositionCompatibility.IdleAngleCache idlePositionCache;
+
         // 运行时缓存 gun def 上的多炮管配置，避免每 tick/draw 重复查 mod extension。
         private ModExtension_ShootWithOffset shootWithOffsetExt;
 
@@ -365,6 +367,7 @@ namespace SRA
             refuelableComp = GetComp<CompRefuelable>();
             powerCellComp = GetComp<CompMechPowerCell>();
             hackableComp = GetComp<CompHackable>();
+            idlePositionCache = default;
 
             // DeSpawn 会重置内置枪械的全部 Verb。重力飞船飞行复用同一炮塔实例，
             // 不会经过 ExposeData 的读档重绑流程，因此每次生成时都要恢复施法者与完成回调。
@@ -622,6 +625,14 @@ namespace SRA
             {
                 CancelCoaxialBurst();
                 ResetCurrentTarget();
+            }
+
+            // TIP 只负责空闲朝向；本地战斗、有人操作和远程炮击始终优先。
+            // 放在索敌之后，避免本 tick 刚取得目标时又被空闲回正拉走。
+            if (TurretIdlePositionCompatibility.Enabled && !currentTargetInt.IsValid &&
+                (mannableComp == null || !mannableComp.MannedNow) && !remoteArtilleryActive)
+            {
+                TurretIdlePositionCompatibility.TickIdleRotation(this, ref idlePositionCache);
             }
         }
 

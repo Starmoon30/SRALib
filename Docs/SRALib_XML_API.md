@@ -1022,6 +1022,16 @@ SRA_MyWarUnitSpawner_NoUnit
 </ThingDef>
 ```
 
+#### Turret Idle Position 可选兼容
+
+- 启用 `Mlie.TurretIdlePosition` 时自动支持 `Building_TurretGunHasSpeed` 及沿用其 Tick 的派生类，不限定联合重工的 Def，也不需要新增 XML 配置。
+- 继续使用 TIP 自带的方向设置按钮、多选和存档。空闲炮塔按 `ModExt_HasSpeedTurret.speed` 和最短角度路径回到设置的中心朝向；TIP 的偏差角不作为攻击射界限制。
+- 有本地目标、主炮正在连射、有人操作或正在执行跨地图炮击时，不做空闲回正；不会修改索敌、前摇、冷却或开火条件。
+- TIP 未启用时不反射其接口，也不读取角度。启用后只在启动时绑定接口；空闲炮塔每 30 tick 按哈希错峰刷新设置，其余 tick 只使用缓存角度旋转。设置变化最多延迟半个游戏秒生效，不扫描地图，不逐 tick 反射。
+- 运行时缓存不额外存档，炮塔生成、读档或跨地图重新生成后会重新读取 TIP。委托读取的是当前游戏的 TIP 组件，不持有旧存档的组件实例。
+- 不需要独立的 TIP 兼容补丁，也不检测或退让其他补丁；请勿重复启用相同的回正实现，以免重复旋转。
+- 参考源码保留在 `Docs/TIP-联合重工炮塔兼容/`；来源与 TIP 的 MIT 许可同时保留在 `Source/SRALib/SRALib/Compatibility/TurretIdlePosition.LICENSE.md`。
+
 ### 多炮管偏移、炮管制退与炮口火焰
 
 入口：
