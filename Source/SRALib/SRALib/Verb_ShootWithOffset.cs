@@ -42,30 +42,20 @@ namespace SRA
                     || typeof(Verb_SRAShootBeam).IsAssignableFrom(verbClass));
         }
 
-        public static void DrawTurretRangeRings(IntVec3 center, float maxRange, float minRange)
+        public static void DrawTurretRangeRings(IntVec3 center, float maxRange, float minRange,
+            float hideAtOrAboveRadius = RangeRingDrawer.DefaultHideAtOrAboveRadius, Map map = null)
         {
             if (minRange >= maxRange)
             {
                 return;
             }
 
-            if (CanDrawRangeRing(maxRange))
-            {
-                GenDraw.DrawRadiusRing(center, maxRange);
-            }
+            RangeRingDrawer.Draw(center, maxRange, hideAtOrAboveRadius: hideAtOrAboveRadius, map: map);
 
-            if (minRange > MinRangeDisplayThreshold && CanDrawRangeRing(minRange))
+            if (minRange > MinRangeDisplayThreshold)
             {
-                GenDraw.DrawRadiusRing(center, minRange);
+                RangeRingDrawer.Draw(center, minRange, hideAtOrAboveRadius: hideAtOrAboveRadius, map: map);
             }
-        }
-
-        private static bool CanDrawRangeRing(float radius)
-        {
-            return radius > 0f
-                // GenDraw.DrawRadiusRing uses GenRadial.NumCellsInRadius internally;
-                // radius >= MaxRadialPatternRadius would log an error.
-                && radius < GenRadial.MaxRadialPatternRadius;
         }
     }
 
@@ -76,7 +66,7 @@ namespace SRA
             VerbProperties verbProperties = SRA_TurretRangeOverlayUtility.FindSupportedTurretRangeVerb(checkingDef as ThingDef);
             if (verbProperties != null)
             {
-                SRA_TurretRangeOverlayUtility.DrawTurretRangeRings(loc, verbProperties.range, verbProperties.minRange);
+                SRA_TurretRangeOverlayUtility.DrawTurretRangeRings(loc, verbProperties.range, verbProperties.minRange, map: map);
             }
 
             return true;

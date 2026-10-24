@@ -9,11 +9,15 @@ namespace SRA
     public class CompRemoteMapMonitor : ThingComp
     {
         private MapParent observedMap;
+        // MapParent 在据点被击败时会被替换为 DestroyedSettlement。
+        // 保留 Map 引用，使监视链接不会因为父世界对象更换而丢失。
+        private Map observedMapInstance;
         private CompPowerTrader powerComp;
 
         public CompProperties_RemoteMapMonitor Props => (CompProperties_RemoteMapMonitor)props;
         public MapParent ObservedMapParent => observedMap;
-        public bool ShouldKeepTargetAlive => Props.keepMapAliveWhenLinked && IsResearchUnlocked() && parent.Spawned && observedMap != null && !observedMap.Destroyed;
+        public Map ObservedMap => observedMapInstance ?? observedMap?.Map;
+        public bool ShouldKeepTargetAlive => Props.keepMapAliveWhenLinked && IsResearchUnlocked() && parent.Spawned && ObservedMap != null && !ObservedMap.Disposed;
 
         public override void PostSpawnSetup(bool respawningAfterLoad)
         {
@@ -25,10 +29,7 @@ namespace SRA
         {
             base.PostDeSpawn(map);
 
-            if (observedMap != null)
-            {
-                RemoteMonitoringMapCache.Remove(observedMap);
-            }
+            RemoteMonitoringMapCache.Remove(ObservedMap);
         }
 
         public override void CompTickRare()
@@ -41,10 +42,7 @@ namespace SRA
         {
             base.PostDestroy(mode, previousMap);
 
-            if (observedMap != null)
-            {
-                RemoteMonitoringMapCache.Remove(observedMap);
-            }
+            RemoteMonitoringMapCache.Remove(ObservedMap);
         }
 
         public override IEnumerable<Gizmo> CompGetGizmosExtra()
@@ -129,6 +127,12 @@ namespace SRA
         {
             base.PostExposeData();
             Scribe_References.Look(ref observedMap, "observedMap");
+            Scribe_References.Look(ref observedMapInstance, "observedMapInstance");
+
+            if (Scribe.mode == LoadSaveMode.PostLoadInit && observedMapInstance == null)
+            {
+                observedMapInstance = observedMap?.Map;
+            }
         }
 
         public bool TrySetObservedMap(MapParent target, bool openAfterLink = false, bool notify = false)
@@ -165,10 +169,11 @@ namespace SRA
 
             if (observedMap != null && observedMap != target)
             {
-                RemoteMonitoringMapCache.Remove(observedMap);
+                RemoteMonitoringMapCache.Remove(ObservedMap);
             }
 
             observedMap = target;
+            observedMapInstance = target.Map;
             RefreshCacheRegistration();
 
             if (notify)
@@ -186,12 +191,10 @@ namespace SRA
 
         public void ClearObservedMap(bool notify = true)
         {
-            if (observedMap != null)
-            {
-                RemoteMonitoringMapCache.Remove(observedMap);
-            }
+            RemoteMonitoringMapCache.Remove(ObservedMap);
 
             observedMap = null;
+            observedMapInstance = null;
 
             if (notify)
             {
@@ -312,20 +315,26 @@ namespace SRA
                 return;
             }
 
+            if (!TryEnsureObservedTargetIsValid())
+            {
+                return;
+            }
+
             if (IsForbiddenSettlementTarget(observedMap))
             {
                 Messages.Message(GetNonHostileSettlementReason(observedMap), MessageTypeDefOf.RejectInput, false);
                 return;
             }
 
-            if (!TryEnsureObservedTargetIsValid() || observedMap == null)
+            if (observedMap == null)
             {
                 return;
             }
 
-            if (observedMap.HasMap && observedMap.Map != null)
+            Map currentObservedMap = ObservedMap;
+            if (currentObservedMap != null)
             {
-                FinalizeOpenedMap(observedMap.Map, onOpened);
+                FinalizeOpenedMap(currentObservedMap, onOpened);
                 return;
             }
 
@@ -355,6 +364,12 @@ namespace SRA
                 return;
             }
 
+            observedMapInstance = map;
+            if (map.Parent != null && !map.Parent.Destroyed)
+            {
+                observedMap = map.Parent;
+            }
+
             RefreshCacheRegistration();
 
             if (Props.jumpToMapAfterOpen)
@@ -367,29 +382,52 @@ namespace SRA
 
         private void RefreshCacheRegistration()
         {
-            if (observedMap == null || observedMap.Destroyed)
+            Map map = ObservedMap;
+            if (map == null || map.Disposed)
             {
                 return;
             }
 
             if (ShouldKeepTargetAlive)
             {
-                RemoteMonitoringMapCache.Add(observedMap);
+                RemoteMonitoringMapCache.Add(map);
             }
             else
             {
-                RemoteMonitoringMapCache.Remove(observedMap);
+                RemoteMonitoringMapCache.Remove(map);
             }
         }
 
         private bool TryEnsureObservedTargetIsValid()
         {
-            if (observedMap == null)
+            if (observedMap == null && observedMapInstance == null)
             {
                 return true;
             }
 
-            if (!observedMap.Destroyed)
+            Map map = ObservedMap;
+            if (map != null && !map.Disposed)
+            {
+                // SettlementDefeatUtility replaces map.info.parent before destroying
+                // the old Settlement. Follow that replacement without dropping the link.
+                if (map.Parent != null && !map.Parent.Destroyed)
+                {
+                    observedMap = map.Parent;
+                    observedMapInstance = map;
+                    RefreshCacheRegistration();
+                    return true;
+                }
+
+                // 地图尚未绑定新的父对象时，仍可保留一个尚未失效的旧目标。
+                if (observedMap != null && !observedMap.Destroyed)
+                {
+                    observedMapInstance = map;
+                    return true;
+                }
+            }
+
+            // 世界目标已选中但地图尚未生成时，Map 为空是正常状态。
+            if (observedMap != null && !observedMap.Destroyed)
             {
                 return true;
             }

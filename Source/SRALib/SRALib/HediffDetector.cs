@@ -221,16 +221,6 @@ namespace SRA
     }
 
     /// <summary>
-    /// Hediff 探测器的共享渲染资源。
-    /// StaticConstructorOnStartup 保证 Unity 材质在游戏主线程和 Def 初始化阶段创建，避免运行时懒加载触发线程警告。
-    /// </summary>
-    [StaticConstructorOnStartup]
-    internal static class HediffDetectorRenderResources
-    {
-        internal static readonly Material RadiusRingMaterial = MaterialPool.MatFrom(BaseContent.WhiteTex, ShaderDatabase.MetaOverlay, Color.red);
-    }
-
-    /// <summary>
     /// 建筑 Hediff 探测器。自身只提交请求和保存局部状态，实际扫描、迷雾任务和标记绘制由地图管理器统一调度。
     /// </summary>
     public class CompHediffDetector : ThingComp
@@ -645,7 +635,7 @@ namespace SRA
             base.PostDrawExtraSelectionOverlays();
             if (detectorEnabled && Props.detectRadius > 0.1f)
             {
-                DrawRadiusRing(parent.DrawPos, Props.detectRadius);
+                RangeRingDrawer.Draw(parent.Position, Props.detectRadius, Color.red, map: parent.Map);
             }
         }
 
@@ -657,25 +647,6 @@ namespace SRA
             }
 
             return cachedIcon;
-        }
-
-        /// <summary>
-        /// 使用平滑红线绘制探测半径，避免原版半径环在大半径时出现明显折线。
-        /// </summary>
-        private static void DrawRadiusRing(Vector3 center, float radius)
-        {
-            center.y = AltitudeLayer.MetaOverlays.AltitudeFor() + 5f;
-
-            int segments = Mathf.Clamp(Mathf.RoundToInt(radius * 4f), 32, 128);
-            float angleStep = 360f / segments;
-            Vector3 previous = center + new Vector3(radius, 0f, 0f);
-            for (int i = 1; i <= segments; i++)
-            {
-                float radians = i * angleStep * Mathf.Deg2Rad;
-                Vector3 next = center + new Vector3(Mathf.Cos(radians) * radius, 0f, Mathf.Sin(radians) * radius);
-                GenDraw.DrawLineBetween(previous, next, HediffDetectorRenderResources.RadiusRingMaterial, 0.05f);
-                previous = next;
-            }
         }
     }
 

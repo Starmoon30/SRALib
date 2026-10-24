@@ -54,7 +54,7 @@ namespace SRA
             }
 
             RemoteMonitoringMapCache.CleanupInvalidEntries();
-            return RemoteMonitoringMapCache.ObservedMaps.Any(mapParent => mapParent.HasMap && mapParent.Map != null && mapParent.Map.mapPawns == mapPawns);
+            return RemoteMonitoringMapCache.ObservedMapInstances.Any(map => !map.Disposed && map.mapPawns == mapPawns);
         }
 
         public static Texture2D ResolveCommandIcon(string primaryPath, string fallbackPath)

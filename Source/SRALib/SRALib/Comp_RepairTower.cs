@@ -270,7 +270,7 @@ namespace SRA
             // 绘制修复范围（如果有限范围）
             if (Props.repairRadius > 0)
             {
-                GenDraw.DrawRadiusRing(this.parent.Position, Props.repairRadius);
+                RangeRingDrawer.Draw(parent.Position, Props.repairRadius, map: parent.Map);
             }
         }
     }

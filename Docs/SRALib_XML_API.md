@@ -24,6 +24,48 @@
 - 专用/遗留组件速查
 - 本地化键
 
+## 圆形范围指示圈（C# 公共接口）
+
+入口：`SRA.RangeRingDrawer.Draw`，实现在 `Rendering/RangeRingDrawer.cs`。
+
+这是绘制接口，不新增 XML 节点，也不改变射程、索敌、爆炸或扫描的实际规则。
+现有炮塔选中/放置范围、修复塔、远程炮击落点与 Hediff 探测器范围已接入；非圆形的扇区和激光命中区域仍沿用原有绘制路径。
+
+```csharp
+// 默认白色；半径达到 500 时自动隐藏提示，不改变实际作用范围。
+RangeRingDrawer.Draw(parent.Position, radius, map: parent.Map);
+
+// 自定义颜色和隐藏阈值。
+RangeRingDrawer.Draw(parent.Position, radius, Color.red,
+    hideAtOrAboveRadius: 1000f, map: parent.Map);
+
+// 禁用阈值，没有原版约 79.8 格的绘制上限。
+RangeRingDrawer.Draw(parent.Position, radius,
+    hideAtOrAboveRadius: 0f, map: parent.Map);
+```
+
+| 参数 | 默认值 | 说明 |
+| --- | --- | --- |
+| `center` | 必填 | 圆心所在格，与原版范围圈按格对齐 |
+| `radius` | 必填 | 显示半径；非正数、NaN、无穷大不绘制 |
+| `color` | 白色 | 外缘颜色，探测器继续使用红色 |
+| `hideAtOrAboveRadius` | 500 | 半径大于等于此值时不绘制；小于等于 0 禁用阈值 |
+| `map` | 当前地图 | 用于地图边界裁剪；不绘制非当前地图或地图外圆心 |
+
+实现说明：
+
+- 保留原版 `Misc/FieldEdge` 外缘贴图、UV/旋转、透明材质、渲染队列与 `MetaOverlays` 层级，不改为平滑圆线。
+- 首次生成只计算各行/列的圆边界，不枚举圆内面积；构建工作量随圆的直径增长，并受地图宽高裁剪。缓存命中后不重建几何。
+- 同半径且具有相同裁剪边界的圆共享相对坐标 Mesh；未贴近地图边缘时，移动建造预览不需要重建。
+- 每 4096 条边打包一个网格，避开 16 位顶点索引限制；常规范围至 499 格的完整圆只需一个网格提交。
+- 按最近使用顺序回收缓存，预算为 128 个圆与 262144 个顶点；本帧已提交的网格延后回收，单个超预算圆可单独保留。
+- 不持有 Map、Thing 或存档引用，无需持久化。材质资源在主线程启动阶段初始化；网格仅在主线程绘制时按需生成。
+- 与原版一致，圆弧离开地图后不绘制；范围覆盖整张地图时不额外画地图边框。炮塔外圈被阈值隐藏时，其仍可见的最小射程内圈独立绘制。
+- `ClearCache()` 用于主线程显式释放网格和工作缓冲区，应在尚未提交本帧圆环绘制时调用。
+
+验证：`dotnet run --project Tests/RangeRings/RangeRings.csproj -c Release`。
+测试包含逐格参考算法对照、地图裁剪、浮点临界半径、大半径、网格共享/分块、缓存回收与输入过滤；Unity 的实际视觉效果仍需游戏内检查。
+
 ## 建筑组件
 
 ### 远程地图监控
@@ -43,6 +85,7 @@
 - 若目标是未敌对势力的据点，会禁止选择或打开，避免原版据点地图因没有敌对 pawn 立即结算为摧毁。
 - 可选科技需求、供电需求、自定义图标和本地化 key。
 - `keepMapAliveWhenLinked` 为 true 时，链接期间通过 patch 阻止目标地图被原版清理。
+- 监视器按 `Map` 保存已生成目标，而不是只保存 `MapParent`。据点被击败后原版会把 `Settlement` 替换为 `DestroyedSettlement`；只要地图仍存在，监视链接会自动跟随新的地图父对象，不会因为跨地图炮击摧毁据点而丢失。
 
 字段：
 

@@ -7,7 +7,11 @@ namespace SRA
     [StaticConstructorOnStartup]
     public static class RemoteMonitoringMapCache
     {
+        // 保留旧集合接口，避免已有子 mod 依赖 RemoteMonitoringMapCache.ObservedMaps 时失效。
         public static readonly HashSet<MapParent> ObservedMaps = new HashSet<MapParent>();
+
+        // MapParent 会在据点被击败时替换为 DestroyedSettlement；Map 才是稳定身份。
+        public static readonly HashSet<Map> ObservedMapInstances = new HashSet<Map>();
 
         static RemoteMonitoringMapCache()
         {
@@ -22,6 +26,7 @@ namespace SRA
             }
 
             ObservedMaps.Clear();
+            ObservedMapInstances.Clear();
 
             foreach (CompRemoteMapMonitor monitor in RemoteMonitoringUtility.GetAllRemoteMapMonitors())
             {
@@ -29,14 +34,48 @@ namespace SRA
                 {
                     ObservedMaps.Add(monitor.ObservedMapParent);
                 }
+
+                if (monitor.ObservedMap != null && !monitor.ObservedMap.Disposed)
+                {
+                    ObservedMapInstances.Add(monitor.ObservedMap);
+                }
             }
         }
 
+        public static void Add(Map map)
+        {
+            if (map != null && !map.Disposed)
+            {
+                ObservedMapInstances.Add(map);
+                if (map.Parent != null && !map.Parent.Destroyed)
+                {
+                    ObservedMaps.Add(map.Parent);
+                }
+            }
+        }
+
+        public static void Remove(Map map)
+        {
+            if (map != null)
+            {
+                ObservedMapInstances.Remove(map);
+                if (map.Parent != null)
+                {
+                    ObservedMaps.Remove(map.Parent);
+                }
+            }
+        }
+
+        // Legacy overloads retained for consumers using the original cache API.
         public static void Add(MapParent mapParent)
         {
             if (mapParent != null && !mapParent.Destroyed)
             {
                 ObservedMaps.Add(mapParent);
+                if (mapParent.Map != null && !mapParent.Map.Disposed)
+                {
+                    ObservedMapInstances.Add(mapParent.Map);
+                }
             }
         }
 
@@ -45,12 +84,17 @@ namespace SRA
             if (mapParent != null)
             {
                 ObservedMaps.Remove(mapParent);
+                if (mapParent.Map != null)
+                {
+                    ObservedMapInstances.Remove(mapParent.Map);
+                }
             }
         }
 
         public static void CleanupInvalidEntries()
         {
             ObservedMaps.RemoveWhere(mapParent => mapParent == null || mapParent.Destroyed);
+            ObservedMapInstances.RemoveWhere(map => map == null || map.Disposed);
         }
     }
 }

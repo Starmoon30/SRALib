@@ -1507,7 +1507,7 @@ namespace SRA
             base.DrawExtraSelectionOverlays();
             float effectiveRange = AttackVerb.EffectiveRange;
             float num = AttackVerb.verbProps.EffectiveMinRange(allowAdjacentShot: true);
-            SRA_TurretRangeOverlayUtility.DrawTurretRangeRings(base.Position, effectiveRange, num);
+            SRA_TurretRangeOverlayUtility.DrawTurretRangeRings(base.Position, effectiveRange, num, map: Map);
 
             if (WarmingUp)
             {

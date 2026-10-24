@@ -576,7 +576,7 @@ namespace SRA
             float radius = GetImpactRadius(groupKey);
             if (radius > 0f)
             {
-                GenDraw.DrawRadiusRing(target.Cell, radius);
+                RangeRingDrawer.Draw(target.Cell, radius, map: map);
             }
         }
 
@@ -618,7 +618,7 @@ namespace SRA
             float radius = GetImpactRadius(comp);
             if (radius > 0f)
             {
-                GenDraw.DrawRadiusRing(target.Cell, radius);
+                RangeRingDrawer.Draw(target.Cell, radius, map: map);
             }
         }
 
