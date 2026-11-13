@@ -1,212 +1,97 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    SRALib targets RimWorld 1.7 only.
+    RimWorld 1.6 is intentionally frozen in 1.6/Assemblies and is not rebuilt.
+
+    RimWorld 1.7 uses CoreCLR/net10 and has a different layout from 1.6:
+    game assemblies are in the game root and UnityEngine types are provided by
+    UnityStubs.dll. Waylith redirects UnityEngine assembly names at runtime.
+  -->
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{C1FB607E-E314-42C7-B6EE-D7849E96E82A}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>SRA</RootNamespace>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
     <AssemblyName>SRALib</AssemblyName>
-    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
-    <LangVersion>9.0</LangVersion>
-    <FileAlignment>512</FileAlignment>
+    <RootNamespace>SRA</RootNamespace>
+    <OutputType>Library</OutputType>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
     <Deterministic>true</Deterministic>
-    <TargetFrameworkProfile />
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+    <GenerateRuntimeConfigurationFiles>false</GenerateRuntimeConfigurationFiles>
+    <UseAppHost>false</UseAppHost>
+    <AutoGenerateBindingRedirects>false</AutoGenerateBindingRedirects>
+    <GenerateBindingRedirectsOutputType>false</GenerateBindingRedirectsOutputType>
+    <ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>None</ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>
+    <NoWarn>$(NoWarn);CS0649;CS0169;CS0414;CS1591;MSB3277</NoWarn>
+
+    <ModRoot Condition="'$(ModRoot)' == ''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\..\..'))</ModRoot>
+    <RimWorldDir Condition="'$(RimWorldDir)' == '' and '$(RimWorldRoot)' != ''">$([System.IO.Path]::GetFullPath('$(RimWorldRoot)'))</RimWorldDir>
+    <RimWorldDir Condition="'$(RimWorldDir)' == ''">$([System.IO.Path]::GetFullPath('$(ModRoot)\..\..'))</RimWorldDir>
+    <ManagedDir Condition="'$(ManagedDir)' == ''">$(RimWorldDir)</ManagedDir>
+    <SteamAppsDir Condition="'$(SteamAppsDir)' == ''">$([System.IO.Path]::GetFullPath('$(RimWorldDir)\..\..'))</SteamAppsDir>
+    <WorkshopDir Condition="'$(WorkshopDir)' == ''">$(SteamAppsDir)\workshop\content\294100</WorkshopDir>
+    <HarmonyAssemblyDir Condition="'$(HarmonyAssemblyDir)' == ''">$(WorkshopDir)\2009463077\1.7\Assemblies</HarmonyAssemblyDir>
+    <HarmonyAssembly Condition="'$(HarmonyAssembly)' == ''">$(HarmonyAssemblyDir)\0Harmony.dll</HarmonyAssembly>
+    <ModAssembliesDir Condition="'$(ModAssembliesDir)' == ''">$(ModRoot)\1.7\Assemblies</ModAssembliesDir>
+    <OutputPath>$(ModAssembliesDir)\</OutputPath>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>..\..\..\1.6\Assemblies\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|ARM64'">
-    <OutputPath>bin\ARM64\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <Optimize>true</Optimize>
-    <DebugType>pdbonly</DebugType>
-    <PlatformTarget>ARM64</PlatformTarget>
-    <LangVersion>7.3</LangVersion>
-    <ErrorReport>prompt</ErrorReport>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
-    <OutputPath>bin\Debug\</OutputPath>
-    <WarningLevel>5</WarningLevel>
-    <PlatformTarget>x64</PlatformTarget>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
     <Optimize>false</Optimize>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>portable</DebugType>
+    <DefineConstants>$(DefineConstants);DEBUG;TRACE</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|ARM64'">
-    <OutputPath>bin\ARM64\Debug\</OutputPath>
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <Optimize>true</Optimize>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>portable</DebugType>
+    <DefineConstants>$(DefineConstants);TRACE</DefineConstants>
   </PropertyGroup>
+
   <ItemGroup>
-    <Reference Include="0Harmony">
-      <HintPath>..\..\..\..\..\..\..\workshop\content\294100\2009463077\Current\Assemblies\0Harmony.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
+    <!-- The legacy root copy is not part of the old project; keep Properties\AssemblyInfo.cs. -->
+    <Compile Remove="AssemblyInfo.cs" />
     <Reference Include="Assembly-CSharp">
-      <HintPath>..\..\..\..\..\RimWorldWin64_Data\Managed\Assembly-CSharp.dll</HintPath>
-      <Private>False</Private>
+      <HintPath>$(ManagedDir)\Assembly-CSharp.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityStubs">
+      <HintPath>$(ManagedDir)\UnityStubs.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Waylith">
+      <HintPath>$(ManagedDir)\Waylith.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="RimWorld">
+      <HintPath>$(ManagedDir)\RimWorld.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="0Harmony">
+      <HintPath>$(HarmonyAssembly)</HintPath>
+      <Private>false</Private>
     </Reference>
     <Reference Include="HarmonyMod">
-      <HintPath>..\..\..\..\..\..\..\workshop\content\294100\2009463077\Current\Assemblies\HarmonyMod.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Net.Http" />
-    <Reference Include="System.Xml" />
-    <Reference Include="UnityEngine">
-      <HintPath>..\..\..\..\..\RimWorldWin64_Data\Managed\UnityEngine.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="UnityEngine.CoreModule">
-      <HintPath>..\..\..\..\..\RimWorldWin64_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="UnityEngine.IMGUIModule">
-      <HintPath>..\..\..\..\..\RimWorldWin64_Data\Managed\UnityEngine.IMGUIModule.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="UnityEngine.TextRenderingModule">
-      <HintPath>..\..\..\..\..\RimWorldWin64_Data\Managed\UnityEngine.TextRenderingModule.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="UnityEngine.UIModule">
-      <HintPath>..\..\..\..\..\RimWorldWin64_Data\Managed\UnityEngine.UIModule.dll</HintPath>
-      <Private>False</Private>
+      <HintPath>$(HarmonyAssemblyDir)\HarmonyMod.dll</HintPath>
+      <Private>false</Private>
     </Reference>
   </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Building_TempControler.cs" />
-    <Compile Include="Building_TurretGunHasSpeed.cs" />
-    <Compile Include="Rendering\CircleOutlineGeometry.cs" />
-    <Compile Include="Rendering\RangeRingDrawer.cs" />
-    <Compile Include="Compatibility\TurretIdlePositionCompatibility.cs" />
-    <Compile Include="CompAbilityEffect_ExcaliburBeam.cs" />
-    <Compile Include="CompBuildingDamageAdjuster.cs" />
-    <Compile Include="CompClearTimedGameConditions.cs" />
-    <Compile Include="CompCasketResearch.cs" />
-    <Compile Include="CompDamageFactors.cs" />
-    <Compile Include="CompGlobalMechCommand.cs" />
-    <Compile Include="CompOpenCustomUI.cs" />
-    <Compile Include="CompProperties_BuildingDamageAdjuster.cs" />
-    <Compile Include="CompProperties_ClearTimedGameConditions.cs" />
-    <Compile Include="CompProperties_DamageFactors.cs" />
-    <Compile Include="CompProperties_UseEffect_ActivateMech.cs" />
-    <Compile Include="CompUseEffect_ActivateMech.cs" />
-    <Compile Include="CompVehicleWeapon.cs" />
-    <Compile Include="CoaxialTurret\CoaxialWeapon.cs" />
-    <Compile Include="CompWeaponHediffGiver.cs" />
-    <Compile Include="Comp_BodyshapeAjuster.cs" />
-    <Compile Include="Comp_MultiTurretGun.cs" />
-    <Compile Include="Comp_PawnRenderExtra.cs" />
-    <Compile Include="Comp_RepairTower.cs" />
-    <Compile Include="Comp_TurretRenderDynamic.cs" />
-    <Compile Include="Comp_WeaponRenderDynamic.cs" />
-    <Compile Include="CompHolographic.cs" />
-    <Compile Include="CompSustainedShoot.cs" />
-    <Compile Include="CompBuildingDrawExtraFourRot.cs" />
-    <Compile Include="CompPlaySoundOnSpawn.cs" />
-    <Compile Include="DamageWorker_AddInjury_NoDamageFactor.cs" />
-    <Compile Include="DirectHediffApplicationUtility.cs" />
-    <Compile Include="ExplosionWithProcessing.cs" />
-    <Compile Include="Building_VacDoor.cs" />
-    <Compile Include="EventSystem\Condition.cs" />
-    <Compile Include="EventSystem\DebugActions.cs" />
-    <Compile Include="EventSystem\DelayedActionManager.cs" />
-    <Compile Include="EventSystem\Dialog_CustomDisplay.cs" />
-    <Compile Include="EventSystem\Dialog_ManageEventVariables.cs" />
-    <Compile Include="EventSystem\Dialog_NewLayoutDisplay.cs" />
-    <Compile Include="EventSystem\Effect.cs" />
-    <Compile Include="EventSystem\EventContext.cs" />
-    <Compile Include="EventSystem\EventDef.cs" />
-    <Compile Include="EventSystem\EventUIConfigDef.cs" />
-    <Compile Include="EventSystem\EventVariableManager.cs" />
-    <Compile Include="EventSystem\QuestNode\QuestNode_EventLetter.cs" />
-    <Compile Include="EventSystem\QuestNode\QuestNode_Root_EventLetter.cs" />
-    <Compile Include="EventSystem\QuestNode\QuestNode_WriteToEventVariablesWithAdd.cs" />
-    <Compile Include="CompAbilityEffect_Skip.cs" />
-    <Compile Include="HediffDetector.cs" />
-    <Compile Include="NoFoodPoisoningUtility.cs" />
-    <Compile Include="KTLaserADS\KTPulseElectrode_Comp.cs" />
-    <Compile Include="KTLaserADS\KTPulseElectrode_Core.cs" />
-    <Compile Include="KTLaserADS\KTPulseElectrode_Interaction.cs" />
-    <Compile Include="Patch_SkillRecord_Interval.cs" />
-    <Compile Include="Flyover\GameComponent_DropPodInterceptor.cs" />
-    <Compile Include="Flyover\SRA_AircraftHangar\CompAbilityEffect_AircraftStrike.cs" />
-    <Compile Include="Flyover\SRA_AircraftHangar\CompAircraftHangar.cs" />
-    <Compile Include="Flyover\SRA_AircraftHangar\WorldComponent_AircraftManager.cs" />
-    <Compile Include="Flyover\SRA_FlyOverDropPod\CompProperties_FlyOverDropPod.cs" />
-    <Compile Include="Flyover\SRA_FlyOverEscort\CompFlyOverEscort.cs" />
-    <Compile Include="Flyover\SRA_FlyOverEscort\CompProperties_FlyOverEscort.cs" />
-    <Compile Include="Flyover\SRA_GroundStrafing\CompGroundStrafing.cs" />
-    <Compile Include="Flyover\SRA_SectorSurveillance\CompSectorSurveillance.cs" />
-    <Compile Include="Flyover\SRA_SendLetterAfterTicks\CompProperties_SendLetterAfterTicks.cs" />
-    <Compile Include="Flyover\SRA_SendLetterAfterTicks\CompSendLetterAfterTicks.cs" />
-    <Compile Include="Flyover\SRA_ShipArtillery\CompProperties_ShipArtillery.cs" />
-    <Compile Include="Flyover\SRA_ShipArtillery\CompShipArtillery.cs" />
-    <Compile Include="Flyover\SRA_SpawnFlyOver\CompAbilityEffect_SpawnFlyOver.cs" />
-    <Compile Include="Flyover\SRA_SpawnFlyOver\CompProperties_AbilitySpawnFlyOver.cs" />
-    <Compile Include="Flyover\ThingclassFlyOver.cs" />
-    <Compile Include="HeavyNavalGunTurret\Comp_HNGT_GlobalBallisticAttack.cs" />
-    <Compile Include="HeavyNavalGunTurret\DamageWorker_NuclearFlame.cs" />
-    <Compile Include="HeavyNavalGunTurret\GlobalAttackMapLabelUtility.cs" />
-    <Compile Include="HeavyNavalGunTurret\HighOrbitAttack.cs" />
-    <Compile Include="HeavyNavalGunTurret\Projectile_CompoundExplosion.cs" />
-    <Compile Include="HeavyNavalGunTurret\RemoteArtilleryUtility.cs" />
-    <Compile Include="HeavyNavalGunTurret\WorldObject_GlobalAttackDevice.cs" />
-    <Compile Include="GizmoHarmonyPatches.cs" />
-    <Compile Include="RemoteMonitoring\CompProperties_RemoteMapMonitor.cs" />
-    <Compile Include="RemoteMonitoring\CompRemoteMapMonitor.cs" />
-    <Compile Include="RemoteMonitoring\Patch_MapPawns_AnyPawnBlockingMapRemoval_RemoteMonitoring.cs" />
-    <Compile Include="RemoteMonitoring\RemoteMonitoringMapCache.cs" />
-    <Compile Include="RemoteMonitoring\RemoteMonitoringUtility.cs" />
-    <Compile Include="ResurrectionBeacon\CompResurrectionBeacon.cs" />
-    <Compile Include="SRALog.cs" />
-    <Compile Include="HediffComp_SRANeedMin.cs" />
-    <Compile Include="HediffComp_WeaponSwitcher.cs" />
-    <Compile Include="KTLaserADS\KTLaserADS_AntiAir.cs" />
-    <Compile Include="KTLaserADS\KTLaserADS_AntiGround.cs" />
-    <Compile Include="KTLaserADS\KTLaserADS_Core.cs" />
-    <Compile Include="KTLaserADS\KTLaserADS_Interaction.cs" />
-    <Compile Include="Projectile_MultiExplosive_NorthArcTrail.cs" />
-    <Compile Include="HediffComp_IgnoreTerrainCost.cs" />
-    <Compile Include="TailBulletDef.cs" />
-    <Compile Include="Verb_MeleeAttackDamage_AOE.cs" />
-    <Compile Include="HediffComp_CountdownDeath.cs" />
-    <Compile Include="SRABarrier\HediffComp_SRABarrier.cs" />
-    <Compile Include="SRABarrier\SRABarrierEffects.cs" />
-    <Compile Include="HediffComp_SRARegen.cs" />
-    <Compile Include="HediffComp_TopTurret.cs" />
-    <Compile Include="HediffWithSeverityLabel.cs" />
-    <Compile Include="Mortar_Patch.cs" />
-    <Compile Include="Mote_ScaleAndRotate.cs" />
-    <Compile Include="Mote_TiledBeamSheath.cs" />
-    <Compile Include="Projectile_BeamWithEffect.cs" />
-    <Compile Include="Projectile_BulletWithEffect.cs" />
-    <Compile Include="Projectile_MultiExplosive.cs" />
-    <Compile Include="Projectile_MultiExplosive_beam.cs" />
-    <Compile Include="Projectile_SRA_Railgun.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SRABarrier\SRABarrierGizmo.cs" />
-    <Compile Include="SRABarrier\SRABarrierHarmonyPatches.cs" />
-    <Compile Include="SRALibSettings.cs" />
-    <Compile Include="ThingDefOf.cs" />
-    <Compile Include="Thing_ExcaliburBeam.cs" />
-    <Compile Include="Verb_KT_Tachyon_Lances.cs" />
-    <Compile Include="Verb_SRAShootBeam.cs" />
-    <Compile Include="Verb_SRAShootBeamStats.cs" />
-    <Compile Include="Verb_ShootArc.cs" />
-    <Compile Include="Verb_ShootWithOffset.cs" />
-    <Compile Include="WarUnitSpawner\Comp_SRAWarUnitSpawner.cs" />
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+
+  <Target Name="SRALibValidateGameReferences" BeforeTargets="ResolveAssemblyReferences">
+    <Error Condition="!Exists('$(ManagedDir)\Assembly-CSharp.dll')"
+           Text="找不到 1.7 的 Assembly-CSharp.dll：$(ManagedDir)\Assembly-CSharp.dll。1.7 程序集位于 RimWorld 游戏根目录。" />
+    <Error Condition="!Exists('$(ManagedDir)\UnityStubs.dll')"
+           Text="找不到 1.7 的 UnityStubs.dll：$(ManagedDir)\UnityStubs.dll。" />
+    <Error Condition="!Exists('$(ManagedDir)\Waylith.dll')"
+           Text="找不到 1.7 的 Waylith.dll：$(ManagedDir)\Waylith.dll。" />
+    <Error Condition="!Exists('$(ManagedDir)\RimWorld.dll')"
+           Text="找不到 1.7 的 RimWorld.dll：$(ManagedDir)\RimWorld.dll。" />
+    <Error Condition="!Exists('$(HarmonyAssembly)')"
+           Text="找不到 1.7 的 0Harmony.dll：$(HarmonyAssembly)。" />
+  </Target>
 </Project>

@@ -2238,7 +2238,7 @@ Beam 版本示例：
 | --- | --- | --- |
 | `portraitPath` | null | 头像贴图路径 |
 | `characterName` | null | 角色名 |
-| `doCloseXButton` | true | 是否显示关闭 X |
+| `doCloseXButton` | true | 是否显示关闭 X；为 `false` 时同时禁止使用 Esc 关闭窗口 |
 | `descriptions` | null | 描述文本列表 |
 | `descriptionMode` | `Random` | `Random` 或 `Sequential` |
 | `hiddenWindow` | false | 是否隐藏窗口，只执行效果 |
@@ -2272,7 +2272,7 @@ Beam 版本示例：
 | `SRA.Condition_VariableGreaterThanOrEqual` | `name`、`value`、`valueVariableName` | 变量大于等于 |
 | `SRA.Condition_VariableLessThanOrEqual` | `name`、`value`、`valueVariableName` | 变量小于等于 |
 | `SRA.Condition_FactionExists` | `factionDef` | 世界中存在某 faction |
-| `SRA.Condition_HasThing` | `thingDef`、`count` | 当前地图资源计数满足数量 |
+| `SRA.Condition_HasThing` | `thingDef`、`count`、`mapScope` | 指定范围内玩家持有物品的数量满足要求 |
 | `SRA.Condition_HasResearchProject` | `researchProject` | 科技已完成 |
 
 效果类型：
@@ -2288,7 +2288,7 @@ Beam 版本示例：
 | `SRA.Effect_ChangeFactionRelation_FromVariable` | `faction`、`goodwillVariableName` | 用变量调整关系 |
 | `SRA.Effect_SpawnPawnAndStore` | `kindDef`、`count`、`storeAs` | 生成 pawn 并存变量 |
 | `SRA.Effect_GiveThing` | `thingDef`、`count` | 空投物品 |
-| `SRA.Effect_TakeThing` | `thingDef`、`count` | 从当前地图移除资源 |
+| `SRA.Effect_TakeThing` | `thingDef`、`count`、`mapScope` | 从指定范围内玩家持有物品中移除指定数量 |
 | `SRA.Effect_SpawnPawn` | `kindDef`、`count`、`joinPlayerFaction`、`letterLabel`、`letterText`、`letterDef` | 生成 pawn |
 | `SRA.Effect_SpawnSkyfaller` | `skyfaller`、`useTradeDropSpot` | 生成 skyfaller |
 | `SRA.Effect_SpawnOrbitTrader` | `traderKindDef` | 添加轨道商船 |
@@ -2302,6 +2302,16 @@ Beam 版本示例：
 | `SRA.Effect_StoreTicksPassed` | `variableName` | 保存游戏 tick |
 | `SRA.Effect_StoreDaysPassed` | `variableName` | 保存游戏天数 |
 | `SRA.Effect_StoreColonyWealth` | `variableName` | 保存殖民地财富 |
+
+`mapScope` 可取以下值，默认值为 `AllMaps`：
+
+| 值 | 作用 |
+| --- | --- |
+| `CurrentMap` | 玩家当前视角所在的地图 |
+| `PlayerHome` | 玩家默认殖民地地图，即原版 `Find.AnyPlayerHomeMap` |
+| `AllMaps` | 当前已经生成的所有地图；不会加载或生成尚未存在的地图 |
+
+统计和扣除会递归检查地图上的物品、建筑容器和 Pawn 背包。玩家殖民地地图上的无派系物品视为玩家库存；其他地图上的无派系物品不会被视为玩家持有物品，除非其持有者链属于玩家派系。
 
 示例：
 

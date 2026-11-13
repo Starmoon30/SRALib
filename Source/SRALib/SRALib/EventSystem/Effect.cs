@@ -297,25 +297,54 @@ namespace SRA
     {
         public ThingDef thingDef;
         public int count = 1;
+        public EventMapScope mapScope = EventMapScope.AllMaps;
+
         public override void Execute(Window dialog = null)
         {
             if (thingDef == null)
             {
-                Log.Error("[SRA] Effect_GiveThing has a null thingDef.");
+                Log.Error("[SRA] Effect_TakeThing has a null thingDef.");
                 return;
             }
 
-            Map currentMap = Find.CurrentMap;
-            if (currentMap == null)
+            List<Thing> sourceThings = new List<Thing>();
+            int playerAmount = EventMapScopeUtility.CollectPlayerOwnedThings(mapScope, thingDef, sourceThings);
+
+            // Keep the operation all-or-nothing when the selected scope does not
+            // contain enough player-owned items.
+            if (playerAmount < count)
             {
-                Log.Error("[SRA] Effect_GiveThing cannot execute without a current map.");
                 return;
             }
-            int playerAmount = currentMap.resourceCounter.GetCount(thingDef);
-            if (playerAmount >= count)
+
+            int remaining = count;
+            for (int i = 0; i < sourceThings.Count && remaining > 0; i++)
             {
-                // ¿Û³ý×ÊÔ´
-                TradeUtility.LaunchThingsOfType(thingDef, count, currentMap, null);
+                Thing source = sourceThings[i];
+                if (source.DestroyedOrNull())
+                {
+                    continue;
+                }
+
+                if (source.stackCount <= 0)
+                {
+                    continue;
+                }
+
+                int amountToTake = Mathf.Min(remaining, source.stackCount);
+                Thing removed = source.SplitOff(amountToTake);
+                if (removed.def.destroyable)
+                {
+                    removed.Destroy(DestroyMode.Vanish);
+                }
+                else
+                {
+                    // SplitOff has already detached the full stack from its map
+                    // or container. Do not call Destroy here: vanilla logs an
+                    // error for defs such as the non-destroyable main brain.
+                    removed.stackCount = 0;
+                }
+                remaining -= amountToTake;
             }
         }
     }
@@ -415,10 +444,10 @@ namespace SRA
         public TraderKindDef traderKindDef;
         public override void Execute(Window dialog = null)
         {
-            // Èç¹ûparmsÖÐÃ»ÓÐÖ¸¶¨£¬ÎÒÃÇ¿ÉÒÔÊ¹ÓÃÒ»¸öÄ¬ÈÏµÄ£¬»òÕß´ÓÆäËû·½Ê½»ñÈ¡
+            // ï¿½ï¿½ï¿½parmsï¿½ï¿½Ã»ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç¿ï¿½ï¿½ï¿½Ê¹ï¿½ï¿½Ò»ï¿½ï¿½Ä¬ï¿½ÏµÄ£ï¿½ï¿½ï¿½ï¿½ß´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê½ï¿½ï¿½È¡
             if (traderKindDef == null)
             {
-                // Èç¹ûÃ»ÓÐÖ¸¶¨£¬ÎÒÃÇ¿ÉÒÔËæ»úÒ»¸ö£¬»òÕß·µ»Øfalse
+                // ï¿½ï¿½ï¿½Ã»ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ß·ï¿½ï¿½ï¿½false
                 return;
             }
             Map map = Find.CurrentMap;

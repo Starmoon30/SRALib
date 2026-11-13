@@ -244,6 +244,8 @@ namespace SRA
     {
         public ThingDef thingDef;
         public int count = 1;
+        public EventMapScope mapScope = EventMapScope.AllMaps;
+
         public override bool IsMet(out string reason)
         {
             if (thingDef == null)
@@ -251,13 +253,9 @@ namespace SRA
                 reason = "thingDef not specified in Condition_HasThing.";
                 return false;
             }
-            Map currentMap = Find.CurrentMap;
-            if (currentMap == null)
-            {
-                reason = "[SRA] Condition_HasThing cannot execute without a current map.";
-                return false;
-            }
-            int playerAmount = currentMap.resourceCounter.GetCount(thingDef);
+
+            int playerAmount = EventMapScopeUtility.CountPlayerOwnedThings(mapScope, thingDef);
+
             if (playerAmount < count)
             {
                 reason = "not has enough thing.";

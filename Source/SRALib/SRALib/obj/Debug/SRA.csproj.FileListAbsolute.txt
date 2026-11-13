@@ -34,3 +34,7 @@ D:\steam\steamapps\common\RimWorld\Mods\SRALib\Source\SRALib\SRALib\bin\Debug\SR
 D:\steam\steamapps\common\RimWorld\Mods\SRALib\Source\SRALib\SRALib\bin\Debug\SRALib.pdb
 D:\steam\steamapps\common\RimWorld\Mods\SRALib\Source\SRALib\SRALib\obj\Debug\SRALib.dll
 D:\steam\steamapps\common\RimWorld\Mods\SRALib\Source\SRALib\SRALib\obj\Debug\SRALib.pdb
+D:\steam\steamapps\common\RimWorld\Mods\SRALib\1.7\Assemblies\SRALib.dll
+D:\steam\steamapps\common\RimWorld\Mods\SRALib\1.7\Assemblies\SRALib.pdb
+D:\steam\steamapps\common\RimWorld\Mods\SRALib\Source\SRALib\SRALib\obj\Debug\SRA.GeneratedMSBuildEditorConfig.editorconfig
+D:\steam\steamapps\common\RimWorld\Mods\SRALib\Source\SRALib\SRALib\obj\Debug\SRA.sourcelink.json

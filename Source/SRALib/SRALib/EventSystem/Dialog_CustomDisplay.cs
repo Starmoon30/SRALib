@@ -34,13 +34,10 @@ namespace SRA
             this.def = def;
             this.forcePause = true;
             this.absorbInputAroundWindow = true;
-            if (def.doCloseXButton)
-            {
-                this.doCloseX = true;
-            }
-            else {
-                this.doCloseX = false;
-            }
+            // Keep both close routes consistent: disabling the X button also
+            // makes the event window ignore the Escape/cancel key.
+            this.doCloseX = def.doCloseXButton;
+            this.closeOnCancel = def.doCloseXButton;
             if (def.eventUIConfig != null)
             {
                 Config = def.eventUIConfig;
@@ -187,7 +184,7 @@ namespace SRA
         protected virtual void DrawOptions(Rect optionRect)
         {
             Listing_Standard listing = new Listing_Standard();
-            listing.Begin(optionRect); // Ê¹ÓÃÍêÕûµÄ optionRect
+            listing.Begin(optionRect); // Ê¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ optionRect
             if (def.options != null)
             {
                 foreach (var option in def.options)

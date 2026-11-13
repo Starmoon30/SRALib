@@ -481,8 +481,9 @@ namespace SRA
 
             int duration = Mathf.Max(1, (ShotsPerBurst - 1) * TicksBetweenBurstShots);
             float pathIndex = Mathf.Clamp01((float)tick / duration) * (path.Count - 1);
-            int lower = Mathf.FloorToInt(pathIndex);
-            int upper = Mathf.Min(lower + 1, path.Count - 1);
+            int lastPathIndex = path.Count - 1;
+            int lower = Mathf.Clamp(Mathf.FloorToInt(pathIndex), 0, lastPathIndex);
+            int upper = Mathf.Clamp(lower + 1, 0, lastPathIndex);
             return Vector3.Lerp(path[lower], path[upper], pathIndex - lower) + targetDrift;
         }
 
@@ -736,7 +737,8 @@ namespace SRA
                 yield break;
             }
 
-            for (int i = 0; i < 4; i++)
+            int directionCount = Math.Min(4, GenAdj.CardinalDirections.Length);
+            for (int i = 0; i < directionCount; i++)
             {
                 IntVec3 cell = pos + GenAdj.CardinalDirections[i];
                 if (cell.InBounds(caster.Map) && (!verbProps.beamHitsNeighborCellsRequiresLOS || Props != null && Props.penetrateObstacles || GenSight.LineOfSight(source, cell, caster.Map)))
@@ -864,12 +866,26 @@ namespace SRA
             }
 
             List<Thing> things = cell.GetThingList(caster.Map);
-            for (int i = things.Count - 1; i >= 0; i--)
+            // Damage can destroy and remove the current Thing while this list is being
+            // traversed. Keep the live list and repair the cursor after each mutation.
+            int index = things.Count - 1;
+            while (index >= 0)
             {
-                Thing thing = things[i];
+                if (index >= things.Count)
+                {
+                    index = things.Count - 1;
+                    continue;
+                }
+
+                Thing thing = things[index];
                 if (CanDamageThing(thing) && damagedThingsThisShot.Add(thing))
                 {
                     ApplyDamage(thing, sourceCell, damageFactor);
+                }
+
+                if (index < things.Count && things[index] == thing)
+                {
+                    index--;
                 }
             }
 
